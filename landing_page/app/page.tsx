@@ -8,9 +8,20 @@ import { HowItWorks } from "./components/how-it-works";
 import { DevelopmentStatus } from "./components/development-status";
 import { CtaSection } from "./components/cta-section";
 import { Footer } from "./components/footer";
+import { useState, useEffect } from "react";
+import { TypingLoader } from "./components/TypingLoader";
 //import { ThemeProvider } from "./components/theme-provider";
 
 export default function Home() {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading delay or wait for actual data fetch
+    const timer = setTimeout(() => setLoading(false), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) return <TypingLoader />;
   // // Add animation library
   // useEffect(() => {
   //   const animateOnScroll = () => {

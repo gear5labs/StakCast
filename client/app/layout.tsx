@@ -16,10 +16,10 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "Stakcast",
   description: "Your crypto prediction market",
-  icons:{
-    icon:'/logo.svg',
-    apple:'/logo.svg'
-  }
+  icons: {
+    icon: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export default function RootLayout({
@@ -29,13 +29,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${manrope.className} antialiased bg-[white] text-gray-600`}>
+      <body
+        className={`${manrope.className} antialiased bg-[white] text-gray-600`}
+      >
         <Suspense>
           <StarknetProvider>
             <AppProvider>
               <Providers>
                 <Header />
-                {children}
+                <main className="px-4 pb-4 pt-32 md:pt-36">{children}</main>
               </Providers>
             </AppProvider>
           </StarknetProvider>

@@ -5,7 +5,7 @@ import { MarketCard } from "./components/ui";
 import { SearchX } from "lucide-react";
 import { DummyMarketType } from "./types";
 import axios from "axios";
-import Spinner from "./components/ui/loading/Spinner"; 
+import Spinner from "./components/ui/loading/Spinner";
 
 export default function Home() {
   const router = useRouter();
@@ -29,15 +29,19 @@ export default function Home() {
     fetchMarkets();
   }, []);
 
-  const markets: DummyMarketType[] = Array.isArray(allMarkets) ? allMarkets : [];
+  const markets: DummyMarketType[] = Array.isArray(allMarkets)
+    ? allMarkets
+    : [];
 
   const filteredMarkets =
     currentCategory === "All"
       ? markets
-      : markets.filter((market) => market?.categories?.includes(currentCategory));
+      : markets.filter((market) =>
+          market?.categories?.includes(currentCategory)
+        );
 
   return (
-    <main className="p-4">
+    <>
       {isLoading ? ( // Show spinner if loading
         <Spinner />
       ) : filteredMarkets.length > 0 ? (
@@ -66,6 +70,6 @@ export default function Home() {
           </p>
         </div>
       )}
-    </main>
+    </>
   );
 }
