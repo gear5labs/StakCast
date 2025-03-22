@@ -61,9 +61,10 @@ const {data}=useBalance({address:address as '0x'})
   const disconnectWallet = async () => {
     try {
       await disconnectAsync();
+      localStorage.removeItem("connector");
       showToast("success", "Success", "Wallet disconnected successfully");
     } catch (error) {
-      console.log(error)
+      console.log(error);
       showToast("error", "Error", "Failed to disconnect wallet");
     }
   };
