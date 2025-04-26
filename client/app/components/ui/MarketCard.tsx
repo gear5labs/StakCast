@@ -1,6 +1,6 @@
 import React from "react";
-
 import { MarketOption } from "@/app/types";
+import seoData from "../layout/seoData.json"; // Import SEO data
 
 interface MarketCardProps {
   name: string;
@@ -13,7 +13,6 @@ interface MarketCardProps {
 
 const MarketCard: React.FC<MarketCardProps> = ({
   name = "Untitled Market",
-  //image = "/default-image.jpg",
   options = [],
   totalRevenue = "$0",
   ...props
@@ -22,9 +21,15 @@ const MarketCard: React.FC<MarketCardProps> = ({
     <div
       className="rounded-lg shadow-md hover:shadow-xl transition-shadow duration-200 border md:w-[30%] w-full mx-auto text-sm gap-3 mt-4"
       style={{ cursor: "pointer" }}
+      role="article"
+      aria-labelledby={`market-${name.replace(/\s+/g, '-')}`} 
       {...props}
     >
+      <h3 id={`market-${name.replace(/\s+/g, '-')}`} className="sr-only">
+        {name} - {totalRevenue} - {seoData.marketCard.description} 
+      </h3>
       <div className="relative h-10 border border-gray-200 shadow-sm overflow-hidden rounded-t-lg m-auto">
+        {/* Uncomment this when image is available */}
         {/* <Image
           src={image}
           alt={name}

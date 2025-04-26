@@ -1,5 +1,7 @@
 "use client";
 import React from "react";
+import SEO from "../layout/Seo"; // Import the SEO component for meta tags
+import seoData from "../layout/seoData.json"; // Import SEO data for categories
 import { useRouter, useSearchParams } from "next/navigation";
 
 const categories = [
@@ -16,28 +18,37 @@ const Categories = () => {
   const searchParams = useSearchParams();
   const currentCategory = searchParams.get('category') || 'All';
 
+  // Extract SEO data for categories
+  const { title, description, keywords } = seoData.categories;
+
   const handleCategoryClick = (categoryName: string) => {
     if (categoryName === 'All') {
-      router.push('/');
+      router.push('/'); 
     } else {
-      router.push(`/?category=${categoryName}`);
+      router.push(`/?category=${categoryName}`); 
     }
   };
 
   return (
     <div className="border-b">
+      {/* SEO Component: Set meta tags for the categories section to improve discoverability */}
+      <SEO
+        title={title} 
+        description={description} 
+        keywords={keywords} 
+      />
       <div className="flex space-x-4 p-4 overflow-x-auto whitespace-nowrap">
         {categories.map((category, index) => (
           <div
             key={index}
-            onClick={() => handleCategoryClick(category.name)}
+            onClick={() => handleCategoryClick(category.name)} 
             className={`cursor-pointer px-4 py-2 text-sm font-medium ${
               currentCategory === category.name
-                ? "text-blue-500 border-b-2 border-blue-500"
-                : "text-gray-600 dark:text-white hover:text-black"
+                ? "text-blue-500 border-b-2 border-blue-500" 
+                : "text-gray-600 dark:text-white hover:text-black" 
             }`}
           >
-            {category.name}
+            {category.name} 
           </div>
         ))}
       </div>

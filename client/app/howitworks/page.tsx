@@ -1,8 +1,17 @@
 import React from "react";
+import SEO from "../components/layout/Seo"; 
+import seoData from "../components/layout/seoData.json"; 
 
 const HowItWorks: React.FC = () => {
   return (
-    <section className="bg-gray-50 dark:bg-slate-950  py-12 px-6">
+    <section className="bg-gray-50 dark:bg-slate-950 py-12 px-6">
+      {/* SEO Component: Set meta tags for the How It Works section */}
+      <SEO
+        title={seoData.howItWorks.title}
+        description={seoData.howItWorks.description}
+        keywords={seoData.howItWorks.keywords}
+      />
+      
       <div className="max-w-5xl mx-auto">
         <h2 className="text-3xl font-bold text-center text-gray-800 dark:text-white mb-6">
           How Stakcast Works

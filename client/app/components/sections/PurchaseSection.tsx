@@ -1,8 +1,10 @@
-import React from "react";
-import {  useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useMarketContext } from "../../context/marketContext";
 import { DummyMarketType } from "@/app/types";
+import SEO from "../layout/Seo"; 
+import seoData from "../layout/seoData.json"; 
+
 const PurchaseSection = () => {
   const params = useParams();
   const { 
@@ -14,7 +16,7 @@ const PurchaseSection = () => {
     handleOptionSelect 
   } = useMarketContext();
   
-  const [market, setMarket] = useState<DummyMarketType| undefined>(undefined);
+  const [market, setMarket] = useState<DummyMarketType | undefined>(undefined);
   
   useEffect(() => {
     const fetchedMarket = markets.find(
@@ -27,17 +29,23 @@ const PurchaseSection = () => {
     if (selectedOption && units > 0) {
       const totalPrice = units * pricePerUnit;
       console.log(
-        `Purchased ${units} units of ${selectedOption} for $${totalPrice.toFixed(
-          2
-        )}`
+        `Purchased ${units} units of ${selectedOption} for $${totalPrice.toFixed(2)}`
       );
       // Add purchase logic here
     } else {
       console.log("Please select an option and enter a valid number of units.");
     }
   };
+
   return (
     <div className="mt-8">
+      {/* SEO Component: Set meta tags for the purchase section */}
+      <SEO
+        title={seoData.purchaseSection.title} 
+        description={seoData.purchaseSection.description} 
+        keywords={seoData.purchaseSection.keywords} 
+      />
+      
       <h2 className="text-xl font-semibold">Make a Prediction</h2>
       <div className="flex flex-col space-y-4 mt-4">
         {market?.options.map((option, index) => (
@@ -76,6 +84,7 @@ const PurchaseSection = () => {
               onChange={(e) => setUnits(Number(e.target.value))}
               placeholder="Enter number of units"
               className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition duration-200 ease-in-out"
+              aria-label="Number of units" // Accessibility: Label for screen readers
             />
           </div>
 

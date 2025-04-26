@@ -1,6 +1,5 @@
 "use client";
 import React, { useState } from "react";
-// import { useAppContext } from "../context/appContext";
 import {
   Wallet,
   TrendingUp,
@@ -11,23 +10,23 @@ import {
 import { DummyMarketType } from "../types";
 import { useAccount, useBalance } from "@starknet-react/core";
 import Header from "../components/layout/Header";
+import SEO from "../components/layout/Seo"; 
+import seoData from "../components/layout/seoData.json"; 
 
 const DashboardPage = () => {
   const { address, isConnected } = useAccount();
-
   const { data, isFetching } = useBalance({
     token: "0x04718f5a0Fc34cC1AF16A1cdee98fFB20C31f5cD61D6Ab07201858f4287c938D",
     address: address as "0x",
   });
-  console.log(data);
 
   const balance = isFetching
     ? "loading..."
     : data?.formatted
-    ? `${parseFloat(data.formatted).toFixed(2)} ${data.symbol}`
-    : "";
+      ? `${parseFloat(data.formatted).toFixed(2)} ${data.symbol}`
+      : "";
+
   const [_markets, setMarkets] = useState<DummyMarketType[]>([]);
-  console.log(_markets);
   const [newMarket, setNewMarket] = useState<Omit<DummyMarketType, "id">>({
     name: "",
     image: "",
@@ -79,6 +78,13 @@ const DashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* SEO Component: Set meta tags for the dashboard */}
+      <SEO
+        title={seoData.dashboard.title}
+        description={seoData.dashboard.description}
+        keywords={seoData.dashboard.keywords}
+      />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <div className="mb-8">
@@ -92,7 +98,7 @@ const DashboardPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <StatsCard
             title="Total Balance"
-            value={balance || " 0.00 ETH"}
+            value={balance || "0.00 ETH"}
             icon={<Wallet className="w-6 h-6" />}
             trend="+0.00%"
           />
@@ -147,18 +153,6 @@ const DashboardPage = () => {
           </form>
         </DashboardCard>
 
-        {/* Display Markets
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {markets.map((market) => (
-            <div key={market.id} className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900">{market.name}</h3>
-              {market.image && (
-                <img src={market.image} alt={market.name} className="mt-2 w-full h-40 object-cover rounded" />
-              )}
-            </div>
-          ))}
-        </div> */}
-
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column */}
@@ -175,7 +169,7 @@ const DashboardPage = () => {
             <DashboardCard title="Your Created Markets">
               <div className="p-6 text-center text-gray-500">
                 <PlusCircle className="w-12 h-12 mx-auto mb-4" />
-                <p>You haven&apos;t created any markets yet</p>
+                <p>You haven't created any markets yet</p>
               </div>
             </DashboardCard>
           </div>

@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { ExternalLink } from "lucide-react";
-
+import SEO from "../../../client/app/components/layout/Seo"
+import seoData from "../../../client/app/components/layout/seoData.json"; 
 export function DevelopmentStatus() {
   const statuses = [
     {
@@ -127,35 +128,43 @@ export function DevelopmentStatus() {
   ];
 
   return (
-    <section className="container mx-auto px-4 py-20">
-      <div className="mb-16 text-center animate-on-scroll">
-        <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-          Development Status
-        </h2>
-        <p className="mx-auto max-w-2xl text-slate-600 dark:text-slate-300">
-          We&apos;re working hard to bring StakCast to life. Here&apos;s our
-          current progress.
-        </p>
-      </div>
+    <>
+       {/* SEO Component: Set meta tags for the comment section */}
+       <SEO
+            title={seoData.developmentStatus.title} 
+            description={seoData.developmentStatus.description} 
+            keywords={seoData.developmentStatus.keywords} 
+          />
+      <section className="container mx-auto px-4 py-20" role="region" aria-labelledby="development-status-title">
+        <h2 id="development-status-title" className="sr-only">{seoData.developmentStatus.title}</h2>
+        <div className="mb-16 text-center animate-on-scroll">
+          <h2 className="mb-4 text-3xl font-bold md:text-4xl">
+            Development Status
+          </h2>
+          <p className="mx-auto max-w-2xl text-slate-600 dark:text-slate-300">
+            We&apos;re working hard to bring StakCast to life. Here&apos;s our current progress.
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-        {statuses.map((status, i) => (
-          <div
-            key={i}
-            className="rounded-2xl border bg-white dark:bg-slate-900 p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-on-scroll"
-            style={{ animationDelay: `${i * 100}ms` }}
-          >
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/10 to-blue-500/10 dark:from-emerald-500/20 dark:to-blue-500/20 transition-transform duration-300 group-hover:scale-110">
-              {status.icon}
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+          {statuses.map((status, i) => (
+            <div
+              key={i}
+              className="rounded-2xl border bg-white dark:bg-slate-900 p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-on-scroll"
+              style={{ animationDelay: `${i * 100}ms` }}
+            >
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/10 to-blue-500/10 dark:from-emerald-500/20 dark:to-blue-500/20 transition-transform duration-300 group-hover:scale-110">
+                {status.icon}
+              </div>
+              <h3 className="mb-2 text-xl font-semibold">{status.title}</h3>
+              <p className="mb-4 text-slate-600 dark:text-slate-300">
+                {status.description}
+              </p>
+              <div className="mt-4">{status.action}</div>
             </div>
-            <h3 className="mb-2 text-xl font-semibold">{status.title}</h3>
-            <p className="mb-4 text-slate-600 dark:text-slate-300">
-              {status.description}
-            </p>
-            <div className="mt-4">{status.action}</div>
-          </div>
-        ))}
-      </div>
-    </section>
+          ))}
+        </div>
+      </section>
+    </>
   );
 }

@@ -1,0 +1,108 @@
+{
+    "about": {
+      "title": "About StakCast | Predict & Earn with STRK",
+      "description": "Learn more about the creators behind StakCast.",
+      "keywords": "About StakCast, STRK token",
+      "image": "/images/about.jpg",
+      "url": "https://yourwebsite.com/about"
+    },
+    "dashboard": {
+      "title": "Dashboard | StakCast",
+      "description": "Your overview of predictions and earnings.",
+      "keywords": "Dashboard, predictions, earnings",
+      "image": "/images/dashboard.jpg",
+      "url": "https://yourwebsite.com/dashboard"
+    },
+    "page": {
+        "title": "About StakCast | Predict & Earn with STRK",
+        "description": "Learn more about the creators behind StakCast  a decentralized prediction platform where users stake STRK tokens to earn rewards,.",
+        "keywords": "About StakCast, STRK token",
+        "image": "/images/dashboard.jpg",
+        "url": "https://yourwebsite.com/dashboard"
+      },
+      "Header": {
+        "title": "Welcome to StakCast | Predict & Earn with STRK",
+        "description": "Join StakCast, a decentralized platform for predicting and earning with STRK tokens.",
+        "keywords": "StakCast, STRK token, prediction platform, earn crypto",
+        "image": "/images/home.jpg",
+        "url": "https://yourwebsite.com/"
+      },
+
+  "categories": {
+    "title": "Explore Categories | StakCast",
+    "description": "Discover various categories including Crypto, Politics, Sports, and more on StakCast.",
+    "keywords": "StakCast, categories, Crypto, Politics, Sports, Global Elections, Business"
+  },
+  "chartSection": {
+    "title": "Market Trends | StakCast",
+    "description": "Explore the latest market trends and predictions in the decentralized finance space with StakCast.",
+    "keywords": "market trends, decentralized finance, predictions, StakCast, crypto trends"
+  },
+  "commentSection": {
+    "title": "Comments | StakCast",
+    "description": "Engage with the community by sharing your thoughts and insights on market trends. Join the discussion now!",
+    "keywords": "comments, user discussion, market trends, StakCast"
+  },
+  "purchaseSection": {
+    "title": "Make a Prediction | StakCast",
+    "description": "Participate in market predictions by purchasing units for your chosen option. Get insights and make informed decisions.",
+    "keywords": "market prediction, purchase units, StakCast, betting odds, financial predictions"
+  },
+  "recentActivity": {
+    "title": "Recent Activity | StakCast",
+    "description": "Stay updated with the latest market activities. See what users are buying and selling in real-time.",
+    "keywords": "recent activity, market trends, StakCast, user actions, trading activity"
+  },
+  "spinner": {
+    "description": "Loading indicator for StakCast processing requests."
+  },
+  "glassCard": {
+    "description": "A stylish glass card component for displaying content with a translucent background, enhancing user experience."
+  },
+  "Dashboard": {
+    "title": "Dashboard | StakCast",
+    "description": "View your market balances, active positions, and manage your created markets on StakCast.",
+    "keywords": "dashboard, market balance, active positions, create market, StakCast"
+  },
+  "howItWorks": {
+    "title": "How Stakcast Works | StakCast",
+    "description": "Learn how Stakcast enables decentralized prediction markets through secure validation and real-time trading.",
+    "keywords": "Stakcast, prediction markets, Atoma, TEEs, decentralized platform"
+  },
+  "marketDetail": {
+    "title": "Market Details | StakCast",
+    "description": "Explore the details of the market, including trading options, recent activity, and comments on StakCast.",
+    "keywords": "market details, prediction market, StakCast, trading, comments"
+  },
+  "walletModal": {
+    "title": "Connect Your Wallet | TeamVerse",
+    "description": "Connect your wallet to TeamVerse to participate in games and activities.",
+    "keywords": "wallet, connect, TeamVerse, StarkNet, blockchain"
+  },
+  "marketCard": {
+    "title": "Market Card | TeamVerse",
+    "description": "Explore various market options with their total revenue and odds.",
+    "keywords": "market card, options, revenue, TeamVerse"
+  },
+  "ctaSection": {
+    "title": "Join StakCast | Prediction Markets",
+    "description": "Join our beta to experience the future of prediction markets. Visit our app today!",
+    "keywords": "prediction markets, StakCast, beta, join community"
+  },
+  "dashboardPreview": {
+    "title": "StakCast Dashboard Preview",
+    "description": "Explore the features of the StakCast Dashboard, designed for prediction markets.",
+    "keywords": "StakCast, dashboard, prediction markets, preview"
+  },
+  "developmentStatus": {
+    "title": "StakCast Development Status",
+    "description": "Stay updated with the latest development status of StakCast, including beta testing and upcoming features.",
+    "keywords": "StakCast, development status, beta testing, security audit, community"
+  },
+  "features": {
+    "title": "Features of StakCast",
+    "description": "Discover the unique features of StakCast that enhance your prediction market experience.",
+    "keywords": "StakCast, features, prediction markets, decentralized, secure staking"
+  }
+    
+  }

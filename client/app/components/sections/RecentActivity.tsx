@@ -1,8 +1,17 @@
 import React from "react";
+import SEO from "../layout/Seo"; 
+import seoData from "../layout/seoData.json"; 
 
 const RecentActivity = () => {
   return (
     <div className="mt-8">
+      {/* SEO Component: Set meta tags for the recent activity section */}
+      <SEO
+        title={seoData.recentActivity.title} 
+        description={seoData.recentActivity.description} 
+        keywords={seoData.recentActivity.keywords} 
+      />
+      
       <h2 className="text-xl font-semibold">Recent Activity</h2>
       <div className="bg-gray-50 dark:bg-slate-950 p-4 rounded-lg shadow-inner">
         <ul>

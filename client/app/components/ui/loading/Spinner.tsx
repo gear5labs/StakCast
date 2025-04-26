@@ -1,10 +1,26 @@
 import React from "react";
-
+import SEO from "../../layout/Seo";
+import seoData from "../../layout/seoData.json"
 const Spinner = () => {
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-80 z-[9999]">
-      <div className="border-t-4 border-blue-500 border-solid rounded-full w-10 h-10 animate-spin"></div>
-    </div>
+    <div 
+    
+    className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-80 z-[9999]" 
+    role="alert" 
+    aria-live="polite" 
+  >
+        {/* SEO Component: Set meta tags for the comment section */}
+        <SEO
+      title={seoData.commentSection.title} 
+      description={seoData.commentSection.description} 
+      keywords={seoData.commentSection.keywords} 
+    />
+    <div 
+      className="border-t-4 border-blue-500 border-solid rounded-full w-10 h-10 animate-spin" 
+      aria-label="Loading..." 
+    ></div>
+  </div>
+
   );
 };
 
