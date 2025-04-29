@@ -9,10 +9,6 @@ use stakcast::custom_errors::Errors::{
 
 #[starknet::contract]
 pub mod PredictionMarket {
-    use starknet::ContractAddress;
-    use starknet::get_caller_address;
-    use starknet::get_block_timestamp;
-    use starknet::get_contract_address;
     use core::array::ArrayTrait;
     use core::option::OptionTrait;
     // Additional interface imports
@@ -209,7 +205,8 @@ pub mod PredictionMarket {
         fn deposit(ref self: ContractState, amount: u256) {
             let caller = get_caller_address();
             let current_balance = self.balances.entry(caller).read();
-            self.balances.entry(caller).write(current_balance + amount);
+            assert!(current_balance >= amount, "Insufficient balance");
+            self.balances.entry(caller).write(current_balance - amount);
         }
 
         fn withdraw(ref self: ContractState, amount: u256) {
