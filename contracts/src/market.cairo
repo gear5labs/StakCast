@@ -8,10 +8,10 @@ use stakcast::interface::{
     IPredictionMarketDispatcher, IPredictionMarketDispatcherTrait, ValidatorInfo, IMarketValidator,
 };
 
-use stakcast::custom_errors::Errors{
+use stakcast::custom_errors::Errors::{
     ERR_INSUFFICIENT_STAKE,ERR_VALIDATOR_NOT_FOUND_OR_INACTIVE,
-    ERR_UNAUTHORIZED_SLASHING,ERR_INVALID_VALIDATOR_INDEX 
-}
+    ERR_UNAUTHORIZED_SLASHING,ERR_INVALID_VALIDATOR_INDEX,ERR_TOO_FREQUENT_RESOLUTION
+};
 use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map};
 
 #[starknet::contract]
@@ -305,7 +305,7 @@ pub mod MarketValidator {
         // Retrieve a validator's address by its index from the new mapping.
         fn get_validator_by_index(self: @ContractState, index: u32) -> ContractAddress {
             let validator_count = self.validator_count.read();
-            assert!(index < validator_count, "{}: {}", ERR_INVALID_VALIDATOR_INDEX index);
+            assert!(index < validator_count, "{}: {}", ERR_INVALID_VALIDATOR_INDEX, index);
             self.validators_by_index.entry(index).read()
         }
 
