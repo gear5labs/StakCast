@@ -442,7 +442,7 @@ pub mod PredictionMarket {
             assert!(caller == market.creator, ERR_CANCELLATION_ONLY_BY_MARKET_CREATOR);
             assert!(
                 self.market_status.entry(market_id).read() == MarketStatus::Active,
-                "Market not active",
+                ERR_INACTIVE_MARKET,
             );
             self.market_status.entry(market_id).write(MarketStatus::Cancelled);
         }
