@@ -1,6 +1,6 @@
 import React from "react";
-import SEO from "../components/layout/Seo"; 
-import seoData from "../components/layout/seoData.json"; 
+import SEO from "../../../shared/components/Seo"; 
+import seoData from "../../../shared/components/seoData.json"; 
 
 const HowItWorks: React.FC = () => {
   return (

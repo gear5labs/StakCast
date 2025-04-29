@@ -2,8 +2,8 @@
 
 import { useRef, useEffect } from "react";
 import { Button } from "./ui/button";
-import SEO from "../../../client/app/components/layout/Seo"
-import seoData from "../../../client/app/components/layout/seoData.json"; 
+import SEO from "../../../shared/components/Seo"
+import seoData from "../../../shared/components/seoData.json"; 
 
 export function DashboardPreview() {
   const previewRef = useRef<HTMLDivElement>(null);

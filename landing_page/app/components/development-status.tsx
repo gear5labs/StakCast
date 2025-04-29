@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { ExternalLink } from "lucide-react";
-import SEO from "../../../client/app/components/layout/Seo"
-import seoData from "../../../client/app/components/layout/seoData.json"; 
+import SEO from "../../../shared/components/Seo"
+import seoData from "../../../shared/components/seoData.json"; 
 export function DevelopmentStatus() {
   const statuses = [
     {

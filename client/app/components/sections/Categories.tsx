@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
-import SEO from "../layout/Seo"; // Import the SEO component for meta tags
-import seoData from "../layout/seoData.json"; // Import SEO data for categories
+import SEO from "../../../../shared/components/Seo"; 
+import seoData from "../../../../shared/components/seoData.json"; 
 import { useRouter, useSearchParams } from "next/navigation";
 
 const categories = [

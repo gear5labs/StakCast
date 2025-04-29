@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Button } from "./ui/button";
 import { ChevronRight } from "lucide-react";
-import SEO from "../../../client/app/components/layout/Seo"
-import seoData from "../../../client/app/components/layout/seoData.json"; 
+import SEO from "../../../shared/components/Seo"
+import seoData from "../../../shared/components/seoData.json"; 
+import { ObfuscatedSymbol } from "../../../shared/components/ObfuscatedSymbol";
 
 export function CtaSection() {
   return (
@@ -54,7 +55,7 @@ export function CtaSection() {
                 <div className="absolute inset-0 rounded-full bg-gradient-to-r from-emerald-500/30 to-blue-500/30 blur-xl"></div>
                 <div className="absolute inset-4 rounded-full bg-gradient-to-r from-emerald-500 to-blue-500"></div>
                 <div className="absolute inset-8 flex items-center justify-center rounded-full bg-white text-4xl font-bold text-slate-900">
-                  S
+                <ObfuscatedSymbol symbol="STK" />
                 </div>
               </div>
             </div>

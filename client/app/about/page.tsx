@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
-import SEO from "../components/layout/Seo";
+import SEO from "../../../shared/components/Seo";
 import DelayedContent from "../components/layout/DelayedContent";
-import seoData from "../components/layout/seoData.json";
+import seoData from "../../../shared/components/seoData.json";
 const page = () => {
   const { title, description, keywords, image, url } = seoData.page;
   return (

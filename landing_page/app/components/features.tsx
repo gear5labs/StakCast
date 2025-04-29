@@ -1,6 +1,6 @@
 import { BarChart2, Shield, Globe2, Zap, Users, Award } from "lucide-react";
-import SEO from "../../../client/app/components/layout/Seo"
-import seoData from "../../../client/app/components/layout/seoData.json"; 
+import SEO from "../../../shared/components/Seo"
+import seoData from "../../../shared/components/seoData.json"; 
 export function Features() {
   const features = [
     {

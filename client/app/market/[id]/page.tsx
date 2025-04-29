@@ -10,8 +10,8 @@ import ChartSection from "@/app/components/sections/ChartSection";
 import MarketContext from "@/app/context/marketContext";
 import PurchaseSection from "@/app/components/sections/PurchaseSection";
 import axios from "axios";
-import SEO from "../../components/layout/Seo"; 
-import seoData from "../../components/layout/seoData.json";
+import SEO from "../../../../shared/components/Seo"; 
+import seoData from "../../../../shared/components/seoData.json";
 
 const Page = () => {
   const params = useParams();

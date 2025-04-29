@@ -10,8 +10,8 @@ import {
 import { DummyMarketType } from "../types";
 import { useAccount, useBalance } from "@starknet-react/core";
 import Header from "../components/layout/Header";
-import SEO from "../components/layout/Seo"; 
-import seoData from "../components/layout/seoData.json"; 
+import SEO from "../../../shared/components/Seo"; 
+import seoData from "../../../shared/components/seoData.json"; 
 
 const DashboardPage = () => {
   const { address, isConnected } = useAccount();

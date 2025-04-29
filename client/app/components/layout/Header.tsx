@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import SEO from "../layout/Seo"; // Import the SEO component for page metadata
-import seoData from "../layout/seoData.json"; // Import SEO data for the header
+import SEO from "../../../../shared/components/Seo"; 
+import seoData from "../../../../shared/components/seoData.json"; 
 import Image from "next/image";
 import Categories from "../sections/Categories";
 import Link from "next/link";

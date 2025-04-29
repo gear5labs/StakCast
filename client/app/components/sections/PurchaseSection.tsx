@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useMarketContext } from "../../context/marketContext";
 import { DummyMarketType } from "@/app/types";
-import SEO from "../layout/Seo"; 
-import seoData from "../layout/seoData.json"; 
+import SEO from "../../../../shared/components/Seo"; 
+import seoData from "../../../../shared/components/seoData.json"; 
 
 const PurchaseSection = () => {
   const params = useParams();

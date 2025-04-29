@@ -1,7 +1,7 @@
 import React from "react";
 import { MarketOption } from "@/app/types";
-import seoData from "../layout/seoData.json"; // Import SEO data
-
+import seoData from "../../../../shared/components/seoData.json"; 
+import { ObfuscatedSymbol } from "d:/StakCast/shared/components/ObfuscatedSymbol";
 interface MarketCardProps {
   name: string;
   image: string;
@@ -39,7 +39,7 @@ const MarketCard: React.FC<MarketCardProps> = ({
         /> */}
       </div>
       <div className="p-4 h-[14em] flex flex-col justify-between overflow-auto">
-        <h3 className="font-bold text-gray-800 dark:text-white">{name}</h3>
+      <ObfuscatedSymbol symbol={name} />
         <p className="text-sm text-gray-600 dark:text-white mt-2">
           <span className="font-medium">Total Revenue:</span> {totalRevenue}
         </p>
