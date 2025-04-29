@@ -1,18 +1,15 @@
-use starknet::ContractAddress;
-use starknet::get_caller_address;
-use starknet::get_block_timestamp;
 use openzeppelin::access::accesscontrol::AccessControlComponent;
 use openzeppelin::access::ownable::OwnableComponent;
 use openzeppelin::introspection::src5::SRC5Component;
-use stakcast::interface::{
-    IPredictionMarketDispatcher, IPredictionMarketDispatcherTrait, ValidatorInfo, IMarketValidator,
-};
-
 use stakcast::custom_errors::Errors::{
-    ERR_INSUFFICIENT_STAKE,ERR_VALIDATOR_NOT_FOUND_OR_INACTIVE,
-    ERR_UNAUTHORIZED_SLASHING,ERR_INVALID_VALIDATOR_INDEX,ERR_TOO_FREQUENT_RESOLUTION
+    ERR_INSUFFICIENT_STAKE, ERR_INVALID_VALIDATOR_INDEX, ERR_TOO_FREQUENT_RESOLUTION,
+    ERR_UNAUTHORIZED_SLASHING, ERR_VALIDATOR_NOT_FOUND_OR_INACTIVE,
 };
-use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map};
+use stakcast::interface::{
+    IMarketValidator, IPredictionMarketDispatcher, IPredictionMarketDispatcherTrait, ValidatorInfo,
+};
+use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
+use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
 
 #[starknet::contract]
 pub mod MarketValidator {
@@ -147,9 +144,8 @@ pub mod MarketValidator {
             let caller = get_caller_address();
 
             // Ensure the provided stake meets the minimum.
-            assert!(stake >= self.min_stake.read(), ERR_INSUFFICIENT_STAKE);
+            assert!(stake >= self.min_stake.read(), "Insufficient stake");
 
-            
             let mut validator_info = self.validators.entry(caller).read();
             if !validator_info.active {
                 // Initialize the validator info if not already active.
@@ -200,13 +196,13 @@ pub mod MarketValidator {
             let mut validator_info = self.validators.entry(caller).read();
 
             if !validator_info.active {
-                panic!(ERR_VALIDATOR_NOT_FOUND_OR_INACTIVE);
+                panic!("Validator not found or inactive");
             }
 
             // Ensure sufficient time has passed since the last resolution.
             assert!(
                 current_time > validator_info.last_resolution_time + self.resolution_timeout.read(),
-                ERR_TOO_FREQUENT_RESOLUTION,
+                "Too frequent resolutions",
             );
 
             validator_info.markets_resolved += 1;
@@ -232,12 +228,12 @@ pub mod MarketValidator {
             self.accesscontrol.assert_only_role(ADMIN_ROLE);
 
             // Only the prediction market contract can perform slashing.
-            assert!(get_caller_address() == self.prediction_market.read(), ERR_UNAUTHORIZED_SLASHING);
+            assert!(get_caller_address() == self.prediction_market.read(), "Unauthorized slashing");
 
             let mut validator_info = self.validators.entry(validator).read();
 
             if !validator_info.active {
-                panic!(ERR_VALIDATOR_NOT_FOUND_OR_INACTIVE);
+                panic!("Validator not found or inactive");
             }
 
             let min_stake: u256 = self.min_stake.read().into();
@@ -281,7 +277,7 @@ pub mod MarketValidator {
         // Implement missing trait items:
         fn get_validator_by_index(self: @ContractState, index: u32) -> ContractAddress {
             let validator_count = self.validator_count.read();
-            assert!(index < validator_count, "{}: {}", ERR_INVALID_VALIDATOR_INDEX, index);
+            assert!(index < validator_count, "Invalid validator index");
             self.validators_by_index.entry(index).read()
         }
 
@@ -294,9 +290,18 @@ pub mod MarketValidator {
         ) {
             self._set_role(recipient, role, is_enable);
         }
+
+        fn is_admin(self: @ContractState, role: felt252, address: ContractAddress) -> bool {
+            self.accesscontrol.has_role(role, address)
+        }
+
         fn set_prediction_market(ref self: ContractState, prediction_market: ContractAddress) {
             self.accesscontrol.assert_only_role(ADMIN_ROLE);
             self.prediction_market.write(prediction_market);
+        }
+
+        fn get_prediction_market(self: @ContractState) -> ContractAddress {
+            self.prediction_market.read()
         }
     }
 
@@ -305,14 +310,14 @@ pub mod MarketValidator {
         // Retrieve a validator's address by its index from the new mapping.
         fn get_validator_by_index(self: @ContractState, index: u32) -> ContractAddress {
             let validator_count = self.validator_count.read();
-            assert!(index < validator_count, "{}: {}", ERR_INVALID_VALIDATOR_INDEX, index);
+            assert!(index < validator_count, "Invalid validator index");
             self.validators_by_index.entry(index).read()
         }
 
         fn calculate_accuracy(self: @ContractState, validator: ContractAddress) -> u32 {
             let validator_info = self.validators.entry(validator).read();
             if !validator_info.active {
-                panic!(ERR_VALIDATOR_NOT_FOUND_OR_INACTIVE);
+                panic!("Validator not found or inactive");
             }
             let total = validator_info.markets_resolved;
             if total == 0 {

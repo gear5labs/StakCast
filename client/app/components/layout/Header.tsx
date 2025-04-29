@@ -9,7 +9,7 @@ import Link from "next/link";
 
 import { useRouter } from "next/navigation";
 import {toast}  from "react-toastify"
-import { useAccount, useConnect } from "@starknet-react/core";
+import { useAccount, useConnect, useDisconnect } from "@starknet-react/core";
 /*  import { WalletModal } from "../ui";*/
 import {  StarknetkitConnector, useStarknetkitConnectModal } from "starknetkit";
 
@@ -24,6 +24,7 @@ const Header = () => {
 
   const { address, status } = useAccount();
   const { connectAsync, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
 
   // const { status, address } = useAppContext();
 
@@ -52,8 +53,10 @@ const Header = () => {
   useEffect(() => {
     if (status === "connected") {
       setIsConnected(true);
+    } else {
+      setIsConnected(false);
     }
-  }, [status, isConnected]);
+  }, [status]);
   const router = useRouter();
 
 
@@ -79,11 +82,25 @@ const Header = () => {
   const authWalletHandler = async () => {
     const { connector } = await starknetkitConnectModal();
     if (!connector) {
-  
       return;
     }
-    await connectAsync({ connector }).then(()=> toast.success("wallet connected")).catch((e)=> toast.error("user rejected", e));
+    await connectAsync({ connector })
+      .then(() => {
+        toast.success("Wallet conectada");
+        // Guardar el ID del conector en localStorage cuando conecta correctamente
+        localStorage.setItem("connector", connector.id);
+      })
+      .catch((e) => toast.error("Conexión rechazada", e));
   };
+
+  const handleDisconnect = () => {
+    disconnect();
+    // Limpiar el localStorage al desconectar
+    localStorage.removeItem("connector");
+    toast.info("Wallet desconectada");
+    setIsDropdownOpen(false);
+  };
+
   return (
 
     <header
@@ -172,10 +189,7 @@ const Header = () => {
                         <li>
                           <button
                             className="block px-4 py-2 text-sm text-red-700 hover:bg-gray-100"
-                            onClick={() => {
-                              // disconnectWallet();
-                              setIsDropdownOpen(false);
-                            }}
+                            onClick={handleDisconnect}
                           >
                             Sign out
                           </button>
@@ -237,6 +251,14 @@ const Header = () => {
                 onClick={authWalletHandler}
               >
                 Connect Wallet
+              </button>
+            )}
+            { isConnected && (
+              <button
+                className="w-full bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm font-medium text-white"
+                onClick={handleDisconnect}
+              >
+                Disconnect Wallet
               </button>
             )}
           </nav>

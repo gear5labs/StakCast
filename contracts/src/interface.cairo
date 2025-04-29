@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use starknet::storage::{Map};
+use starknet::storage::Map;
 // Data Structures
 #[derive(Drop, Serde, starknet::Store)]
 pub struct Market {
@@ -22,8 +22,7 @@ struct Storage {
     markets: Map<u32, Market>,
     market_outcomes: Map<(u32, u32), felt252>, // (market_id, outcome_index) -> outcome
     stakes_per_outcome: Map<(u32, u32), u256>, // (market_id, outcome_index) -> stake
-    admin: ContractAddress, // Admin address for access control
-   
+    admin: ContractAddress // Admin address for access control
 }
 
 #[derive(Copy, Drop, Serde, starknet::Store)]
@@ -162,9 +161,13 @@ pub trait IMarketValidator<TContractState> {
     fn set_role(
         ref self: TContractState, recipient: ContractAddress, role: felt252, is_enable: bool,
     );
-     // New function to set the PredictionMarket address
-     fn set_prediction_market(ref self: TContractState, prediction_market: ContractAddress);
-    
+    // New function to set the PredictionMarket address
+    fn set_prediction_market(ref self: TContractState, prediction_market: ContractAddress);
+
+    fn get_prediction_market(self: @TContractState) -> ContractAddress;
+
+    #[external(v0)]
+    fn is_admin(self: @TContractState, role: felt252, address: ContractAddress) -> bool;
 }
 
 #[starknet::interface]

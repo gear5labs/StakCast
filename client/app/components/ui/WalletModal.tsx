@@ -4,6 +4,7 @@ import { useConnect } from "@starknet-react/core";
 // import { useAppContext } from "@/app/context/appContext";
 // import { useAccount, useDisconnect } from "@starknet-react/core";
 import { StarknetkitConnector, useStarknetkitConnectModal } from "starknetkit";
+import { toast } from "react-toastify";
 
 const WalletModal = () => {
   const { connectAsync, connectors } = useConnect()
@@ -36,9 +37,18 @@ const WalletModal = () => {
             console.log("User rejected to connect")
             return;
           }
-       await  connectAsync({ connector }).then(()=> console.log("success")).catch((e)=> console.log(e));
+          await connectAsync({ connector })
+            .then(() => {
+              console.log("success");
+              toast.success("Wallet conectada");
+              // Guardar el ID del conector en localStorage
+              localStorage.setItem("connector", connector.id);
+            })
+            .catch((e) => {
+              console.log(e);
+              toast.error("Error al conectar la wallet");
+            });
         }}
-        
       >
        connect wallet
       </button>
