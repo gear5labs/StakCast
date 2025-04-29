@@ -6,9 +6,11 @@ import Image from "next/image";
 import Categories from "../sections/Categories";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
-import { useAccount, useConnect } from "@starknet-react/core";
-import { StarknetkitConnector, useStarknetkitConnectModal } from "starknetkit";
+import {toast}  from "react-toastify"
+import { useAccount, useConnect, useDisconnect } from "@starknet-react/core";
+/*  import { WalletModal } from "../ui";*/
+import {  StarknetkitConnector, useStarknetkitConnectModal } from "starknetkit";
+
 import ThemeToggle from "../utils/ThemeToggle";
 
 const Header = () => {
@@ -16,6 +18,12 @@ const Header = () => {
   const [isConnected, setIsConnected] = useState(false);
   const { address, status } = useAccount();
   const { connectAsync, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
+
+  // const { status, address } = useAppContext();
+
+  // const [walletModal, setWalletModal] = useState<boolean>(false);
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -33,9 +41,10 @@ const Header = () => {
   useEffect(() => {
     if (status === "connected") {
       setIsConnected(true);
+    } else {
+      setIsConnected(false);
     }
-  }, [status, isConnected]);
-
+  }, [status]);
   const router = useRouter();
   const toggleDropdown = () => {
     setIsDropdownOpen((prev) => !prev);
@@ -55,8 +64,20 @@ const Header = () => {
       return;
     }
     await connectAsync({ connector })
-      .then(() => toast.success("wallet connected"))
-      .catch((e) => toast.error("user rejected", e));
+      .then(() => {
+        toast.success("Wallet conectada");
+        // Guardar el ID del conector en localStorage cuando conecta correctamente
+        localStorage.setItem("connector", connector.id);
+      })
+      .catch((e) => toast.error("Conexión rechazada", e));
+  };
+
+  const handleDisconnect = () => {
+    disconnect();
+    // Limpiar el localStorage al desconectar
+    localStorage.removeItem("connector");
+    toast.info("Wallet desconectada");
+    setIsDropdownOpen(false);
   };
 
   return (
@@ -114,88 +135,107 @@ const Header = () => {
                       />
                     </button>
 
-                    {isDropdownOpen && (
-                      <div className="absolute right-0 z-50 mt-2 w-48 bg-white divide-y divide-gray-100 rounded-lg shadow-sm">
-                        <div className="px-4 py-3">
-                          <span className="block text-sm text-gray-900">Bonnie Green</span>
-                          <span className="block text-sm text-gray-500 truncate">example@email.com</span>
-                        </div>
-                        <ul className="py-2" aria-labelledby="user-menu-button">
-                          <li>
-                            <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Dashboard</a>
-                          </li>
-                          <li>
-                            <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
-                          </li>
-                          <li>
-                            <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Earnings</a>
-                          </li>
-                          <li>
-                            <button
-                              className="block px-4 py-2 text-sm text-red-700 hover:bg-gray-100"
-                              onClick={() => {
-                                // disconnectWallet();
-                                setIsDropdownOpen(false);
-                              }}
-                            >
-                              Sign out
-                            </button>
-                          </li>
-                        </ul>
+                  {isDropdownOpen && (
+                    <div className="absolute right-0 z-50 mt-2 w-48 bg-white divide-y divide-gray-100 rounded-lg shadow-sm">
+                      <div className="px-4 py-3">
+                        <span className="block text-sm text-gray-900">Bonnie Green</span>
+                        <span className="block text-sm text-gray-500 truncate">example@email.com</span>
                       </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <button
-                  className="bg-yellow-600 text-white hover:bg-blue-700 px-4 py-2 rounded text-sm font-medium"
-                  onClick={authWalletHandler}
-                >
-                  Connect Wallet
-                </button>
-              )}
-            </div>
-
-            <div className="md:hidden">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-gray-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-white"
-              >
-                <svg
-                  className="h-6 w-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  {isMenuOpen ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                      <ul className="py-2" aria-labelledby="user-menu-button">
+                        <li>
+                          <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            Dashboard
+                          </a>
+                        </li>
+                        <li>
+                          <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            Settings
+                          </a>
+                        </li>
+                        <li>
+                          <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            Earnings
+                          </a>
+                        </li>
+                        <li>
+                          <button
+                            className="block px-4 py-2 text-sm text-red-700 hover:bg-gray-100"
+                            onClick={handleDisconnect}
+                          >
+                            Sign out
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
                   )}
-                </svg>
+                </div>
+              </div>
+            ) : (
+              <button
+                className="bg-yellow-600 text-white hover:bg-blue-700 px-4 py-2 rounded text-sm font-medium"
+                onClick={authWalletHandler}
+              >
+                Connect Wallet
               </button>
-            </div>
+            )}
+          </div>
+
+          <div className="md:hidden">
+            <button
+             onClick={()=> setIsMenuOpen(!isMenuOpen)}
+              className="text-gray-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-white"
+            >
+              <svg
+                className="h-6 w-6"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                {isMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
           </div>
         </div>
+      </div>
 
-        {isMenuOpen && (
-          <div className="md:hidden">
-            <nav className="px-2 py-4 space-y-2">
-              <Link href="/dashboard" className="block hover:text-blue-400">Dashboard</Link>
-              <Link href="/howitworks" className="block hover:text-blue-400">How It Works</Link>
-              <a href="#about" className="block hover:text-blue-400">About Us</a>
-              {!isConnected && (
-                <button
-                  className="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm font-medium text-white"
-                  onClick={authWalletHandler}
-                >
-                  Connect Wallet
-                </button>
-              )}
-            </nav>
-          </div>
-        )}
+
+      {isMenuOpen && (
+        <div className="md:hidden">
+          <nav className="px-2 py-4 space-y-2">
+            <Link href="/dashboard" className="block hover:text-blue-400">
+              Dashboard
+            </Link>
+            <Link href="/howitworks" className="block hover:text-blue-400">
+              How It Works
+            </Link>
+            <a href="#about" className="block hover:text-blue-400">
+              About Us
+            </a>
+            { !isConnected && (
+              <button
+                className="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm font-medium text-white"
+                onClick={authWalletHandler}
+              >
+                Connect Wallet
+              </button>
+            )}
+            { isConnected && (
+              <button
+                className="w-full bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm font-medium text-white"
+                onClick={handleDisconnect}
+              >
+                Disconnect Wallet
+              </button>
+            )}
+          </nav>
+        </div>
+      )}
+
 
         {/* Wallet Connector Modal */}
         {/* {walletModal && (

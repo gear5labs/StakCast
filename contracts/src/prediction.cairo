@@ -1,22 +1,18 @@
 #[starknet::contract]
 pub mod PredictionMarket {
     // Imports
-    use starknet::ContractAddress;
-    use starknet::get_caller_address;
-    use starknet::get_block_timestamp;
-    use starknet::get_contract_address; 
     use core::array::ArrayTrait;
     use core::option::OptionTrait;
-    use openzeppelin::token::erc20::interface::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
-    use starknet::storage::{
-        StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map,
-    };
     // Additional interface imports
     use stakcast::interface::{
-        IPredictionMarket, IMarketValidatorDispatcher, IMarketValidatorDispatcherTrait,
-        Market as IMarket, Position as IPosition, MarketStatus as IMarketStatus,
-        MarketOutcome as IMarketOutcome, MarketDetails as IMarketDetails,
+        IMarketValidatorDispatcher, IMarketValidatorDispatcherTrait, IPredictionMarket,
+        Market as IMarket, MarketDetails as IMarketDetails, MarketOutcome as IMarketOutcome,
+        MarketStatus as IMarketStatus, Position as IPosition,
     };
+    use starknet::storage::{
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+    };
+    use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_contract_address};
 
     // Local Data Structures
     #[derive(Drop, Serde, starknet::Store)]
@@ -113,6 +109,7 @@ pub mod PredictionMarket {
     // Storage
     #[storage]
     struct Storage {
+        balances: Map<ContractAddress, u256>,
         markets: Map<u32, Market>,
         market_count: u32,
         positions: Map<(u32, ContractAddress), Position>,
@@ -147,10 +144,10 @@ pub mod PredictionMarket {
 
     #[derive(Drop, starknet::Event)]
     pub struct MarketResolved {
-       pub market_id: u32,
-       pub outcome: u32,
-       pub resolver: ContractAddress,
-       pub resolution_details: felt252,
+        pub market_id: u32,
+        pub outcome: u32,
+        pub resolver: ContractAddress,
+        pub resolution_details: felt252,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -162,9 +159,9 @@ pub mod PredictionMarket {
 
     #[derive(Drop, starknet::Event)]
     pub struct MarketDisputed {
-       pub market_id: u32,
-       pub disputer: ContractAddress,
-       pub reason: felt252,
+        pub market_id: u32,
+        pub disputer: ContractAddress,
+        pub reason: felt252,
     }
 
     #[event]
@@ -197,8 +194,21 @@ pub mod PredictionMarket {
     #[external(v0)]
     #[abi(embed_v0)]
     impl PredictionMarketImp of IPredictionMarket<ContractState> {
-        fn get_stake_token(self: @ContractState) -> ContractAddress {
-            self.stake_token.read()
+        fn deposit(ref self: ContractState, amount: u256) {
+            let caller = get_caller_address();
+            let current_balance = self.balances.entry(caller).read();
+            self.balances.entry(caller).write(current_balance + amount);
+        }
+
+        fn withdraw(ref self: ContractState, amount: u256) {
+            let caller = get_caller_address();
+            let current_balance = self.balances.entry(caller).read();
+            assert!(current_balance >= amount, "Insufficient balance");
+            self.balances.entry(caller).write(current_balance - amount);
+        }
+
+        fn get_balance(self: @ContractState, user: ContractAddress) -> u256 {
+            return self.balances.entry(user).read();
         }
 
         fn get_market_details(self: @ContractState, market_id: u32) -> IMarketDetails {
@@ -293,10 +303,10 @@ pub mod PredictionMarket {
             assert!(current_time >= market.start_time, "Market not started");
             assert!(current_time < market.end_time, "Market ended");
 
-            let stake_token = ERC20ABIDispatcher { contract_address: self.stake_token.read() };
-            let contract_addr = get_contract_address();
-            let success = stake_token.transfer_from(caller, contract_addr, amount);
-            assert!(success, "Token transfer failed");
+            // Deduct from user's internal balance
+            let user_balance = self.balances.entry(caller).read();
+            assert!(user_balance >= amount, "Insufficient balance");
+            self.balances.entry(caller).write(user_balance - amount);
 
             let old_pos = self.positions.entry((market_id, caller)).read();
             let new_pos = Position {
@@ -347,19 +357,21 @@ pub mod PredictionMarket {
                     .read();
                 winnings = (old_pos.amount * market.total_stake) / tot_win_stake;
                 let fee = (winnings * self.platform_fee.read()) / 10000;
-                let stake_token = ERC20ABIDispatcher { contract_address: self.stake_token.read() };
                 if winnings > fee {
-                    stake_token.transfer(caller, winnings - fee);
-                    stake_token.transfer(self.fee_collector.read(), fee);
+                    // Add winnings to user's internal balance
+                    let user_balance = self.balances.entry(caller).read();
+                    self.balances.entry(caller).write(user_balance + (winnings - fee));
+                    // Add fee to fee collector's balance
+                    let fee_collector_balance = self
+                        .balances
+                        .entry(self.fee_collector.read())
+                        .read();
+                    self
+                        .balances
+                        .entry(self.fee_collector.read())
+                        .write(fee_collector_balance + fee);
                 }
             }
-
-            let new_pos = Position {
-                amount: old_pos.amount, outcome_index: old_pos.outcome_index, claimed: true,
-            };
-            self.positions.entry((market_id, caller)).write(new_pos);
-
-            self.emit(WinningsClaimed { market_id: market_id, user: caller, amount: winnings });
         }
 
         fn resolve_market(
@@ -404,7 +416,7 @@ pub mod PredictionMarket {
                 let stake_i = self.stakes_per_outcome.entry((market_id, i)).read();
                 stakes.append(stake_i);
                 i += 1;
-            };
+            }
             (market.total_stake, stakes)
         }
 

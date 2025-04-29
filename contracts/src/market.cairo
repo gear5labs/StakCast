@@ -1,15 +1,11 @@
-use starknet::ContractAddress;
-use starknet::get_caller_address;
-use starknet::get_block_timestamp;
-use starknet::get_contract_address; // Added missing import.
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use openzeppelin::access::accesscontrol::AccessControlComponent;
 use openzeppelin::access::ownable::OwnableComponent;
 use openzeppelin::introspection::src5::SRC5Component;
 use stakcast::interface::{
-    IPredictionMarketDispatcher, IPredictionMarketDispatcherTrait, ValidatorInfo, IMarketValidator,
+    IMarketValidator, IPredictionMarketDispatcher, IPredictionMarketDispatcherTrait, ValidatorInfo,
 };
-use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map};
+use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
+use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
 
 #[starknet::contract]
 pub mod MarketValidator {
@@ -146,18 +142,6 @@ pub mod MarketValidator {
             // Ensure the provided stake meets the minimum.
             assert!(stake >= self.min_stake.read(), "Insufficient stake");
 
-            let pm = IPredictionMarketDispatcher {
-                contract_address: self.prediction_market.read(),
-            };
-            let stake_token_addr = pm.get_stake_token();
-
-            let stake_token = IERC20Dispatcher { contract_address: stake_token_addr };
-            // Use get_contract_address from Starknet.
-            assert!(
-                stake_token.transfer_from(caller, get_contract_address(), stake),
-                "Stake transfer failed",
-            );
-
             let mut validator_info = self.validators.entry(caller).read();
             if !validator_info.active {
                 // Initialize the validator info if not already active.
@@ -245,7 +229,7 @@ pub mod MarketValidator {
             let mut validator_info = self.validators.entry(validator).read();
 
             if !validator_info.active {
-                panic!("Validator not active");
+                panic!("Validator not found or inactive");
             }
 
             let min_stake: u256 = self.min_stake.read().into();
@@ -265,12 +249,6 @@ pub mod MarketValidator {
             }
 
             self.validators.entry(validator).write(validator_info);
-
-            let pm = IPredictionMarketDispatcher {
-                contract_address: self.prediction_market.read(),
-            };
-            let stake_token = IERC20Dispatcher { contract_address: pm.get_stake_token() };
-            stake_token.transfer(self.prediction_market.read(), slash_amount);
 
             self.emit(ValidatorSlashed { validator, amount: slash_amount, reason });
         }
@@ -295,7 +273,7 @@ pub mod MarketValidator {
         // Implement missing trait items:
         fn get_validator_by_index(self: @ContractState, index: u32) -> ContractAddress {
             let validator_count = self.validator_count.read();
-            assert!(index < validator_count, "Invalid validator index: {}", index);
+            assert!(index < validator_count, "Invalid validator index");
             self.validators_by_index.entry(index).read()
         }
 
@@ -308,9 +286,18 @@ pub mod MarketValidator {
         ) {
             self._set_role(recipient, role, is_enable);
         }
+
+        fn is_admin(self: @ContractState, role: felt252, address: ContractAddress) -> bool {
+            self.accesscontrol.has_role(role, address)
+        }
+
         fn set_prediction_market(ref self: ContractState, prediction_market: ContractAddress) {
             self.accesscontrol.assert_only_role(ADMIN_ROLE);
             self.prediction_market.write(prediction_market);
+        }
+
+        fn get_prediction_market(self: @ContractState) -> ContractAddress {
+            self.prediction_market.read()
         }
     }
 
@@ -319,7 +306,7 @@ pub mod MarketValidator {
         // Retrieve a validator's address by its index from the new mapping.
         fn get_validator_by_index(self: @ContractState, index: u32) -> ContractAddress {
             let validator_count = self.validator_count.read();
-            assert!(index < validator_count, "Invalid validator index: {}", index);
+            assert!(index < validator_count, "Invalid validator index");
             self.validators_by_index.entry(index).read()
         }
 
