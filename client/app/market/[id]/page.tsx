@@ -51,7 +51,7 @@ const Page = () => {
     setSelectedOption(optionName);
     setPricePerUnit(odds / 100);
   };
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handlePurchase = () => {
     if (selectedOption && units > 0) {
       const totalPrice = units * pricePerUnit;

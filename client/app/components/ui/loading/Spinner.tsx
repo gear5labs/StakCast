@@ -1,6 +1,6 @@
 import React from "react";
-import SEO from "../../layout/Seo";
-import seoData from "../../layout/seoData.json"
+import SEO from "../../../../../shared/components/Seo";
+import seoData from "../../../../../shared/components/seoData.json"
 const Spinner = () => {
   return (
     <div 

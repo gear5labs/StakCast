@@ -10,8 +10,8 @@ import {
 import { DummyMarketType } from "../types";
 import { useAccount, useBalance } from "@starknet-react/core";
 import Header from "../components/layout/Header";
-import SEO from "../../../shared/components/Seo"; 
-import seoData from "../../../shared/components/seoData.json"; 
+import SEO from "../../../shared/components/Seo";
+import seoData from "../../../shared/components/seoData.json";
 
 const DashboardPage = () => {
   const { address, isConnected } = useAccount();
@@ -23,8 +23,8 @@ const DashboardPage = () => {
   const balance = isFetching
     ? "loading..."
     : data?.formatted
-      ? `${parseFloat(data.formatted).toFixed(2)} ${data.symbol}`
-      : "";
+    ? `${parseFloat(data.formatted).toFixed(2)} ${data.symbol}`
+    : "";
 
   const [_markets, setMarkets] = useState<DummyMarketType[]>([]);
   const [newMarket, setNewMarket] = useState<Omit<DummyMarketType, "id">>({
@@ -71,6 +71,11 @@ const DashboardPage = () => {
           <p className="text-gray-600 dark:text-white">
             Please connect your wallet to access your dashboard.
           </p>
+        </div>
+        <div>
+          {_markets.map((market) => (
+            <div key={market.id}>{market.name}</div>
+          ))}
         </div>
       </div>
     );
@@ -169,7 +174,7 @@ const DashboardPage = () => {
             <DashboardCard title="Your Created Markets">
               <div className="p-6 text-center text-gray-500">
                 <PlusCircle className="w-12 h-12 mx-auto mb-4" />
-                <p>You haven't created any markets yet</p>
+                <p>You haven&apos;t created any markets yet</p>
               </div>
             </DashboardCard>
           </div>

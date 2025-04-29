@@ -24,5 +24,9 @@
   },
   "lint-staged": {
     "**/*.{js,ts,tsx}": "pnpm exec eslint --fix"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   }
 }
