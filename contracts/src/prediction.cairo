@@ -416,12 +416,13 @@ pub mod PredictionMarket {
                 );
         }
 
+        // Get market stats
         fn get_market_stats(self: @ContractState, market_id: u32) -> (u256, Array<u256>) {
             let market = self.markets.entry(market_id).read();
             let mut stakes: Array<u256> = ArrayTrait::new();
             let outcomes_count = market.num_outcomes;
             let mut i = 0;
-            while i < outcomes_count {
+            while i != outcomes_count {
                 let stake_i = self.stakes_per_outcome.entry((market_id, i)).read();
                 stakes.append(stake_i);
                 i += 1;
