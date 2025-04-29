@@ -1,3 +1,11 @@
+use stakcast::custom_errors::Errors{
+    ERR_INSUFFICIENT_BALANCE,ERR_INVALID_START_TIME,ERR_MIN_STAKE_ABOVE_ZERO,ERR_MAX_STAKE_LESS_THAN_MIN,
+    ERR_INVALID_END_TIME,ERR_MIN_OUTCOMES_REQUIRED,ERR_BELOW_MIN_STAKE,ERR_ABOVE_MAX_STAKE,
+    ERR_INVALID_OUTCOME,ERR_INACTIVE_MARKET,ERR_MARKET_NOT_STARTED,ERR_MARKET_ENDED,
+    ERR_NO_CLAIMING_POSITION,ERR_POSITION_CLAIMED,ERR_RESOLVABLE_BY_ASSIGNED_VALIDATORS,ERR_UNRESOLVED_MARKET,
+    ERR_MARKET_NOT_ENDED,ERR_RESOLUTION_PERIOD_EXP,ERR_INVALID_WINNING_OUTCOME,ERR_CANCELLATION_ONLY_BY_MARKET_CREATOR,
+}
+
 #[starknet::contract]
 pub mod PredictionMarket {
     // Imports
@@ -207,7 +215,7 @@ pub mod PredictionMarket {
         fn withdraw(ref self: ContractState, amount: u256) {
             let caller = get_caller_address();
             let current_balance = self.balances.entry(caller).read();
-            assert!(current_balance >= amount, "Insufficient balance");
+            assert!(current_balance >= amount, ERR_INSUFFICIENT_BALANCE);
             self.balances.entry(caller).write(current_balance - amount);
         }
 
@@ -247,12 +255,12 @@ pub mod PredictionMarket {
         ) -> u32 {
             let caller = get_caller_address();
             let current_time = get_block_timestamp();
-            assert!(start_time > current_time, "Invalid start time");
-            assert!(end_time > start_time, "Invalid end time");
+            assert!(start_time > current_time, ERR_INVALID_START_TIME);
+            assert!(end_time > start_time, ERR_INVALID_END_TIME);
             let outcomes_len: usize = ArrayTrait::len(@outcomes);
-            assert!(outcomes_len >= 2, "Minimum 2 outcomes required");
-            assert!(min_stake > 0, "Min stake must be > 0");
-            assert!(max_stake >= min_stake, "Max stake < min stake");
+            assert!(outcomes_len >= 2, ERR_MIN_OUTCOMES_REQUIRED);
+            assert!(min_stake > 0, ERR_MIN_STAKE_ABOVE_ZERO);
+            assert!(max_stake >= min_stake, ERR_MAX_STAKE_LESS_THAN_MIN);
 
             let market_id = self.market_count.read() + 1;
             self.market_count.write(market_id);
@@ -297,19 +305,19 @@ pub mod PredictionMarket {
             let caller = get_caller_address();
             let market = self.markets.entry(market_id).read();
             let current_time = get_block_timestamp();
-            assert!(amount >= market.min_stake, "Below min stake");
-            assert!(amount <= market.max_stake, "Above max stake");
-            assert!(outcome_index < market.num_outcomes, "Invalid outcome");
+            assert!(amount >= market.min_stake, ERR_BELOW_MIN_STAKE);
+            assert!(amount <= market.max_stake, ERR_ABOVE_MAX_STAKE);
+            assert!(outcome_index < market.num_outcomes, ERR_INVALID_OUTCOME);
             assert!(
                 self.market_status.entry(market_id).read() == MarketStatus::Active,
-                "Market not active",
+                ERR_INACTIVE_MARKET,
             );
-            assert!(current_time >= market.start_time, "Market not started");
-            assert!(current_time < market.end_time, "Market ended");
+            assert!(current_time >= market.start_time, ERR_MARKET_NOT_STARTED);
+            assert!(current_time < market.end_time, ERR_MARKET_ENDED);
 
             // Deduct from user's internal balance
             let user_balance = self.balances.entry(caller).read();
-            assert!(user_balance >= amount, "Insufficient balance");
+            assert!(user_balance >= amount, ERR_INSUFFICIENT_BALANCE);
             self.balances.entry(caller).write(user_balance - amount);
 
             let old_pos = self.positions.entry((market_id, caller)).read();
@@ -349,8 +357,8 @@ pub mod PredictionMarket {
             };
             let outcome = OptionTrait::unwrap(outcome_opt);
             let old_pos = self.positions.entry((market_id, caller)).read();
-            assert!(old_pos.amount > 0, "No position to claim");
-            assert!(!old_pos.claimed, "Already claimed");
+            assert!(old_pos.amount > 0, ERR_NO_CLAIMING_POSITION);
+            assert!(!old_pos.claimed, ERR_POSITION_CLAIMED);
 
             let winning_outcome = outcome.winning_outcome;
             let mut winnings = 0;
@@ -381,10 +389,10 @@ pub mod PredictionMarket {
             let caller = get_caller_address();
             let market = self.markets.entry(market_id).read();
             let current_time = get_block_timestamp();
-            assert!(caller == market.validator, "Only assigned validator can resolve");
-            assert!(current_time >= market.end_time, "Market not yet ended");
-            assert!(current_time <= market.resolution_time, "Resolution period expired");
-            assert!(winning_outcome < market.num_outcomes, "Invalid winning outcome");
+            assert!(caller == market.validator, ERR_RESOLVABLE_BY_ASSIGNED_VALIDATORS);
+            assert!(current_time >= market.end_time, ERR_MARKET_NOT_ENDED);
+            assert!(current_time <= market.resolution_time, ERR_RESOLUTION_PERIOD_EXP);
+            assert!(winning_outcome < market.num_outcomes, ERR_INVALID_WINNING_OUTCOME);
             self
                 .market_outcomes
                 .entry(market_id)
@@ -422,7 +430,7 @@ pub mod PredictionMarket {
             let caller = get_caller_address();
             assert!(
                 self.market_status.entry(market_id).read() == MarketStatus::Resolved,
-                "Market not resolved",
+                ERR_UNRESOLVED_MARKET,
             );
             self.market_status.entry(market_id).write(MarketStatus::Disputed);
             self.emit(MarketDisputed { market_id: market_id, disputer: caller, reason: reason });
@@ -431,7 +439,7 @@ pub mod PredictionMarket {
         fn cancel_market(ref self: ContractState, market_id: u32, reason: felt252) {
             let caller = get_caller_address();
             let market = self.markets.entry(market_id).read();
-            assert!(caller == market.creator, "Only market creator can cancel");
+            assert!(caller == market.creator, ERR_CANCELLATION_ONLY_BY_MARKET_CREATOR);
             assert!(
                 self.market_status.entry(market_id).read() == MarketStatus::Active,
                 "Market not active",
