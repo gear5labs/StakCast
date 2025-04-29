@@ -1,14 +1,13 @@
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, spy_events, EventSpyAssertionsTrait,
-    start_cheat_caller_address, test_address,
+    start_cheat_caller_address, test_address, stop_cheat_caller_address,
 };
 use starknet::testing::set_block_timestamp;
 use starknet::ContractAddress;
 use stakcast::interface::{
     IPredictionMarketDispatcher, IPredictionMarketDispatcherTrait, IMarketValidatorDispatcher,
-    IMarketValidatorDispatcherTrait,
 };
-use stakcast::interface::MarketStatus;
+use stakcast::interface::MarketStatus; // Import MarketStatus
 use stakcast::prediction::PredictionMarket::{Event, MarketResolved, MarketDisputed};
 
 // Helper to deploy MarketValidator (dependency)
@@ -51,6 +50,21 @@ fn deploy_prediction_market(
     IPredictionMarketDispatcher { contract_address: address }
 }
 
+// Helper to deploy a mock ERC20 token
+fn deploy_mock_erc20() -> IERC20Dispatcher {
+    let declare_result = declare("MockERC20").unwrap();
+    let contract_class = declare_result.contract_class();
+    let (address, _) = contract_class.deploy(@array![].into()).unwrap();
+    IERC20Dispatcher { contract_address: address }
+}
+
+const ADMIN_ROLE: felt252 = selector!("ADMIN_ROLE");
+const INVALID_ROLE: felt252 = selector!("INVALID_ROLE");
+
+fn RANDOM_ADDRESS() -> ContractAddress {
+    'RANDOM_ADDRESS'.try_into().unwrap()
+}
+
 // Test: Market Creation
 #[test]
 fn test_create_market() {
@@ -68,9 +82,7 @@ fn test_create_market() {
 
     let outcomes = array!['Yes', 'No'];
     let market_id = pm_contract
-        .create_market(
-            "Test Market", "", "Category", 2000, 3000, outcomes, 100_u256, 1000_u256,
-        );
+        .create_market("Test Market", "", "Category", 2000, 3000, outcomes, 100_u256, 1000_u256);
 
     let market_details = pm_contract.get_market_details(market_id);
     assert_eq!(market_details.market.title, "Test Market", "Incorrect market title");
@@ -92,9 +104,7 @@ fn test_take_position() {
     start_cheat_caller_address(pm_contract.contract_address, owner);
     let outcomes = array!['Yes', 'No'];
     let market_id = pm_contract
-        .create_market(
-            "Test Market", "", "Category", 2000, 3000, outcomes, 100_u256, 1000_u256,
-        );
+        .create_market("Test Market", "", "Category", 2000, 3000, outcomes, 100_u256, 1000_u256);
 
     start_cheat_caller_address(pm_contract.contract_address, user);
     pm_contract.deposit(500_u256); // Fund user internally
@@ -133,21 +143,22 @@ fn test_resolve_market() {
 
     let market_details = pm_contract.get_market_details(market_id);
     assert_eq!(market_details.status, MarketStatus::Resolved, "Market should be resolved");
-    spy.assert_emitted(
-        @array![
-            (
-                pm_contract.contract_address,
-                Event::MarketResolved(
-                    MarketResolved {
-                        market_id: market_id,
-                        outcome: 0,
-                        resolver: owner,
-                        resolution_details: 'Resolution details',
-                    }
-                )
-            ),
-        ]
-    );
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    pm_contract.contract_address,
+                    Event::MarketResolved(
+                        MarketResolved {
+                            market_id: market_id,
+                            outcome: 0,
+                            resolver: owner,
+                            resolution_details: 'Resolution details',
+                        },
+                    ),
+                ),
+            ],
+        );
 }
 
 // Test: Dispute Market
@@ -155,18 +166,21 @@ fn test_resolve_market() {
 fn test_dispute_market() {
     let owner = test_address();
     let disputer = test_address();
-    let mv_contract = deploy_market_validator(
-        test_address(), 100_u256, 86400, 10, owner,
-    );
+    let mv_contract = deploy_market_validator(test_address(), 100_u256, 86400, 10, owner);
     let pm_contract = deploy_prediction_market(
-        owner, 500_u256, mv_contract.contract_address,
+        erc20.contract_address, owner, 500_u256, mv_contract.contract_address,
     );
 
-    let mv_contract_dispatcher = IMarketValidatorDispatcher { contract_address: mv_contract.contract_address };
+    // Update MarketValidator with PredictionMarket address
+    let mv_contract_dispatcher = IMarketValidatorDispatcher {
+        contract_address: mv_contract.contract_address,
+    };
+
     mv_contract_dispatcher.set_prediction_market(pm_contract.contract_address);
 
     start_cheat_caller_address(pm_contract.contract_address, owner);
     let outcomes = array!['Yes', 'No'];
+
     let market_id = pm_contract.create_market(
         "Test Market", "", "Category", 2000, 3000, outcomes, 100_u256, 1000_u256,
     );
@@ -179,20 +193,19 @@ fn test_dispute_market() {
 
     let market_details = pm_contract.get_market_details(market_id);
     assert_eq!(market_details.status, MarketStatus::Disputed, "Market should be disputed");
-    spy.assert_emitted(
-        @array![
-            (
-                pm_contract.contract_address,
-                Event::MarketDisputed(
-                    MarketDisputed {
-                        market_id: market_id,
-                        disputer: disputer,
-                        reason: 'Dispute reason',
-                    }
-                )
-            ),
-        ]
-    );
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    pm_contract.contract_address,
+                    Event::MarketDisputed(
+                        MarketDisputed {
+                            market_id: market_id, disputer: disputer, reason: 'Dispute reason',
+                        },
+                    ),
+                ),
+            ],
+        );
 }
 
 // Test: Market Cancellation
@@ -206,15 +219,14 @@ fn test_cancel_market() {
         creator, 500_u256, mv_contract.contract_address,
     );
 
+
     let mv_contract_dispatcher = IMarketValidatorDispatcher { contract_address: mv_contract.contract_address };
     mv_contract_dispatcher.set_prediction_market(pm_contract.contract_address);
 
     start_cheat_caller_address(pm_contract.contract_address, creator);
     let outcomes = array!['Yes', 'No'];
     let market_id = pm_contract
-        .create_market(
-            "Test Market", "", "Category", 2000, 3000, outcomes, 100_u256, 1000_u256,
-        );
+        .create_market("Test Market", "", "Category", 2000, 3000, outcomes, 100_u256, 1000_u256);
 
     pm_contract.cancel_market(market_id, 'Cancel reason');
 
@@ -233,6 +245,7 @@ fn test_claim_winnings() {
     let pm_contract = deploy_prediction_market(
         owner, 500_u256, mv_contract.contract_address,
     );
+
 
     let mv_contract_dispatcher = IMarketValidatorDispatcher { contract_address: mv_contract.contract_address };
     mv_contract_dispatcher.set_prediction_market(pm_contract.contract_address);
@@ -336,5 +349,141 @@ fn test_invalid_market_id() {
     let pm_contract = deploy_prediction_market(
         test_address(), 500_u256, mv_contract.contract_address,
     );
-    pm_contract.resolve_market(9999, 0, 'Invalid');
+    pm_contract.resolve_market(9999, 0, 'Invalid'); // Non-existent market
+}
+
+#[test]
+fn test_set_role() {
+    let mock_erc20 = test_address();
+    let fee_collector = test_address();
+    let owner = test_address();
+    let admin = test_address();
+    let mv_contract = deploy_market_validator(
+        test_address(), // PredictionMarket address (mock for now)
+        100_u256, 86400, 10, owner,
+    );
+    let pm_contract = deploy_prediction_market(
+        mock_erc20, fee_collector, 500_u256, mv_contract.contract_address,
+    );
+
+    // set the role of the admin contract address to an admin
+    mv_contract.set_role(admin, ADMIN_ROLE, true);
+
+    // get admin status to check weather his role changed to an admin
+    let admin_status = mv_contract.is_admin(ADMIN_ROLE, admin);
+    assert!(admin_status, "Admin status should be true");
+}
+
+
+#[test]
+fn test_remove_role() {
+    let mock_erc20 = test_address();
+    let fee_collector = test_address();
+    let owner = test_address();
+    let admin = test_address();
+    let mv_contract = deploy_market_validator(
+        test_address(), // PredictionMarket address (mock for now)
+        100_u256, 86400, 10, owner,
+    );
+    let pm_contract = deploy_prediction_market(
+        mock_erc20, fee_collector, 500_u256, mv_contract.contract_address,
+    );
+
+    // set the role of the admin contract address to an admin
+    mv_contract.set_role(admin, ADMIN_ROLE, true);
+
+    // get admin status to check weather his role changed to an admin
+    let admin_status = mv_contract.is_admin(ADMIN_ROLE, admin);
+    assert!(admin_status, "Admin status should be true");
+
+    // remove the role
+    mv_contract.set_role(admin, ADMIN_ROLE, false);
+
+    // assert that it is false now
+    let admin_status = mv_contract.is_admin(ADMIN_ROLE, admin);
+    assert!(!admin_status, "Admin status should be true");
+}
+
+#[test]
+#[should_panic]
+fn test_set_role_should_panic_when_invalid_role_is_passed() {
+    let mock_erc20 = test_address();
+    let fee_collector = test_address();
+    let owner = test_address();
+    let admin = test_address();
+    let mv_contract = deploy_market_validator(
+        test_address(), // PredictionMarket address (mock for now)
+        100_u256, 86400, 10, owner,
+    );
+    let pm_contract = deploy_prediction_market(
+        mock_erc20, fee_collector, 500_u256, mv_contract.contract_address,
+    );
+
+    mv_contract.set_role(admin, INVALID_ROLE, false);
+}
+
+#[test]
+#[should_panic(expected: ('Caller is missing role',))]
+fn test_set_role_should_panic_when_called_by_non_owner() {
+    let mock_erc20 = test_address();
+    let fee_collector = test_address();
+    let owner = test_address();
+    let admin = test_address();
+    let mv_contract = deploy_market_validator(
+        test_address(), // PredictionMarket address (mock for now)
+        100_u256, 86400, 10, owner,
+    );
+    let pm_contract = deploy_prediction_market(
+        mock_erc20, fee_collector, 500_u256, mv_contract.contract_address,
+    );
+
+    start_cheat_caller_address(mv_contract.contract_address, RANDOM_ADDRESS());
+    mv_contract.set_role(admin, ADMIN_ROLE, true);
+    stop_cheat_caller_address(mv_contract.contract_address);
+
+    start_cheat_caller_address(mv_contract.contract_address, RANDOM_ADDRESS());
+    mv_contract.set_role(admin, ADMIN_ROLE, true);
+    stop_cheat_caller_address(mv_contract.contract_address);
+}
+
+#[test]
+fn test_set_prediction_market() {
+    let mock_erc20 = test_address();
+    let fee_collector = test_address();
+    let owner = test_address();
+    let admin = test_address();
+    let mock_prediction_market = test_address();
+    let mv_contract = deploy_market_validator(
+        test_address(), // PredictionMarket address (mock for now)
+        100_u256, 86400, 10, owner,
+    );
+    let pm_contract = deploy_prediction_market(
+        mock_erc20, fee_collector, 500_u256, mv_contract.contract_address,
+    );
+    mv_contract.set_role(admin, ADMIN_ROLE, true);
+    mv_contract.set_prediction_market(mock_prediction_market);
+    let prediction_market = mv_contract.get_prediction_market();
+    assert!(prediction_market == mock_prediction_market, "Market not set correctly");
+}
+
+
+#[test]
+#[should_panic(expected: ('Caller is missing role',))]
+fn test_set_prediction_should_panic_when_called_by_non_owner() {
+    let mock_erc20 = test_address();
+    let fee_collector = test_address();
+    let owner = test_address();
+    let admin = test_address();
+    let mock_prediction_market = test_address();
+    let mv_contract = deploy_market_validator(
+        test_address(), // PredictionMarket address (mock for now)
+        100_u256, 86400, 10, owner,
+    );
+    let pm_contract = deploy_prediction_market(
+        mock_erc20, fee_collector, 500_u256, mv_contract.contract_address,
+    );
+
+    start_cheat_caller_address(mv_contract.contract_address, RANDOM_ADDRESS());
+    mv_contract.set_prediction_market(mock_prediction_market);
+    stop_cheat_caller_address(mv_contract.contract_address);
 }

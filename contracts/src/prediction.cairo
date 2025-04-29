@@ -9,7 +9,10 @@ use stakcast::custom_errors::Errors::{
 
 #[starknet::contract]
 pub mod PredictionMarket {
-    // Imports
+    use starknet::ContractAddress;
+    use starknet::get_caller_address;
+    use starknet::get_block_timestamp;
+    use starknet::get_contract_address;
     use core::array::ArrayTrait;
     use core::option::OptionTrait;
     // Additional interface imports

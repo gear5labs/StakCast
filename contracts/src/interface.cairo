@@ -162,9 +162,13 @@ pub trait IMarketValidator<TContractState> {
     fn set_role(
         ref self: TContractState, recipient: ContractAddress, role: felt252, is_enable: bool,
     );
-     // New function to set the PredictionMarket address
-     fn set_prediction_market(ref self: TContractState, prediction_market: ContractAddress);
-    
+    // New function to set the PredictionMarket address
+    fn set_prediction_market(ref self: TContractState, prediction_market: ContractAddress);
+
+    fn get_prediction_market(self: @TContractState) -> ContractAddress;
+
+    #[external(v0)]
+    fn is_admin(self: @TContractState, role: felt252, address: ContractAddress) -> bool;
 }
 
 #[starknet::interface]

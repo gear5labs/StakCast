@@ -290,9 +290,18 @@ pub mod MarketValidator {
         ) {
             self._set_role(recipient, role, is_enable);
         }
+
+        fn is_admin(self: @ContractState, role: felt252, address: ContractAddress) -> bool {
+            self.accesscontrol.has_role(role, address)
+        }
+
         fn set_prediction_market(ref self: ContractState, prediction_market: ContractAddress) {
             self.accesscontrol.assert_only_role(ADMIN_ROLE);
             self.prediction_market.write(prediction_market);
+        }
+
+        fn get_prediction_market(self: @ContractState) -> ContractAddress {
+            self.prediction_market.read()
         }
     }
 
