@@ -1,14 +1,14 @@
 use snforge_std::{
-    declare, ContractClassTrait, DeclareResultTrait, spy_events, EventSpyAssertionsTrait,
-    start_cheat_caller_address, test_address, stop_cheat_caller_address,
-};
-use starknet::testing::set_block_timestamp;
-use starknet::ContractAddress;
-use stakcast::interface::{
-    IPredictionMarketDispatcher, IPredictionMarketDispatcherTrait, IMarketValidatorDispatcher,
+    ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait, declare, spy_events,
+    start_cheat_caller_address, stop_cheat_caller_address, test_address,
 };
 use stakcast::interface::MarketStatus; // Import MarketStatus
-use stakcast::prediction::PredictionMarket::{Event, MarketResolved, MarketDisputed};
+use stakcast::interface::{
+    IMarketValidatorDispatcher, IPredictionMarketDispatcher, IPredictionMarketDispatcherTrait,
+};
+use stakcast::prediction::PredictionMarket::{Event, MarketDisputed, MarketResolved};
+use starknet::ContractAddress;
+use starknet::testing::set_block_timestamp;
 
 // Helper to deploy MarketValidator (dependency)
 fn deploy_market_validator(
@@ -34,9 +34,7 @@ fn deploy_market_validator(
 
 // Helper to deploy PredictionMarket
 fn deploy_prediction_market(
-    fee_collector: ContractAddress,
-    platform_fee: u256,
-    market_validator: ContractAddress,
+    fee_collector: ContractAddress, platform_fee: u256, market_validator: ContractAddress,
 ) -> IPredictionMarketDispatcher {
     let declare_result = declare("PredictionMarket").unwrap();
     let contract_class = declare_result.contract_class();
@@ -70,9 +68,7 @@ fn RANDOM_ADDRESS() -> ContractAddress {
 fn test_create_market() {
     let fee_collector = test_address();
     let owner = test_address();
-    let mv_contract = deploy_market_validator(
-        test_address(), 100_u256, 86400, 10, owner,
-    );
+    let mv_contract = deploy_market_validator(test_address(), 100_u256, 86400, 10, owner);
     let pm_contract = deploy_prediction_market(
         fee_collector, 500_u256, mv_contract.contract_address,
     );
@@ -94,12 +90,8 @@ fn test_create_market() {
 fn test_take_position() {
     let owner = test_address();
     let user = test_address();
-    let mv_contract = deploy_market_validator(
-        test_address(), 100_u256, 86400, 10, owner,
-    );
-    let pm_contract = deploy_prediction_market(
-        owner, 500_u256, mv_contract.contract_address,
-    );
+    let mv_contract = deploy_market_validator(test_address(), 100_u256, 86400, 10, owner);
+    let pm_contract = deploy_prediction_market(owner, 500_u256, mv_contract.contract_address);
 
     start_cheat_caller_address(pm_contract.contract_address, owner);
     let outcomes = array!['Yes', 'No'];
@@ -120,21 +112,18 @@ fn test_take_position() {
 #[test]
 fn test_resolve_market() {
     let owner = test_address();
-    let mv_contract = deploy_market_validator(
-        test_address(), 100_u256, 86400, 10, owner,
-    );
-    let pm_contract = deploy_prediction_market(
-        owner, 500_u256, mv_contract.contract_address,
-    );
+    let mv_contract = deploy_market_validator(test_address(), 100_u256, 86400, 10, owner);
+    let pm_contract = deploy_prediction_market(owner, 500_u256, mv_contract.contract_address);
 
-    let mv_contract_dispatcher = IMarketValidatorDispatcher { contract_address: mv_contract.contract_address };
+    let mv_contract_dispatcher = IMarketValidatorDispatcher {
+        contract_address: mv_contract.contract_address,
+    };
     mv_contract_dispatcher.set_prediction_market(pm_contract.contract_address);
 
     start_cheat_caller_address(pm_contract.contract_address, owner);
     let outcomes = array!['Yes', 'No'];
-    let market_id = pm_contract.create_market(
-        "Test Market", "", "Category", 2000, 3000, outcomes, 100_u256, 1000_u256,
-    );
+    let market_id = pm_contract
+        .create_market("Test Market", "", "Category", 2000, 3000, outcomes, 100_u256, 1000_u256);
 
     set_block_timestamp(3500);
     start_cheat_caller_address(pm_contract.contract_address, owner);
@@ -181,9 +170,8 @@ fn test_dispute_market() {
     start_cheat_caller_address(pm_contract.contract_address, owner);
     let outcomes = array!['Yes', 'No'];
 
-    let market_id = pm_contract.create_market(
-        "Test Market", "", "Category", 2000, 3000, outcomes, 100_u256, 1000_u256,
-    );
+    let market_id = pm_contract
+        .create_market("Test Market", "", "Category", 2000, 3000, outcomes, 100_u256, 1000_u256);
     set_block_timestamp(3500);
     pm_contract.resolve_market(market_id, 0, 'Resolution details');
 
@@ -212,15 +200,12 @@ fn test_dispute_market() {
 #[test]
 fn test_cancel_market() {
     let creator = test_address();
-    let mv_contract = deploy_market_validator(
-        test_address(), 100_u256, 86400, 10, creator,
-    );
-    let pm_contract = deploy_prediction_market(
-        creator, 500_u256, mv_contract.contract_address,
-    );
+    let mv_contract = deploy_market_validator(test_address(), 100_u256, 86400, 10, creator);
+    let pm_contract = deploy_prediction_market(creator, 500_u256, mv_contract.contract_address);
 
-
-    let mv_contract_dispatcher = IMarketValidatorDispatcher { contract_address: mv_contract.contract_address };
+    let mv_contract_dispatcher = IMarketValidatorDispatcher {
+        contract_address: mv_contract.contract_address,
+    };
     mv_contract_dispatcher.set_prediction_market(pm_contract.contract_address);
 
     start_cheat_caller_address(pm_contract.contract_address, creator);
@@ -239,23 +224,18 @@ fn test_cancel_market() {
 fn test_claim_winnings() {
     let owner = test_address();
     let user = test_address();
-    let mv_contract = deploy_market_validator(
-        test_address(), 100_u256, 86400, 10, owner,
-    );
-    let pm_contract = deploy_prediction_market(
-        owner, 500_u256, mv_contract.contract_address,
-    );
+    let mv_contract = deploy_market_validator(test_address(), 100_u256, 86400, 10, owner);
+    let pm_contract = deploy_prediction_market(owner, 500_u256, mv_contract.contract_address);
 
-
-    let mv_contract_dispatcher = IMarketValidatorDispatcher { contract_address: mv_contract.contract_address };
+    let mv_contract_dispatcher = IMarketValidatorDispatcher {
+        contract_address: mv_contract.contract_address,
+    };
     mv_contract_dispatcher.set_prediction_market(pm_contract.contract_address);
 
     start_cheat_caller_address(pm_contract.contract_address, owner);
     let outcomes = array!['Yes', 'No'];
     let market_id = pm_contract
-        .create_market(
-            "Test Market", "", "Category", 2000, 3000, outcomes, 100_u256, 1000_u256,
-        );
+        .create_market("Test Market", "", "Category", 2000, 3000, outcomes, 100_u256, 1000_u256);
 
     start_cheat_caller_address(pm_contract.contract_address, user);
     pm_contract.deposit(500_u256); // Fund user internally
@@ -280,19 +260,17 @@ fn test_claim_winnings() {
 fn test_deposit() {
     let owner = test_address();
     let user = test_address();
-    let mv_contract = deploy_market_validator(
-        test_address(), 100_u256, 86400, 10, owner,
-    );
-    let pm_contract = deploy_prediction_market(
-        owner, 500_u256, mv_contract.contract_address,
-    );
+    let mv_contract = deploy_market_validator(test_address(), 100_u256, 86400, 10, owner);
+    let pm_contract = deploy_prediction_market(owner, 500_u256, mv_contract.contract_address);
 
     start_cheat_caller_address(pm_contract.contract_address, user);
     let initial_balance = pm_contract.get_balance(user);
     pm_contract.deposit(1000_u256);
     let final_balance = pm_contract.get_balance(user);
 
-    assert_eq!(final_balance, initial_balance + 1000_u256, "Balance should increase by deposit amount");
+    assert_eq!(
+        final_balance, initial_balance + 1000_u256, "Balance should increase by deposit amount",
+    );
 }
 
 // Test: Withdraw
@@ -301,12 +279,8 @@ fn test_deposit() {
 fn test_withdraw() {
     let owner = test_address();
     let user = test_address();
-    let mv_contract = deploy_market_validator(
-        test_address(), 100_u256, 86400, 10, owner,
-    );
-    let pm_contract = deploy_prediction_market(
-        owner, 500_u256, mv_contract.contract_address,
-    );
+    let mv_contract = deploy_market_validator(test_address(), 100_u256, 86400, 10, owner);
+    let pm_contract = deploy_prediction_market(owner, 500_u256, mv_contract.contract_address);
 
     start_cheat_caller_address(pm_contract.contract_address, user);
     pm_contract.deposit(1000_u256);
@@ -315,7 +289,9 @@ fn test_withdraw() {
     pm_contract.withdraw(600_u256);
     let final_balance = pm_contract.get_balance(user);
 
-    assert_eq!(final_balance, initial_balance - 600_u256, "Balance should decrease by withdrawal amount");
+    assert_eq!(
+        final_balance, initial_balance - 600_u256, "Balance should decrease by withdrawal amount",
+    );
 
     pm_contract.withdraw(500_u256); // Should panic with "Insufficient balance"
 }
@@ -325,12 +301,8 @@ fn test_withdraw() {
 fn test_multiple_deposits_and_withdrawals() {
     let owner = test_address();
     let user = test_address();
-    let mv_contract = deploy_market_validator(
-        test_address(), 100_u256, 86400, 10, owner,
-    );
-    let pm_contract = deploy_prediction_market(
-        owner, 500_u256, mv_contract.contract_address,
-    );
+    let mv_contract = deploy_market_validator(test_address(), 100_u256, 86400, 10, owner);
+    let pm_contract = deploy_prediction_market(owner, 500_u256, mv_contract.contract_address);
 
     start_cheat_caller_address(pm_contract.contract_address, user);
     pm_contract.deposit(500_u256);

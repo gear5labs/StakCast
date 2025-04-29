@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use starknet::storage::{Map};
+use starknet::storage::Map;
 // Data Structures
 #[derive(Drop, Serde, starknet::Store)]
 pub struct Market {
@@ -22,8 +22,7 @@ struct Storage {
     markets: Map<u32, Market>,
     market_outcomes: Map<(u32, u32), felt252>, // (market_id, outcome_index) -> outcome
     stakes_per_outcome: Map<(u32, u32), u256>, // (market_id, outcome_index) -> stake
-    admin: ContractAddress, // Admin address for access control
-   
+    admin: ContractAddress // Admin address for access control
 }
 
 #[derive(Copy, Drop, Serde, starknet::Store)]
