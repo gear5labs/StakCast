@@ -352,6 +352,19 @@ pub mod PredictionMarket {
                     },
                 );
         }
+        
+        fn get_all_categories(self: @ContractState) -> Array<felt252> {
+            let count = self.category_count.read();
+            let mut categories = ArrayTrait::new();
+            
+            let mut i: u32 = 1;
+            while i <= count {
+                categories.append(self.category_array.entry(i).read());
+                i += 1;
+            }
+            
+            categories
+        }
 
         fn claim_winnings(ref self: ContractState, market_id: u32) {
             let caller = get_caller_address();
@@ -489,28 +502,28 @@ pub mod PredictionMarket {
             self.validator_index.write(current_index + 1);
             validator_contract.get_validator_by_index(index)
         }
-    }
 
-    fn _add_category(ref self: ContractState, category: felt252) -> u32 {
-        let category_exists = self.category_to_id.entry(category).read();
-
-        if category_exists != 0 {
-            return category_exists;
-        } else {
-            let new_id = self.category_count.read() + 1;
-            self.category_array.entry(new_id).write(category);
-            self.category_to_id.entry(category).write(new_id);
-            self.category_count.write(new_id);
-
-            self
-                .emit(
-                    CategoryCreated {
-                        category_id: new_id,
-                        name: category
-                    },
-                );
-            
-            return new_id;
+        fn _add_category(ref self: ContractState, category: felt252) -> u32 {
+            let category_exists = self.category_to_id.entry(category).read();
+    
+            if category_exists != 0 {
+                return category_exists;
+            } else {
+                let new_id = self.category_count.read() + 1;
+                self.category_array.entry(new_id).write(category);
+                self.category_to_id.entry(category).write(new_id);
+                self.category_count.write(new_id);
+    
+                self
+                    .emit(
+                        CategoryCreated {
+                            category_id: new_id,
+                            name: category
+                        },
+                    );
+                
+                return new_id;
+            }
         }
     }
 }

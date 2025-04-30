@@ -464,17 +464,15 @@ fn test_set_prediction_should_panic_when_called_by_non_owner() {
 #[test]
 fn test_category_functionality() {
     // Deploy dependencies
-    let erc20 = deploy_mock_erc20();
+    // let _erc20 = deploy_mock_erc20();
     let fee_collector = test_address();
     let owner = test_address();
     let mv_contract = deploy_market_validator(
         test_address(), // PredictionMarket address (mock for now)
         100_u256, 86400, 10, owner,
     );
-    let pm_contract = deploy_prediction_market(
-        erc20.contract_address, fee_collector, 500_u256, // 5% fee
-        mv_contract.contract_address,
-    );
+
+    let pm_contract = deploy_prediction_market(fee_collector, 500_u256, mv_contract.contract_address);
 
     // Set caller as admin
     start_cheat_caller_address(pm_contract.contract_address, owner);
