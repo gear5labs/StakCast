@@ -126,6 +126,7 @@ pub mod PredictionMarket {
         category_array: Map<u32, felt252>, // Store categories by index
         category_to_id: Map<felt252, u32>, // Map category name to its ID
         category_count: u32,
+        admin: ContractAddress,
     }
 
     // Events
@@ -199,6 +200,9 @@ pub mod PredictionMarket {
         self.platform_fee.write(platform_fee);
         self.market_validator.write(market_validator_address);
         self.validator_index.write(0);
+
+        let deployer = get_caller_address();
+        self.admin.write(deployer);
     }
 
     // External Implementation
@@ -242,8 +246,7 @@ pub mod PredictionMarket {
         }
         
         fn add_category(ref self: ContractState, category: felt252) {
-            // assert(get_caller_address() == self.admin.read(), "Only admin can add categories");
-            // self.accesscontrol.assert_only_role(ADMIN_ROLE);
+            assert!(get_caller_address() == self.admin.read(), "Only admin can add categories");
             self._add_category(category);
         }
 
