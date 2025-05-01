@@ -1,7 +1,7 @@
 import React from "react";
 import { MarketOption } from "@/app/types";
 import seoData from "../../../../shared/components/seoData.json"; 
-import { ObfuscatedSymbol } from "d:/StakCast/shared/components/ObfuscatedSymbol";
+import { ObfuscatedSymbol } from "../../../../shared/components/ObfuscatedSymbol";
 interface MarketCardProps {
   name: string;
   image: string;
