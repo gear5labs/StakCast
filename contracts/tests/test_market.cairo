@@ -131,3 +131,233 @@ fn test_get_validator_by_index_no_validators() {
     // Try to get validator with no validators registered (should panic)
     mv_contract.get_validator_by_index(0);
 }
+
+// --- register_validator Tests ---
+
+#[test]
+fn test_register_validator_success() {
+    // Setup
+    let owner = test_address();
+    let validator_addr = test_address();
+    let min_stake = 100_u256;
+    
+    let mv_contract = deploy_market_validator(test_address(), min_stake, 86400, 10, owner);
+    let pm_contract = deploy_prediction_market(
+        owner, 500_u256, mv_contract.contract_address
+    );
+    start_cheat_caller_address(mv_contract.contract_address, owner);
+    mv_contract.set_prediction_market(pm_contract.contract_address);
+    
+    // Execute: Register validator
+    start_cheat_caller_address(mv_contract.contract_address, validator_addr);
+    mv_contract.register_validator(min_stake);
+    
+    // Assert: Validator info is stored correctly
+    let validator_info = mv_contract.get_validator_info(validator_addr);
+    assert_eq!(validator_info.stake, min_stake, "Stake mismatch");
+    assert!(validator_info.active, "Validator should be active");
+    assert_eq!(mv_contract.get_validator_count(), 1, "Validator count incorrect");
+    assert_eq!(mv_contract.get_validator_by_index(0), validator_addr, "Validator index mismatch");
+}
+
+#[test]
+fn test_register_validator_update_stake() {
+    // Setup
+    let owner = test_address();
+    let validator_addr = test_address();
+    let initial_stake = 100_u256;
+    let updated_stake = 200_u256;
+    
+    let mv_contract = deploy_market_validator(test_address(), initial_stake, 86400, 10, owner);
+    let pm_contract = deploy_prediction_market(
+        owner, 500_u256, mv_contract.contract_address
+    );
+    start_cheat_caller_address(mv_contract.contract_address, owner);
+    mv_contract.set_prediction_market(pm_contract.contract_address);
+    
+    // Execute: Register validator initially
+    start_cheat_caller_address(mv_contract.contract_address, validator_addr);
+    mv_contract.register_validator(initial_stake);
+    
+    // Assert: Initial registration
+    let initial_info = mv_contract.get_validator_info(validator_addr);
+    assert_eq!(initial_info.stake, initial_stake, "Initial stake mismatch");
+    assert_eq!(mv_contract.get_validator_count(), 1, "Initial count incorrect");
+    
+    // Execute: Register again with higher stake (should update)
+    mv_contract.register_validator(updated_stake);
+    
+    // Assert: Validator info is updated
+    let updated_info = mv_contract.get_validator_info(validator_addr);
+    assert_eq!(updated_info.stake, updated_stake, "Updated stake mismatch");
+    assert!(updated_info.active, "Validator should remain active");
+    assert_eq!(mv_contract.get_validator_count(), 1, "Validator count should not change"); // Still only one validator
+}
+
+
+#[test]
+#[should_panic(expected: ('Insufficient stake',))]
+fn test_register_validator_insufficient_stake() {
+    // Setup
+    let owner = test_address();
+    let validator_addr = test_address();
+    let min_stake = 100_u256;
+    let insufficient_stake = 50_u256;
+    
+    let mv_contract = deploy_market_validator(test_address(), min_stake, 86400, 10, owner);
+    let pm_contract = deploy_prediction_market(
+        owner, 500_u256, mv_contract.contract_address
+    );
+    start_cheat_caller_address(mv_contract.contract_address, owner);
+    mv_contract.set_prediction_market(pm_contract.contract_address);
+    
+    // Execute: Attempt to register with insufficient stake (should panic)
+    start_cheat_caller_address(mv_contract.contract_address, validator_addr);
+    mv_contract.register_validator(insufficient_stake); 
+}
+
+
+// --- slash_validator Tests ---
+
+#[test]
+fn test_slash_validator_success_fixed_amount() {
+    // Setup
+    let owner = test_address(); // Admin and prediction market deployer
+    let validator_addr = test_address();
+    let initial_stake = 200_u256;
+    let min_stake = 100_u256;
+    let slash_amount = 50_u256;
+    let slash_reason: felt252 = 'misbehavior';
+    
+    let mv_contract = deploy_market_validator(test_address(), min_stake, 86400, 10, owner); // Temp PM addr
+    let pm_contract = deploy_prediction_market(
+        owner, 500_u256, mv_contract.contract_address
+    );
+    start_cheat_caller_address(mv_contract.contract_address, owner); // Set PM address as owner
+    mv_contract.set_prediction_market(pm_contract.contract_address); // Set the actual PM address
+    
+    // Register validator
+    start_cheat_caller_address(mv_contract.contract_address, validator_addr);
+    mv_contract.register_validator(initial_stake);
+    
+    // Execute: Slash validator (called by Prediction Market contract)
+    start_cheat_caller_address(mv_contract.contract_address, pm_contract.contract_address); 
+    mv_contract.slash_validator(validator_addr, slash_amount, slash_reason);
+    
+    // Assert: Stake reduced, still active
+    let validator_info = mv_contract.get_validator_info(validator_addr);
+    assert_eq!(validator_info.stake, initial_stake - slash_amount, "Stake not reduced correctly");
+    assert!(validator_info.active, "Validator should still be active");
+    assert_eq!(validator_info.disputed_resolutions, 1, "Dispute count mismatch");
+}
+
+#[test]
+fn test_slash_validator_success_percentage() {
+    // Setup
+    let owner = test_address();
+    let validator_addr = test_address();
+    let initial_stake = 200_u256;
+    let min_stake = 100_u256;
+    let slash_percentage: u64 = 10; // 10%
+    let expected_slash = (initial_stake * slash_percentage.into()) / 100_u256;
+    let slash_reason: felt252 = 'inactivity';
+    
+    let mv_contract = deploy_market_validator(test_address(), min_stake, 86400, slash_percentage, owner);
+    let pm_contract = deploy_prediction_market(
+        owner, 500_u256, mv_contract.contract_address
+    );
+    start_cheat_caller_address(mv_contract.contract_address, owner);
+    mv_contract.set_prediction_market(pm_contract.contract_address);
+    
+    // Register validator
+    start_cheat_caller_address(mv_contract.contract_address, validator_addr);
+    mv_contract.register_validator(initial_stake);
+    
+    // Execute: Slash validator with 0 amount (triggers percentage slash)
+    start_cheat_caller_address(mv_contract.contract_address, pm_contract.contract_address);
+    mv_contract.slash_validator(validator_addr, 0_u256, slash_reason); 
+    
+    // Assert: Stake reduced by percentage
+    let validator_info = mv_contract.get_validator_info(validator_addr);
+    assert_eq!(validator_info.stake, initial_stake - expected_slash, "Stake not reduced by percentage");
+    assert!(validator_info.active, "Validator should still be active");
+    assert_eq!(validator_info.disputed_resolutions, 1, "Dispute count mismatch");
+}
+
+#[test]
+fn test_slash_validator_deactivation() {
+    // Setup
+    let owner = test_address();
+    let validator_addr = test_address();
+    let initial_stake = 150_u256;
+    let min_stake = 100_u256;
+    let slash_amount = 60_u256; // Will bring stake below min_stake
+    let slash_reason: felt252 = 'critical failure';
+    
+    let mv_contract = deploy_market_validator(test_address(), min_stake, 86400, 10, owner);
+    let pm_contract = deploy_prediction_market(
+        owner, 500_u256, mv_contract.contract_address
+    );
+    start_cheat_caller_address(mv_contract.contract_address, owner);
+    mv_contract.set_prediction_market(pm_contract.contract_address);
+    
+    // Register validator
+    start_cheat_caller_address(mv_contract.contract_address, validator_addr);
+    mv_contract.register_validator(initial_stake);
+    
+    // Execute: Slash validator
+    start_cheat_caller_address(mv_contract.contract_address, pm_contract.contract_address);
+    mv_contract.slash_validator(validator_addr, slash_amount, slash_reason);
+    
+    // Assert: Stake reduced, validator deactivated
+    let validator_info = mv_contract.get_validator_info(validator_addr);
+    assert_eq!(validator_info.stake, initial_stake - slash_amount, "Stake mismatch after slash");
+    assert!(!validator_info.active, "Validator should be deactivated");
+}
+
+
+#[test]
+#[should_panic(expected: ('Validator not found or inactive',))]
+fn test_slash_validator_non_existent() {
+    // Setup
+    let owner = test_address();
+    let non_existent_validator = test_address();
+    let min_stake = 100_u256;
+    
+    let mv_contract = deploy_market_validator(test_address(), min_stake, 86400, 10, owner);
+    let pm_contract = deploy_prediction_market(
+        owner, 500_u256, mv_contract.contract_address
+    );
+    start_cheat_caller_address(mv_contract.contract_address, owner);
+    mv_contract.set_prediction_market(pm_contract.contract_address);
+    
+    // Execute: Attempt to slash non-existent validator (should panic)
+    start_cheat_caller_address(mv_contract.contract_address, pm_contract.contract_address);
+    mv_contract.slash_validator(non_existent_validator, 50_u256, 'fake reason');
+}
+
+#[test]
+#[should_panic(expected: ('Unauthorized slashing',))]
+fn test_slash_validator_unauthorized_caller() {
+    // Setup
+    let owner = test_address();
+    let validator_addr = test_address();
+    let unauthorized_caller = test_address();
+    let initial_stake = 200_u256;
+    let min_stake = 100_u256;
+    
+    let mv_contract = deploy_market_validator(test_address(), min_stake, 86400, 10, owner);
+    let pm_contract = deploy_prediction_market(
+        owner, 500_u256, mv_contract.contract_address
+    );
+    start_cheat_caller_address(mv_contract.contract_address, owner);
+    mv_contract.set_prediction_market(pm_contract.contract_address);
+    
+    // Register validator
+    start_cheat_caller_address(mv_contract.contract_address, validator_addr);
+    mv_contract.register_validator(initial_stake);
+    
+    // Execute: Attempt to slash from unauthorized address (should panic)
+    start_cheat_caller_address(mv_contract.contract_address, unauthorized_caller); 
+    mv_contract.slash_validator(validator_addr, 50_u256, 'unauthorized attempt');
+}
