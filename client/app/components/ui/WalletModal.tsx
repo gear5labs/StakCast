@@ -4,8 +4,6 @@ import { useConnect } from "@starknet-react/core";
 import { StarknetkitConnector, useStarknetkitConnectModal } from "starknetkit";
 import { toast } from "react-toastify";
 
-import SEO from "../../../../shared/components/Seo"; 
-import seoData from "../../../../shared/components/seoData.json"; 
 
 const WalletModal = () => {
   const { connectAsync, connectors } = useConnect();
