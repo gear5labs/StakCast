@@ -1,0 +1,619 @@
+{
+  "generator": "starknet-events-beta",
+  "state": {
+    "name": "stakcast",
+    "chainName": "starknet-testnet",
+    "contracts": [
+      {
+        "name": "stakcast",
+        "address": "0x02a3cb3bbbe186b59ba4ee6ce1227c284043be42dc46e84115e4587754a89c04",
+        "initialBlock": 716387,
+        "aliases": [],
+        "rawAbi": [
+          {
+            "type": "impl",
+            "name": "PredictionMarketImp",
+            "interface_name": "stakcast::interface::IPredictionMarket"
+          },
+          {
+            "type": "struct",
+            "name": "core::byte_array::ByteArray",
+            "members": [
+              {
+                "name": "data",
+                "type": "core::array::Array::\u003ccore::bytes_31::bytes31\u003e"
+              },
+              {
+                "name": "pending_word",
+                "type": "core::felt252"
+              },
+              {
+                "name": "pending_word_len",
+                "type": "core::integer::u32"
+              }
+            ]
+          },
+          {
+            "type": "struct",
+            "name": "core::integer::u256",
+            "members": [
+              {
+                "name": "low",
+                "type": "core::integer::u128"
+              },
+              {
+                "name": "high",
+                "type": "core::integer::u128"
+              }
+            ]
+          },
+          {
+            "type": "struct",
+            "name": "stakcast::interface::Market",
+            "members": [
+              {
+                "name": "creator",
+                "type": "core::starknet::contract_address::ContractAddress"
+              },
+              {
+                "name": "title",
+                "type": "core::byte_array::ByteArray"
+              },
+              {
+                "name": "description",
+                "type": "core::byte_array::ByteArray"
+              },
+              {
+                "name": "category",
+                "type": "core::byte_array::ByteArray"
+              },
+              {
+                "name": "start_time",
+                "type": "core::integer::u64"
+              },
+              {
+                "name": "end_time",
+                "type": "core::integer::u64"
+              },
+              {
+                "name": "resolution_time",
+                "type": "core::integer::u64"
+              },
+              {
+                "name": "total_stake",
+                "type": "core::integer::u256"
+              },
+              {
+                "name": "min_stake",
+                "type": "core::integer::u256"
+              },
+              {
+                "name": "max_stake",
+                "type": "core::integer::u256"
+              },
+              {
+                "name": "num_outcomes",
+                "type": "core::integer::u32"
+              },
+              {
+                "name": "validator",
+                "type": "core::starknet::contract_address::ContractAddress"
+              }
+            ]
+          },
+          {
+            "type": "enum",
+            "name": "stakcast::interface::MarketStatus",
+            "variants": [
+              {
+                "name": "Active",
+                "type": "()"
+              },
+              {
+                "name": "Closed",
+                "type": "()"
+              },
+              {
+                "name": "Resolved",
+                "type": "()"
+              },
+              {
+                "name": "Disputed",
+                "type": "()"
+              },
+              {
+                "name": "Cancelled",
+                "type": "()"
+              }
+            ]
+          },
+          {
+            "type": "struct",
+            "name": "stakcast::interface::MarketOutcome",
+            "members": [
+              {
+                "name": "winning_outcome",
+                "type": "core::integer::u32"
+              },
+              {
+                "name": "resolution_details",
+                "type": "core::felt252"
+              }
+            ]
+          },
+          {
+            "type": "enum",
+            "name": "core::option::Option::\u003cstakcast::interface::MarketOutcome\u003e",
+            "variants": [
+              {
+                "name": "Some",
+                "type": "stakcast::interface::MarketOutcome"
+              },
+              {
+                "name": "None",
+                "type": "()"
+              }
+            ]
+          },
+          {
+            "type": "struct",
+            "name": "stakcast::interface::MarketDetails",
+            "members": [
+              {
+                "name": "market",
+                "type": "stakcast::interface::Market"
+              },
+              {
+                "name": "status",
+                "type": "stakcast::interface::MarketStatus"
+              },
+              {
+                "name": "outcome",
+                "type": "core::option::Option::\u003cstakcast::interface::MarketOutcome\u003e"
+              }
+            ]
+          },
+          {
+            "type": "enum",
+            "name": "core::bool",
+            "variants": [
+              {
+                "name": "False",
+                "type": "()"
+              },
+              {
+                "name": "True",
+                "type": "()"
+              }
+            ]
+          },
+          {
+            "type": "struct",
+            "name": "stakcast::interface::Position",
+            "members": [
+              {
+                "name": "amount",
+                "type": "core::integer::u256"
+              },
+              {
+                "name": "outcome_index",
+                "type": "core::integer::u32"
+              },
+              {
+                "name": "claimed",
+                "type": "core::bool"
+              }
+            ]
+          },
+          {
+            "type": "interface",
+            "name": "stakcast::interface::IPredictionMarket",
+            "items": [
+              {
+                "type": "function",
+                "name": "create_market",
+                "inputs": [
+                  {
+                    "name": "title",
+                    "type": "core::byte_array::ByteArray"
+                  },
+                  {
+                    "name": "description",
+                    "type": "core::byte_array::ByteArray"
+                  },
+                  {
+                    "name": "category",
+                    "type": "core::byte_array::ByteArray"
+                  },
+                  {
+                    "name": "start_time",
+                    "type": "core::integer::u64"
+                  },
+                  {
+                    "name": "end_time",
+                    "type": "core::integer::u64"
+                  },
+                  {
+                    "name": "outcomes",
+                    "type": "core::array::Array::\u003ccore::felt252\u003e"
+                  },
+                  {
+                    "name": "min_stake",
+                    "type": "core::integer::u256"
+                  },
+                  {
+                    "name": "max_stake",
+                    "type": "core::integer::u256"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "type": "core::integer::u32"
+                  }
+                ],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "take_position",
+                "inputs": [
+                  {
+                    "name": "market_id",
+                    "type": "core::integer::u32"
+                  },
+                  {
+                    "name": "outcome_index",
+                    "type": "core::integer::u32"
+                  },
+                  {
+                    "name": "amount",
+                    "type": "core::integer::u256"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "claim_winnings",
+                "inputs": [
+                  {
+                    "name": "market_id",
+                    "type": "core::integer::u32"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "get_market_details",
+                "inputs": [
+                  {
+                    "name": "market_id",
+                    "type": "core::integer::u32"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "type": "stakcast::interface::MarketDetails"
+                  }
+                ],
+                "state_mutability": "view"
+              },
+              {
+                "type": "function",
+                "name": "get_user_position",
+                "inputs": [
+                  {
+                    "name": "user",
+                    "type": "core::starknet::contract_address::ContractAddress"
+                  },
+                  {
+                    "name": "market_id",
+                    "type": "core::integer::u32"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "type": "stakcast::interface::Position"
+                  }
+                ],
+                "state_mutability": "view"
+              },
+              {
+                "type": "function",
+                "name": "get_market_stats",
+                "inputs": [
+                  {
+                    "name": "market_id",
+                    "type": "core::integer::u32"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "type": "(core::integer::u256, core::array::Array::\u003ccore::integer::u256\u003e)"
+                  }
+                ],
+                "state_mutability": "view"
+              },
+              {
+                "type": "function",
+                "name": "get_stake_token",
+                "inputs": [],
+                "outputs": [
+                  {
+                    "type": "core::starknet::contract_address::ContractAddress"
+                  }
+                ],
+                "state_mutability": "view"
+              },
+              {
+                "type": "function",
+                "name": "assign_validator",
+                "inputs": [
+                  {
+                    "name": "market_id",
+                    "type": "core::integer::u32"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "resolve_market",
+                "inputs": [
+                  {
+                    "name": "market_id",
+                    "type": "core::integer::u32"
+                  },
+                  {
+                    "name": "winning_outcome",
+                    "type": "core::integer::u32"
+                  },
+                  {
+                    "name": "resolution_details",
+                    "type": "core::felt252"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "dispute_market",
+                "inputs": [
+                  {
+                    "name": "market_id",
+                    "type": "core::integer::u32"
+                  },
+                  {
+                    "name": "reason",
+                    "type": "core::felt252"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "cancel_market",
+                "inputs": [
+                  {
+                    "name": "market_id",
+                    "type": "core::integer::u32"
+                  },
+                  {
+                    "name": "reason",
+                    "type": "core::felt252"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "set_market_validator",
+                "inputs": [
+                  {
+                    "name": "market_validator",
+                    "type": "core::starknet::contract_address::ContractAddress"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              }
+            ]
+          },
+          {
+            "type": "constructor",
+            "name": "constructor",
+            "inputs": [
+              {
+                "name": "stake_token_address",
+                "type": "core::starknet::contract_address::ContractAddress"
+              },
+              {
+                "name": "fee_collector",
+                "type": "core::starknet::contract_address::ContractAddress"
+              },
+              {
+                "name": "platform_fee",
+                "type": "core::integer::u256"
+              },
+              {
+                "name": "market_validator_address",
+                "type": "core::starknet::contract_address::ContractAddress"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "stakcast::prediction::PredictionMarket::MarketCreated",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "market_id",
+                "type": "core::integer::u32",
+                "kind": "data"
+              },
+              {
+                "name": "creator",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
+              },
+              {
+                "name": "title",
+                "type": "core::byte_array::ByteArray",
+                "kind": "data"
+              },
+              {
+                "name": "start_time",
+                "type": "core::integer::u64",
+                "kind": "data"
+              },
+              {
+                "name": "end_time",
+                "type": "core::integer::u64",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "stakcast::prediction::PredictionMarket::PositionTaken",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "market_id",
+                "type": "core::integer::u32",
+                "kind": "data"
+              },
+              {
+                "name": "user",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
+              },
+              {
+                "name": "outcome_index",
+                "type": "core::integer::u32",
+                "kind": "data"
+              },
+              {
+                "name": "amount",
+                "type": "core::integer::u256",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "stakcast::prediction::PredictionMarket::MarketResolved",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "market_id",
+                "type": "core::integer::u32",
+                "kind": "data"
+              },
+              {
+                "name": "outcome",
+                "type": "core::integer::u32",
+                "kind": "data"
+              },
+              {
+                "name": "resolver",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
+              },
+              {
+                "name": "resolution_details",
+                "type": "core::felt252",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "stakcast::prediction::PredictionMarket::WinningsClaimed",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "market_id",
+                "type": "core::integer::u32",
+                "kind": "data"
+              },
+              {
+                "name": "user",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
+              },
+              {
+                "name": "amount",
+                "type": "core::integer::u256",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "stakcast::prediction::PredictionMarket::MarketDisputed",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "market_id",
+                "type": "core::integer::u32",
+                "kind": "data"
+              },
+              {
+                "name": "disputer",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
+              },
+              {
+                "name": "reason",
+                "type": "core::felt252",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "stakcast::prediction::PredictionMarket::Event",
+            "kind": "enum",
+            "variants": [
+              {
+                "name": "MarketCreated",
+                "type": "stakcast::prediction::PredictionMarket::MarketCreated",
+                "kind": "nested"
+              },
+              {
+                "name": "PositionTaken",
+                "type": "stakcast::prediction::PredictionMarket::PositionTaken",
+                "kind": "nested"
+              },
+              {
+                "name": "MarketResolved",
+                "type": "stakcast::prediction::PredictionMarket::MarketResolved",
+                "kind": "nested"
+              },
+              {
+                "name": "WinningsClaimed",
+                "type": "stakcast::prediction::PredictionMarket::WinningsClaimed",
+                "kind": "nested"
+              },
+              {
+                "name": "MarketDisputed",
+                "type": "stakcast::prediction::PredictionMarket::MarketDisputed",
+                "kind": "nested"
+              }
+            ]
+          }
+        ],
+        "Abi": {}
+      }
+    ],
+    "confirmEnoughContracts": true
+  }
+}

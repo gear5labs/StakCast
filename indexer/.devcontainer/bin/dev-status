@@ -1,0 +1,113 @@
+#!/bin/bash
+
+PROJECT=$(docker inspect --format='{{index .Config.Labels "com.docker.compose.project"}}' $HOSTNAME)
+DOCKERPS=$(docker ps --format=json)
+SUBSTREAMS_VERSION=$(substreams --version)
+CONTAINERS=$(echo -e $DOCKERPS | jq -r 'select(.Names | startswith("'$PROJECT'"))|.Names')
+
+COLOR_RED='\033[0;31m'
+COLOR_DEFAULT='\033[0m'
+
+redline() {
+    echo -e "$COLOR_RED$1$COLOR_DEFAULT"
+}
+
+echo
+redline "#################### Versions #####################"
+echo
+echo -n '* ' 
+substreams --version
+echo -n '* ' 
+graph --version
+
+echo
+redline "############### Running containers ################"
+echo
+for container in $CONTAINERS; do
+  role=unknown
+  case $container in 
+    *-main-1)
+        role="Main (this container)"
+        ;;
+    *-graph-node-1)
+        role="Graph Node"
+        GRAPHNODE_CONTAINER=$container
+        ;;
+    *-pgweb-1)
+        role="PGWeb"
+        ;;
+    *-ipfs-1)
+        role="IPFS server"
+        IPFS_CONTAINER=$container
+        ;;
+    *-postgres-1)
+        role="Postgres database"
+        POSTGRES_CONTAINER=$container
+        ;;
+  esac
+  status=$(echo -e $DOCKERPS | jq -r 'select(.Names=="'$container'") | "\(.State) - \(.Status)"')
+  comment=""
+  if [[ "$container" == "$GRAPHNODE_CONTAINER" ]] && echo $status|grep -q unhealthy ; then
+    comment=" -- becomes healthy after running 'substreams auth' and 'substreams codegen subgraph'"
+  fi
+  STATUSES="$STATUSES\n- $container\t$role\t$status$comment"
+done 
+
+echo -e $STATUSES| column -t -s "$(printf '\t')"
+
+if ! [[ -e $WORKSPACE_FOLDER/.substreams.env ]]; then
+    echo
+    echo "The $WORKSPACE_FOLDER/.substreams.env file is missing. Please authenticate using 'substreams auth' from $WORKSPACE_FOLDER folder."
+    echo
+    exit 1
+fi
+
+echo
+redline "#################### Graph-node ####################"
+if ! find $WORKSPACE_FOLDER -type f -name subgraph.yaml 2>/dev/null |grep -q .; then
+    echo
+    echo "No subgraph.yaml file found, run 'substreams codegen subgraph' if you want to generate a subgraph from your substreams."
+    echo
+    exit 0
+fi
+
+if nc -z $LOCAL_GRAPH_NODE_HOSTNAME 8000; then
+    echo
+    redline "--------------------- Chains ----------------------"
+    docker exec -ti $GRAPHNODE_CONTAINER bash -i -c "graphman chain list"
+    echo
+    echo "* add more chains by editing .graph-node/config.toml"
+    echo
+    redline "------------------ Deployments --------------------"
+    docker exec -ti $GRAPHNODE_CONTAINER bash -i -c "graphman info --all --status"
+else
+    state=$(docker inspect $GRAPHNODE_CONTAINER|jq .[].State)
+    if [[ "$(echo -e $state |jq -r .Status)" == "running" ]]; then
+        if [[ "$(echo -e $state |jq -r .Health.Status)" == "healthy" ]]; then
+            echo
+            echo "The graph-node container is running and healthy, but not available at $LOCAL_GRAPH_NODE_HOSTNAME:8000"
+            echo "You may have an issue with your container network configuration (e.g. docker-compose). Try restarting all the containers."
+            exit
+        elif [[ "$(echo -e $state |jq -r .Health.Status)" == "starting" ]]; then
+            echo
+            echo "The graph-node container is just starting, please wait a moment to get more information."
+            echo
+            exit
+        else
+            echo
+            echo "The graph-node container is not ready, showing as $(echo -e $status |jq -r .Health.Status)."
+            echo "You can check the logs for more information by running 'dev-logs-graphnode'."
+            exit
+        fi
+    else
+        echo "The graph-node container $GRAPHNODE_CONTAINER is not running"
+        echo "Current status:"  
+        echo $state | jq .Status
+        echo
+        echo "You can try to start the container by running 'dev-restart-services'."
+        echo "Get more details by running 'docker inspect $GRAPHNODE_CONTAINER'."
+        echo
+        exit
+    fi
+
+fi

@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS "Events" (
+  "id" VARCHAR(64),
+  PRIMARY KEY (id)
+)

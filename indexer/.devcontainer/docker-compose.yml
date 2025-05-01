@@ -1,0 +1,93 @@
+services:
+  main:
+    image: ghcr.io/streamingfast/substreams-starter:v0.1.4
+    platform: linux/amd64
+    volumes:
+      - ..:/workspace:cached
+      - /var/run/docker.sock:/var/run/docker-host.sock
+      - ipfs-data:/data/ipfs
+      - ipfs-export-data:/data/ipfs-export
+      - db-data:/data/db
+    entrypoint: '/bin/sh -c "sleep infinity"'
+    healthcheck:
+      test: ["CMD", "true"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ipfs:
+    image: ipfs/kubo:v0.14.0
+    volumes:
+      - ipfs-data:/data/ipfs
+      - ipfs-export-data:/export
+    network_mode: service:main
+    depends_on:
+      - postgres
+
+  graph-node:
+    image: graphprotocol/graph-node:9a51f3b
+    volumes:
+      - ../.graph-node:/config/graph-node:cached
+      - ..:/workspace:cached  # .devcontainer, .env
+    environment:
+      postgres_host: postgres
+      postgres_user: graph-node
+      postgres_pass: let-me-in
+      postgres_db: graph-node
+      ipfs: 'localhost:5001'
+      GRAPH_LOG: info
+      GRAPH_NODE_CONFIG: /workspace/.graph-node/config.toml
+      GRAPH_STORE_WRITE_BATCH_SIZE: 0
+      GRAPH_ALLOW_NON_DETERMINISTIC_FULLTEXT_SEARCH: "true"
+    command:
+      - /workspace/.devcontainer/wait-graph-node.sh
+    depends_on:
+      - ipfs
+      - postgres
+    network_mode: service:main
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:15
+    command:
+    -  "postgres"
+    -  "-cshared_preload_libraries=pg_stat_statements"
+    #-  "-clog_statement=all"
+    network_mode: service:main
+    environment:
+      POSTGRES_USER: graph-node
+      POSTGRES_PASSWORD: let-me-in
+      POSTGRES_DB: graph-node
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+      POSTGRES_HOST_AUTH_METHOD: md5
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "graph-node"]
+      interval: 30s
+      timeout: 10s
+      retries: 15
+
+  pgweb:
+    image: sosedoff/pgweb:0.11.12
+    restart: on-failure
+    command: ["pgweb", "--bind=0.0.0.0", "--listen=8081", "--binary-codec=hex"]
+    network_mode: service:main
+    environment:
+      - DATABASE_URL=postgres://graph-node:let-me-in@localhost:5432/graph-node?sslmode=disable
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD", "true"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:
+  ipfs-data:
+  ipfs-export-data:

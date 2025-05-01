@@ -1,0 +1,57 @@
+type MarketCreated @entity(immutable: true) {
+    id: ID!
+    market_id: BigInt!
+    creator: String!
+    title: String!
+    startTime: BigInt!
+    endTime: BigInt!
+}
+
+type PositionTaken @entity(immutable: true) {
+    id: ID!
+    market_id: BigInt!
+    user: String!
+    outcome_index: BigInt!
+    amount: BigInt!
+}
+
+type MarketResolved @entity(immutable: true) {
+    id: ID!
+    market_id: BigInt!
+    outcome: BigInt!
+    resolver: String!
+    resolution_details: String!
+}
+
+type WinningsClaimed @entity(immutable: true) {
+    id: ID!
+    market_id: BigInt!
+    user: String!
+    amount: BigInt!
+}
+
+type MarketDisputed @entity(immutable: true) {
+    id: ID!
+    market_id: BigInt!
+    disputer: String!
+    reason: String!
+}
+
+type ValidatorRegistered @entity(immutable: true) {
+    id: ID!
+    validator: String!
+    stake: BigInt!
+}
+
+type ValidatorSlashed @entity(immutable: true) {
+    id: ID!
+    validator: String!
+    amount: BigInt!
+    reason: String!
+}
+
+type ValidatorActivated @entity(immutable: true) {
+    id: ID!
+    validator: String!
+    activation_time: BigInt!
+}

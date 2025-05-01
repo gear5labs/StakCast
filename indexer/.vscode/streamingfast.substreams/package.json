@@ -1,0 +1,101 @@
+{
+  "name": "substreams",
+  "publisher": "streamingfast",
+  "repository": "https://github.com/streamingfast/substreams-starter",
+  "displayName": "Substreams",
+  "description": "Substreams Developer Environment Extension",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.91.0"
+  },
+  "categories": [
+    "Data Science",
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "workspaceContains:substreams.yaml",
+    "workspaceContains:**/substreams.yaml",
+    "workspaceContains:substreams.yml",
+    "workspaceContains:**/substreams.yml",
+    "workspaceContains:.devcontainer/enable-substreams-extension"
+  ],
+
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "category": "Substreams",
+        "command": "substreams.runInit",
+        "title": "Initialize a new project"
+      },
+      {
+        "category": "Substreams",
+        "command": "substreams.runGui",
+        "title": "Run Substreams GUI"
+      },      {
+        "category": "Substreams",
+        "command": "substreams.loadFromRegistry",
+        "title": "Download a module from the Substreams.dev Registry"
+      },      
+      {
+        "category": "Substreams",
+        "command": "substreams.getSimpleApiKey",
+        "title": "Obtain a lower-power, short-lived API token"
+      },      
+      {
+        "category": "Substreams",
+        "command": "substreams.marketAuth",
+        "title": "Authenticate on The Graph Market"
+      },      
+      {
+        "category": "Substreams",
+        "command": "substreams.runBuild",
+        "title": "Build Package"
+      },
+      {
+        "category": "Substreams",
+        "command": "substreams.initSubgraph",
+        "title": "Generate subgraph from Substreams module"
+      },      
+      {
+        "category": "Substreams",
+        "command": "substreams.initSql",
+        "title": "Generate Substreams:SQL from module"
+      }
+    ],
+
+    "walkthroughs": [
+      {
+        "id": "starter",
+        "title": "Get Started with Substreams",
+        "description": "Build, stream and publish your first Substreams",
+        "steps": [
+          {
+            "id": "build",
+            "title": "Start building",
+            "description": "Open a Terminal, and start building with:\n\n* ``substreams init``\n* ``substreams build``\n* ``substreams auth``\n* ``substreams gui``\n\n[Open Terminal](command:workbench.action.terminal.new)",
+            "media": {
+              "image": "media/substreams.svg",
+              "altText": "Start building"
+            }
+          }
+        ]
+      }
+    ]    
+  },
+
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.91.0",
+    "@types/mocha": "^10.0.7",
+    "@types/node": "20.x",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5",
+    "@vscode/test-cli": "^0.0.9",
+    "@vscode/test-electron": "^2.4.0"
+  }
+}

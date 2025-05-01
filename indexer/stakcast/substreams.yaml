@@ -1,0 +1,39 @@
+specVersion: v0.1.0
+package:
+  name: stakcast
+  version: v0.1.0
+
+imports:
+  starknet: https://spkg.io/streamingfast/starknet-foundational-v0.1.4.spkg
+
+protobuf:
+  files:
+    - events.proto
+  importPaths:
+    - ./proto
+
+  excludePaths:
+    - sf/substreams/index
+    - sf/substreams/rpc
+    - sf/substreams/sink
+    - sf/substreams/v1
+    - google
+
+binaries:
+  default:
+    type: wasm/rust-v1+wasm-bindgen-shims
+    file: ./target/wasm32-unknown-unknown/release/substreams.wasm
+
+modules:
+- name: map_stakcast_events
+  kind: map
+  initialBlock: 716387
+  inputs:
+    - map: starknet:filtered_transactions
+  output:
+   type: proto:starknet.v1.Events
+
+network: starknet-testnet
+
+params:
+  starknet:filtered_transactions: ev:from_address:0x02a3cb3bbbe186b59ba4ee6ce1227c284043be42dc46e84115e4587754a89c04
