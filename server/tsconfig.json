@@ -1,0 +1,23 @@
+{
+	"compilerOptions": {
+		"target": "es2020", // Updated to more recent ES version
+		"module": "commonjs",
+		"lib": ["es2020"], // Added lib to match target
+		"rootDir": "./src", // Added explicit root directory
+		"typeRoots": ["./node_modules/@types", "./src/@types"],
+		"outDir": "./dist",
+		"removeComments": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"strict": true,
+		"skipLibCheck": true,
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"resolveJsonModule": true, // Added for JSON imports
+		"sourceMap": true, // Added for debugging
+		"noImplicitAny": true, // Added for stricter typing
+		"moduleResolution": "node" // Added for proper module resolution
+	},
+	"include": ["src/**/*", "src/@types/express/index.d.ts"],
+	"exclude": ["node_modules", "dist"] // Added exclude
+}

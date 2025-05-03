@@ -459,3 +459,69 @@ fn test_set_prediction_should_panic_when_called_by_non_owner() {
     mv_contract.set_prediction_market(mock_prediction_market);
     stop_cheat_caller_address(mv_contract.contract_address);
 }
+
+// Test: Category Functionality
+#[test]
+fn test_category_functionality() {
+    // Deploy dependencies
+    // let _erc20 = deploy_mock_erc20();
+    let fee_collector = test_address();
+    let owner = test_address();
+    let mv_contract = deploy_market_validator(
+        test_address(), // PredictionMarket address (mock for now)
+        100_u256, 86400, 10, owner,
+    );
+
+    let pm_contract = deploy_prediction_market(fee_collector, 500_u256, mv_contract.contract_address);
+
+    // Set caller as admin
+    start_cheat_caller_address(pm_contract.contract_address, owner);
+    set_block_timestamp(1000);
+
+    // Ensure initial state
+    let initial_categories = pm_contract.get_all_categories();
+    assert_eq!(initial_categories.len(), 0, "Should start with no categories");
+
+    // Add a category
+    let category1 = 91742371214451; // Sports
+    pm_contract.add_category(category1);
+    let categories_after_add = pm_contract.get_all_categories();
+    assert_eq!(categories_after_add.len(), 1);
+    assert_eq!(*categories_after_add[0], category1);
+
+    // Attempt duplicate category
+    pm_contract.add_category(category1);
+    let categories_after_duplicate = pm_contract.get_all_categories();
+    assert_eq!(categories_after_duplicate.len(), 1, "Duplicate should not be added");
+
+    // Add another category
+    let category2 = 5795970445629547379; // Politics
+    pm_contract.add_category(category2);
+    let categories_after_second = pm_contract.get_all_categories();
+    assert_eq!(categories_after_second.len(), 2);
+
+    // Add category via market creation
+    let title = "Finance Market";
+    let description = "Market about finance";
+    let category3 = 19819171171689317; // Finance
+    let outcomes = array![19819171171689317, 5795970445629547379]; // array!["Yes", "No"];
+    let start_time = 2000;
+    let end_time = 3000;
+    let min_stake = 10_u256;
+    let max_stake = 1000_u256;
+
+    pm_contract.create_market(
+        title, description, category3,
+        start_time, end_time, outcomes, min_stake, max_stake
+    );
+    let categories_after_market = pm_contract.get_all_categories();
+    assert_eq!(categories_after_market.len(), 3);
+    let mut category_found = false;
+    for category in categories_after_market {
+        if category == category3 {
+            category_found = true;
+            break;
+        }
+    }
+    assert!(category_found, "Category should exist in the list");
+}

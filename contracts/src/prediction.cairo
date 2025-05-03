@@ -20,7 +20,7 @@ pub mod PredictionMarket {
         creator: ContractAddress,
         title: ByteArray,
         description: ByteArray,
-        category: ByteArray,
+        category: felt252,
         start_time: u64,
         end_time: u64,
         resolution_time: u64,
@@ -122,6 +122,11 @@ pub mod PredictionMarket {
         // Now stored as a primitive.
         validator_index: u32,
         market_status: Map<u32, MarketStatus>,
+        // Category tracking
+        category_array: Map<u32, felt252>, // Store categories by index
+        category_to_id: Map<felt252, u32>, // Map category name to its ID
+        category_count: u32,
+        admin: ContractAddress,
     }
 
     // Events
@@ -164,6 +169,12 @@ pub mod PredictionMarket {
         pub reason: felt252,
     }
 
+    #[derive(Drop, starknet::Event)]
+    pub struct CategoryCreated {
+        category_id: u32,
+        name: felt252
+    }
+
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
@@ -172,6 +183,7 @@ pub mod PredictionMarket {
         MarketResolved: MarketResolved,
         WinningsClaimed: WinningsClaimed,
         MarketDisputed: MarketDisputed,
+        CategoryCreated: CategoryCreated,
     }
 
     // Constructor
@@ -188,6 +200,9 @@ pub mod PredictionMarket {
         self.platform_fee.write(platform_fee);
         self.market_validator.write(market_validator_address);
         self.validator_index.write(0);
+
+        let deployer = get_caller_address();
+        self.admin.write(deployer);
     }
 
     // External Implementation
@@ -229,12 +244,17 @@ pub mod PredictionMarket {
             let pos = self.positions.entry((market_id, user)).read();
             to_interface_position(pos)
         }
+        
+        fn add_category(ref self: ContractState, category: felt252) {
+            assert!(get_caller_address() == self.admin.read(), "Only admin can add categories");
+            self._add_category(category);
+        }
 
         fn create_market(
             ref self: ContractState,
             title: ByteArray,
             description: ByteArray,
-            category: ByteArray,
+            category: felt252,
             start_time: u64,
             end_time: u64,
             outcomes: Array<felt252>,
@@ -249,6 +269,8 @@ pub mod PredictionMarket {
             assert!(outcomes_len >= 2, "Minimum 2 outcomes required");
             assert!(min_stake > 0, "Min stake must be > 0");
             assert!(max_stake >= min_stake, "Max stake < min stake");
+
+            self._add_category(category);
 
             let market_id = self.market_count.read() + 1;
             self.market_count.write(market_id);
@@ -332,6 +354,19 @@ pub mod PredictionMarket {
                         amount: amount,
                     },
                 );
+        }
+        
+        fn get_all_categories(self: @ContractState) -> Array<felt252> {
+            let count = self.category_count.read();
+            let mut categories = ArrayTrait::new();
+            
+            let mut i: u32 = 1;
+            while i <= count {
+                categories.append(self.category_array.entry(i).read());
+                i += 1;
+            }
+            
+            categories
         }
 
         fn claim_winnings(ref self: ContractState, market_id: u32) {
@@ -469,6 +504,29 @@ pub mod PredictionMarket {
             let index = current_index % validator_count;
             self.validator_index.write(current_index + 1);
             validator_contract.get_validator_by_index(index)
+        }
+
+        fn _add_category(ref self: ContractState, category: felt252) -> u32 {
+            let category_exists = self.category_to_id.entry(category).read();
+    
+            if category_exists != 0 {
+                return category_exists;
+            } else {
+                let new_id = self.category_count.read() + 1;
+                self.category_array.entry(new_id).write(category);
+                self.category_to_id.entry(category).write(new_id);
+                self.category_count.write(new_id);
+    
+                self
+                    .emit(
+                        CategoryCreated {
+                            category_id: new_id,
+                            name: category
+                        },
+                    );
+                
+                return new_id;
+            }
         }
     }
 }
