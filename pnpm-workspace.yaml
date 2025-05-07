@@ -1,4 +1,9 @@
 packages:
-  - 'indexer'
-  - 'client'
-  - 'landing_page'
+  - "apps/*"
+  - "packages/*"
+  - "client"
+  - "landing_page"
+  - "server"
+  - "contracts"
+  - "indexer"
+  - "agents"

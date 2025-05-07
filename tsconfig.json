@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "target": "ES2020",
+      "esModuleInterop": true,
+      "moduleDetection": "force",
+      "allowJs": true,
+      "resolveJsonModule": true,
+      "allowSyntheticDefaultImports": true,
+      "noEmit": true,
+      "baseUrl": ".",
+      "strict": true
+    },
+    "include": ["apps", "packages"]
+  }
+  

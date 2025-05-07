@@ -1,6 +1,12 @@
 #!/bin/sh
 echo "🚀 Running Pre-Commit Hook..."
 
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+npx --no-install lint-staged
+
+
 # Get the current branch name
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
