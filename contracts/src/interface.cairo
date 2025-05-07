@@ -6,7 +6,7 @@ pub struct Market {
     pub creator: ContractAddress,
     pub title: ByteArray,
     pub description: ByteArray,
-    pub category: ByteArray,
+    pub category: felt252,
     pub start_time: u64,
     pub end_time: u64,
     pub resolution_time: u64,
@@ -76,7 +76,7 @@ pub trait IPredictionMarket<TContractState> {
         ref self: TContractState,
         title: ByteArray,
         description: ByteArray,
-        category: ByteArray,
+        category: felt252,
         start_time: u64,
         end_time: u64,
         outcomes: Array<felt252>,
@@ -90,6 +90,9 @@ pub trait IPredictionMarket<TContractState> {
     #[external(v0)]
     fn claim_winnings(ref self: TContractState, market_id: u32);
 
+    #[external(v0)]
+    fn add_category(ref self: TContractState, category: felt252);
+
     // Getters
     #[external(v0)]
     fn get_market_details(self: @TContractState, market_id: u32) -> MarketDetails;
@@ -99,6 +102,9 @@ pub trait IPredictionMarket<TContractState> {
 
     #[external(v0)]
     fn get_market_stats(self: @TContractState, market_id: u32) -> (u256, Array<u256>);
+
+    #[external(v0)]
+    fn get_all_categories(self: @TContractState) -> Array<felt252>;
 
     // Administration
     fn assign_validator(ref self: TContractState, market_id: u32);

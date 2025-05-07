@@ -13,45 +13,102 @@ interface MarketCardProps {
 
 const MarketCard: React.FC<MarketCardProps> = ({
   name = "Untitled Market",
-  //image = "/default-image.jpg",
+  // image = "/default-image.jpg",
   options = [],
   totalRevenue = "$0",
+  onClick,
   ...props
 }) => {
+  
+  const sortedOptions = [...options].sort((a, b) => {
+    // const getNumericValue = (odds: string) => {
+    //   const match = odds.match(/(\d+(\.\d+)?)/);
+    //   return match ? parseFloat(match[0]) : 0;
+    // };
+    return b.odds - a.odds;
+  });
+
+  const topOption = sortedOptions.length > 0 ? sortedOptions[0] : null;
+
   return (
     <div
-      className="rounded-lg shadow-md hover:shadow-xl transition-shadow duration-200 border md:w-[30%] w-full mx-auto text-sm gap-3 mt-4"
-      style={{ cursor: "pointer" }}
+      className="bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 w-full h-full flex flex-col cursor-pointer"
+      onClick={onClick}
       {...props}
     >
-      <div className="relative h-10 border border-gray-200 shadow-sm overflow-hidden rounded-t-lg m-auto">
-        {/* <Image
-          src={image}
-          alt={name}
-          className="object-cover w-fit h-fit"
-          height={100}
-          width={100}
-        /> */}
+
+      <div className="p-5 border-b border-gray-100 dark:border-gray-800">
+        <h3 className="font-medium text-gray-900 dark:text-white text-lg leading-tight">
+          {name}
+        </h3>
       </div>
-      <div className="p-4 h-[14em] flex flex-col justify-between overflow-auto">
-        <h3 className="font-bold text-gray-800 dark:text-white">{name}</h3>
-        <p className="text-sm text-gray-600 dark:text-white mt-2">
-          <span className="font-medium">Total Revenue:</span> {totalRevenue}
-        </p>
-        <div className="mt-2 space-y-2 overflow-auto text-sm">
-          {options?.map((option, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between bg-gray-100 dark:bg-gray-800 p-2 rounded-md"
-            >
-              <span className="text-sm font-medium text-gray-800 dark:text-white">
-                {option.name}
+
+    
+      <div className="p-5 flex-1 flex flex-col">
+        {/* Top Option with Prominence */}
+        {topOption && (
+          <div className="mb-4 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {topOption.name}
               </span>
-              <span className="text-sm font-bold text-blue-600">
-                {option.odds}
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                {topOption.odds}%
               </span>
             </div>
-          ))}
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-blue-500 h-2 rounded-full"
+                style={{
+                  width: topOption.odds
+                    ? topOption.odds
+                    : `${parseFloat(topOption.odds as unknown as string) * 100}%`,
+                }}
+              ></div>
+            </div>
+          </div>
+        )}
+
+        {/* Other Options */}
+        <div className="space-y-3 mb-4">
+          {options?.length > 1
+            ? sortedOptions.slice(1, 4).map((option, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {option.name}
+                  </span>
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    {option.odds}
+                  </span>
+                </div>
+              ))
+            : options.length === 0 && (
+                <p className="text-sm text-gray-400 italic">
+                  No options available
+                </p>
+              )}
+
+          {options.length > 4 && (
+            <p className="text-xs text-gray-400 text-right mt-1">
+              +{options.length - 4} more
+            </p>
+          )}
+        </div>
+      </div>
+
+  
+      <div className="bg-gray-50 dark:bg-gray-800 p-4 flex justify-between items-center">
+        <div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium">
+            Volume
+          </p>
+          <p className="text-sm font-medium text-gray-900 dark:text-white">
+            {totalRevenue}
+          </p>
+        </div>
+        <div className="flex items-center space-x-1">
+          <div className="h-2 w-2 rounded-full bg-green-500"></div>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Live</span>
         </div>
       </div>
     </div>
