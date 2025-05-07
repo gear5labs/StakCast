@@ -17,6 +17,13 @@ export const config = {
 	},
 
 	db: {
+
+		redis:{
+			port:process.env.REDIS_PORT || 6379,
+			host:process.env.REDIS_HOST || 'localhost',
+			password:process.env.REDIS_PASSWORD || undefined
+
+		},
 		postgres:{
 			port:process.env.POSTRES_PORT || 5432,
 			host:process.env.POSTGRES_HOST || 'localhost',
