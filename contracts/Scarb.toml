@@ -12,7 +12,7 @@ pragma_lib = { git = "https://github.com/astraly-labs/pragma-lib", branch = "mai
 unstable-add-statements-code-locations-debug-info = true
 
 [dev-dependencies]
-snforge_std = "0.40.0"
+snforge_std = "0.44.0"
 assert_macros = "2.9.2"
 
 [[target.starknet-contract]]
@@ -25,7 +25,7 @@ sierra-replace-ids = true
 test = "snforge test"
 
 [lib]
-path = "contracts/src/lib.cairo"
+path = "src/lib.cairo"
 
 [tool.scarb]
 allow-prebuilt-plugins = ["snforge_std"]
