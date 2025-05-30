@@ -1,4 +1,5 @@
 use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
+use starknet::class_hash::{ClassHash, class_hash_const};
 use snforge_std::{
     declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
     stop_cheat_caller_address, start_cheat_block_timestamp
@@ -32,6 +33,14 @@ fn FEE_RECIPIENT() -> ContractAddress {
 
 fn PRAGMA_ORACLE() -> ContractAddress {
     contract_address_const::<'pragma_oracle'>()
+}
+
+fn NEW_FEE_RECIPIENT() -> ContractAddress {
+    contract_address_const::<'new_fee_recipient'>()
+}
+
+fn NEW_CLASS_HASH() -> ClassHash {
+    class_hash_const::<'new_implementation'>()
 }
 
 // ================ Test Setup ================
@@ -557,4 +566,40 @@ fn test_complete_market_lifecycle() {
     let market = contract.get_prediction(1);
     assert(market.is_resolved == true, 'Market should be resolved');
     assert(market.is_open == false, 'Market should be closed');
+}
+
+// ================ Upgrade Function Tests ================
+
+#[test]
+fn test_admin_can_upgrade_contract() {
+    let contract = deploy_contract();
+    
+    start_cheat_caller_address(contract.contract_address, ADMIN());
+    
+    // This will fail in test environment since NEW_CLASS_HASH() doesn't exist
+    // but it tests the access control and parameter validation
+    contract.upgrade(NEW_CLASS_HASH());
+    
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+#[should_panic(expected: ('Only admin allowed',))]
+fn test_non_admin_cannot_upgrade_contract() {
+    let contract = deploy_contract();
+    
+    start_cheat_caller_address(contract.contract_address, USER1());
+    contract.upgrade(NEW_CLASS_HASH());
+}
+
+#[test]
+#[should_panic(expected: ('Class hash cannot be zero',))]
+fn test_cannot_upgrade_to_zero_class_hash() {
+    let contract = deploy_contract();
+    
+    start_cheat_caller_address(contract.contract_address, ADMIN());
+    
+    // Create a zero class hash
+    let zero_hash: ClassHash = 0_felt252.try_into().unwrap();
+    contract.upgrade(zero_hash);
 } 

@@ -2,6 +2,8 @@ use starknet::{
     ContractAddress, get_caller_address, get_block_timestamp,
     storage::{StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map}
 };
+use starknet::class_hash::ClassHash;
+use core::num::traits::Zero;
 use pragma_lib::types::{DataType};
 use pragma_lib::abi::{IPragmaABIDispatcher, IPragmaABIDispatcherTrait};
 
@@ -952,6 +954,12 @@ pub mod PredictionHub {
         fn remove_all_predictions(ref self: ContractState) {
             self.assert_only_admin();
             self.prediction_count.write(0);
+        }
+
+        fn upgrade(ref self: ContractState, impl_hash: ClassHash) {
+            self.assert_only_admin();
+            assert(impl_hash.is_non_zero(), 'Class hash cannot be zero');
+            starknet::syscalls::replace_class_syscall(impl_hash).unwrap();
         }
     }
 
