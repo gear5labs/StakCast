@@ -4,11 +4,13 @@ use starknet::{
 };
 use pragma_lib::types::{DataType};
 use pragma_lib::abi::{IPragmaABIDispatcher, IPragmaABIDispatcherTrait};
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
 use super::interface::{
     IPredictionHub, PredictionMarket, CryptoPrediction, SportsPrediction, Choice, UserStake,
     UserBet
 };
+use super::admin_interface::{IAdditionalAdmin};
 
 // ================ Security Events ================
 
@@ -45,6 +47,32 @@ pub struct MarketResolved {
 }
 
 #[derive(Drop, starknet::Event)]
+pub struct WagerPlaced {
+    pub market_id: u256,
+    pub user: ContractAddress,
+    pub choice: u8,
+    pub amount: u256,
+    pub fee_amount: u256,
+    pub net_amount: u256,
+    pub wager_index: u8,
+}
+
+#[derive(Drop, starknet::Event)]
+pub struct FeesCollected {
+    pub market_id: u256,
+    pub fee_amount: u256,
+    pub fee_recipient: ContractAddress,
+}
+
+#[derive(Drop, starknet::Event)]
+pub struct WinningsCollected {
+    pub market_id: u256,
+    pub user: ContractAddress,
+    pub amount: u256,
+    pub wager_index: u8,
+}
+
+#[derive(Drop, starknet::Event)]
 pub struct BetPlaced {
     pub market_id: u256,
     pub user: ContractAddress,
@@ -78,6 +106,11 @@ pub mod PredictionHub {
         // Fee management
         fee_recipient: ContractAddress,
         platform_fee_percentage: u256, // Basis points (e.g., 250 = 2.5%)
+        collected_fees: Map<u256, u256>, // market_id -> total_fees_collected
+        total_fees_collected: u256,
+        
+        // Token integration
+        betting_token: ContractAddress, // ERC20 token used for betting
         
         // Oracle integration
         pragma_oracle: ContractAddress,
@@ -94,6 +127,14 @@ pub mod PredictionHub {
         max_market_duration: u64, // Maximum time a market can be open
         resolution_window: u64,   // Time window after market end for resolution
         
+        // Betting restrictions
+        min_bet_amount: u256, // Minimum bet amount
+        max_bet_amount: u256, // Maximum bet amount per user per market
+        
+        // Pool management
+        market_liquidity: Map<u256, u256>, // market_id -> available_liquidity
+        total_value_locked: u256,
+        
         // Reentrancy protection
         reentrancy_guard: bool,
     }
@@ -106,6 +147,9 @@ pub mod PredictionHub {
         EmergencyPaused: EmergencyPaused,
         MarketCreated: MarketCreated,
         MarketResolved: MarketResolved,
+        WagerPlaced: WagerPlaced,
+        FeesCollected: FeesCollected,
+        WinningsCollected: WinningsCollected,
         BetPlaced: BetPlaced,
     }
 
@@ -117,16 +161,26 @@ pub mod PredictionHub {
         admin: ContractAddress,
         fee_recipient: ContractAddress,
         pragma_oracle: ContractAddress,
+        betting_token: ContractAddress,
     ) {
         self.admin.write(admin);
         self.fee_recipient.write(fee_recipient);
         self.platform_fee_percentage.write(250); // 2.5% default fee
         self.pragma_oracle.write(pragma_oracle);
+        self.betting_token.write(betting_token);
         
         // Set default time restrictions
         self.min_market_duration.write(3600); // 1 hour minimum
         self.max_market_duration.write(31536000); // 1 year maximum
         self.resolution_window.write(604800); // 1 week resolution window
+        
+        // Set default betting restrictions
+        self.min_bet_amount.write(1000000000000000000); // 1 token (18 decimals)
+        self.max_bet_amount.write(1000000000000000000000000); // 1M tokens
+        
+        // Initialize tracking
+        self.total_fees_collected.write(0);
+        self.total_value_locked.write(0);
         
         // Initialize security states
         self.is_paused.write(false);
@@ -223,6 +277,22 @@ pub mod PredictionHub {
 
         fn assert_valid_amount(self: @ContractState, amount: u256) {
             assert(amount > 0, 'Amount must be positive');
+            let min_bet = self.min_bet_amount.read();
+            let max_bet = self.max_bet_amount.read();
+            assert(amount >= min_bet, 'Amount below minimum');
+            assert(amount <= max_bet, 'Amount above maximum');
+        }
+
+        fn assert_sufficient_token_balance(self: @ContractState, user: ContractAddress, amount: u256) {
+            let token = IERC20Dispatcher { contract_address: self.betting_token.read() };
+            let balance = token.balance_of(user);
+            assert(balance >= amount, 'Insufficient token balance');
+        }
+
+        fn assert_sufficient_allowance(self: @ContractState, user: ContractAddress, amount: u256) {
+            let token = IERC20Dispatcher { contract_address: self.betting_token.read() };
+            let allowance = token.allowance(user, starknet::get_contract_address());
+            assert(allowance >= amount, 'Insufficient token allowance');
         }
 
         fn start_reentrancy_guard(ref self: ContractState) {
@@ -472,6 +542,16 @@ pub mod PredictionHub {
             amount: u256,
             market_type: u8,
         ) -> bool {
+            self.place_wager(market_id, choice_idx, amount, market_type)
+        }
+
+        fn place_wager(
+            ref self: ContractState,
+            market_id: u256,
+            choice_idx: u8,
+            amount: u256,
+            market_type: u8,
+        ) -> bool {
             self.assert_not_paused();
             self.assert_betting_not_paused();
             self.assert_market_exists(market_id, market_type);
@@ -481,39 +561,39 @@ pub mod PredictionHub {
             self.start_reentrancy_guard();
 
             let caller = get_caller_address();
-            
-            // Create user bet
-            let choice = if choice_idx == 0 {
-                if market_type == 0 {
-                    let market = self.predictions.entry(market_id).read();
-                    let (choice_0, _choice_1) = market.choices;
-                    choice_0
-                } else if market_type == 1 {
-                    let market = self.crypto_predictions.entry(market_id).read();
-                    let (choice_0, _choice_1) = market.choices;
-                    choice_0
-                } else {
-                    let market = self.sports_predictions.entry(market_id).read();
-                    let (choice_0, _choice_1) = market.choices;
-                    choice_0
-                }
-            } else {
-                if market_type == 0 {
-                    let market = self.predictions.entry(market_id).read();
-                    let (_choice_0, choice_1) = market.choices;
-                    choice_1
-                } else if market_type == 1 {
-                    let market = self.crypto_predictions.entry(market_id).read();
-                    let (_choice_0, choice_1) = market.choices;
-                    choice_1
-                } else {
-                    let market = self.sports_predictions.entry(market_id).read();
-                    let (_choice_0, choice_1) = market.choices;
-                    choice_1
-                }
-            };
+            self.assert_sufficient_token_balance(caller, amount);
+            self.assert_sufficient_allowance(caller, amount);
 
-            let user_stake = UserStake { amount, claimed: false };
+            // Calculate fees
+            let fee_percentage = self.platform_fee_percentage.read();
+            let fee_amount = (amount * fee_percentage) / 10000; // Basis points conversion
+            let net_amount = amount - fee_amount;
+
+            // Transfer tokens from user to contract
+            let token = IERC20Dispatcher { contract_address: self.betting_token.read() };
+            let success = token.transfer_from(caller, starknet::get_contract_address(), amount);
+            assert(success, 'Token transfer failed');
+
+            // Transfer fees to fee recipient
+            if fee_amount > 0 {
+                let fee_success = token.transfer(self.fee_recipient.read(), fee_amount);
+                assert(fee_success, 'Fee transfer failed');
+                
+                // Track fees
+                let current_market_fees = self.collected_fees.entry(market_id).read();
+                self.collected_fees.entry(market_id).write(current_market_fees + fee_amount);
+                self.total_fees_collected.write(self.total_fees_collected.read() + fee_amount);
+
+                self.emit(FeesCollected {
+                    market_id,
+                    fee_amount,
+                    fee_recipient: self.fee_recipient.read(),
+                });
+            }
+
+            // Create user bet with net amount
+            let choice = self._get_choice_struct(market_id, market_type, choice_idx);
+            let user_stake = UserStake { amount: net_amount, claimed: false };
             let user_bet = UserBet { choice, stake: user_stake };
 
             // Update user bets
@@ -524,14 +604,30 @@ pub mod PredictionHub {
             self.user_bets.entry(bet_key).write(user_bet);
             self.user_bet_counts.entry(count_key).write(current_count + 1);
 
-            // Update market totals
-            self._update_market_totals(market_id, market_type, choice_idx, amount);
+            // Update market totals with net amount
+            self._update_market_totals(market_id, market_type, choice_idx, net_amount);
+            
+            // Update liquidity tracking
+            let current_liquidity = self.market_liquidity.entry(market_id).read();
+            self.market_liquidity.entry(market_id).write(current_liquidity + net_amount);
+            self.total_value_locked.write(self.total_value_locked.read() + net_amount);
+
+            // Emit comprehensive wager event
+            self.emit(WagerPlaced {
+                market_id,
+                user: caller,
+                choice: choice_idx,
+                amount,
+                fee_amount,
+                net_amount,
+                wager_index: current_count,
+            });
 
             self.emit(BetPlaced {
                 market_id,
                 user: caller,
                 choice: choice_idx,
-                amount,
+                amount: net_amount,
             });
 
             self.end_reentrancy_guard();
@@ -777,17 +873,34 @@ pub mod PredictionHub {
 
             // Calculate winnings
             let user_stake = user_bet.stake.amount;
-            let _winnings = if winning_pool > 0 {
+            let winnings = if winning_pool > 0 {
                 (user_stake * total_pool) / winning_pool
             } else {
                 user_stake // Return original stake if no one won
             };
+
+            // Transfer winnings to user
+            let token = IERC20Dispatcher { contract_address: self.betting_token.read() };
+            let success = token.transfer(caller, winnings);
+            assert(success, 'Winnings transfer failed');
+
+            // Update liquidity tracking
+            let current_liquidity = self.market_liquidity.entry(market_id).read();
+            self.market_liquidity.entry(market_id).write(current_liquidity - winnings);
+            self.total_value_locked.write(self.total_value_locked.read() - winnings);
 
             // Mark as claimed
             user_bet.stake.claimed = true;
             
             // Update the bet in storage
             self.user_bets.entry(bet_key).write(user_bet);
+
+            self.emit(WinningsCollected {
+                market_id,
+                user: caller,
+                amount: winnings,
+                wager_index: bet_idx,
+            });
 
             self.end_reentrancy_guard();
         }
@@ -953,6 +1066,34 @@ pub mod PredictionHub {
             self.assert_only_admin();
             self.prediction_count.write(0);
         }
+
+        // ================ Enhanced Betting Functions ================
+
+        fn get_betting_token(self: @ContractState) -> ContractAddress {
+            self.betting_token.read()
+        }
+
+        fn get_market_fees(self: @ContractState, market_id: u256) -> u256 {
+            self.collected_fees.entry(market_id).read()
+        }
+
+        fn get_total_fees_collected(self: @ContractState) -> u256 {
+            self.total_fees_collected.read()
+        }
+
+        fn get_betting_restrictions(self: @ContractState) -> (u256, u256) {
+            let min_bet = self.min_bet_amount.read();
+            let max_bet = self.max_bet_amount.read();
+            (min_bet, max_bet)
+        }
+
+        fn get_market_liquidity(self: @ContractState, market_id: u256) -> u256 {
+            self.market_liquidity.entry(market_id).read()
+        }
+
+        fn get_total_value_locked(self: @ContractState) -> u256 {
+            self.total_value_locked.read()
+        }
     }
 
     // ================ Additional Admin Implementation ================
@@ -1068,6 +1209,132 @@ pub mod PredictionHub {
             let resolution_window = self.resolution_window.read();
             (min_duration, max_duration, resolution_window)
         }
+
+        fn is_market_creation_paused(self: @ContractState) -> bool {
+            self.market_creation_paused.read()
+        }
+
+        fn is_betting_paused(self: @ContractState) -> bool {
+            self.betting_paused.read()
+        }
+
+        fn is_resolution_paused(self: @ContractState) -> bool {
+            self.resolution_paused.read()
+        }
+
+        fn set_oracle_address(ref self: ContractState, oracle: ContractAddress) {
+            self.assert_only_admin();
+            self.pragma_oracle.write(oracle);
+        }
+
+        fn get_oracle_address(self: @ContractState) -> ContractAddress {
+            self.pragma_oracle.read()
+        }
+
+        fn get_market_stats(self: @ContractState) -> (u256, u256, u256) {
+            let total_markets = self.prediction_count.read();
+            let mut active_markets = 0;
+            let mut resolved_markets = 0;
+            let mut i = 1;
+
+            while i <= total_markets {
+                // Check all market types
+                let mut market_type: u8 = 0;
+                while market_type < 3_u8 {
+                    if market_type == 0 {
+                        let market = self.predictions.entry(i).read();
+                        if market.market_id != 0 {
+                            if market.is_resolved {
+                                resolved_markets += 1;
+                            } else if market.is_open {
+                                active_markets += 1;
+                            }
+                        }
+                    } else if market_type == 1 {
+                        let market = self.crypto_predictions.entry(i).read();
+                        if market.market_id != 0 {
+                            if market.is_resolved {
+                                resolved_markets += 1;
+                            } else if market.is_open {
+                                active_markets += 1;
+                            }
+                        }
+                    } else if market_type == 2 {
+                        let market = self.sports_predictions.entry(i).read();
+                        if market.market_id != 0 {
+                            if market.is_resolved {
+                                resolved_markets += 1;
+                            } else if market.is_open {
+                                active_markets += 1;
+                            }
+                        }
+                    }
+                    market_type += 1;
+                };
+                i += 1;
+            };
+
+            (total_markets, active_markets, resolved_markets)
+        }
+
+        fn emergency_close_market(ref self: ContractState, market_id: u256, market_type: u8) {
+            self.assert_only_admin();
+            self.assert_market_exists(market_id, market_type);
+
+            if market_type == 0 {
+                let mut market = self.predictions.entry(market_id).read();
+                market.is_open = false;
+                self.predictions.entry(market_id).write(market);
+            } else if market_type == 1 {
+                let mut market = self.crypto_predictions.entry(market_id).read();
+                market.is_open = false;
+                self.crypto_predictions.entry(market_id).write(market);
+            } else if market_type == 2 {
+                let mut market = self.sports_predictions.entry(market_id).read();
+                market.is_open = false;
+                self.sports_predictions.entry(market_id).write(market);
+            }
+        }
+
+        fn emergency_close_multiple_markets(
+            ref self: ContractState,
+            market_ids: Array<u256>,
+            market_types: Array<u8>,
+        ) {
+            self.assert_only_admin();
+            assert(market_ids.len() == market_types.len(), 'Arrays length mismatch');
+            
+            let mut i = 0;
+            while i < market_ids.len() {
+                let market_id = *market_ids.at(i);
+                let market_type = *market_types.at(i);
+                self.emergency_close_market(market_id, market_type);
+                i += 1;
+            };
+        }
+
+        fn set_betting_token(ref self: ContractState, token_address: ContractAddress) {
+            self.assert_only_admin();
+            self.betting_token.write(token_address);
+        }
+
+        fn set_betting_restrictions(ref self: ContractState, min_amount: u256, max_amount: u256) {
+            self.assert_only_admin();
+            assert(min_amount > 0, 'Min amount must be positive');
+            assert(max_amount > min_amount, 'Max must be greater than min');
+            
+            self.min_bet_amount.write(min_amount);
+            self.max_bet_amount.write(max_amount);
+        }
+
+        fn emergency_withdraw_tokens(ref self: ContractState, amount: u256, recipient: ContractAddress) {
+            self.assert_only_admin();
+            assert(amount > 0, 'Amount must be positive');
+            
+            let token = IERC20Dispatcher { contract_address: self.betting_token.read() };
+            let success = token.transfer(recipient, amount);
+            assert(success, 'Emergency withdrawal failed');
+        }
     }
 
     // ================ Helper Functions ================
@@ -1154,36 +1421,42 @@ pub mod PredictionHub {
                 }
             }
         }
+
+        fn _get_choice_struct(
+            self: @ContractState,
+            market_id: u256,
+            market_type: u8,
+            choice_idx: u8,
+        ) -> Choice {
+            if choice_idx == 0 {
+                if market_type == 0 {
+                    let market = self.predictions.entry(market_id).read();
+                    let (choice_0, _choice_1) = market.choices;
+                    choice_0
+                } else if market_type == 1 {
+                    let market = self.crypto_predictions.entry(market_id).read();
+                    let (choice_0, _choice_1) = market.choices;
+                    choice_0
+                } else {
+                    let market = self.sports_predictions.entry(market_id).read();
+                    let (choice_0, _choice_1) = market.choices;
+                    choice_0
+                }
+            } else {
+                if market_type == 0 {
+                    let market = self.predictions.entry(market_id).read();
+                    let (_choice_0, choice_1) = market.choices;
+                    choice_1
+                } else if market_type == 1 {
+                    let market = self.crypto_predictions.entry(market_id).read();
+                    let (_choice_0, choice_1) = market.choices;
+                    choice_1
+                } else {
+                    let market = self.sports_predictions.entry(market_id).read();
+                    let (_choice_0, choice_1) = market.choices;
+                    choice_1
+                }
+            }
+        }
     }
-}
-
-// ================ Additional Admin Interface ================
-
-#[starknet::interface]
-pub trait IAdditionalAdmin<TContractState> {
-    fn remove_moderator(ref self: TContractState, moderator: ContractAddress);
-    fn is_moderator(self: @TContractState, address: ContractAddress) -> bool;
-    fn get_moderator_count(self: @TContractState) -> u32;
-    
-    // Emergency controls
-    fn emergency_pause(ref self: TContractState, reason: ByteArray);
-    fn emergency_unpause(ref self: TContractState);
-    
-    // Granular pause controls
-    fn pause_market_creation(ref self: TContractState);
-    fn unpause_market_creation(ref self: TContractState);
-    fn pause_betting(ref self: TContractState);
-    fn unpause_betting(ref self: TContractState);
-    fn pause_resolution(ref self: TContractState);
-    fn unpause_resolution(ref self: TContractState);
-    
-    // Time and fee management
-    fn set_time_restrictions(ref self: TContractState, min_duration: u64, max_duration: u64, resolution_window: u64);
-    fn set_platform_fee(ref self: TContractState, fee_percentage: u256);
-    fn get_platform_fee(self: @TContractState) -> u256;
-    
-    // Status queries
-    fn is_paused(self: @TContractState) -> bool;
-    fn get_emergency_pause_reason(self: @TContractState) -> ByteArray;
-    fn get_time_restrictions(self: @TContractState) -> (u64, u64, u64);
 }

@@ -1,4 +1,4 @@
-[sncast.default]
-account = "stakcast"
-accounts-file = "/Users/macbookprom1/.starknet_accounts/starknet_open_zeppelin_accounts.json"
-url = "https://free-rpc.nethermind.io/sepolia-juno/v0_7"
+# [sncast.default]
+# account = "stakcast"
+# accounts-file = "/Users/macbookprom1/.starknet_accounts/starknet_open_zeppelin_accounts.json"
+# url = "https://free-rpc.nethermind.io/sepolia-juno/v0_7"

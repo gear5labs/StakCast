@@ -88,9 +88,6 @@ pub trait IAdditionalAdmin<TContractState> {
     
     // ================ Security Audit Functions ================
     
-    /// Get total value locked in all markets
-    fn get_total_value_locked(self: @TContractState) -> u256;
-    
     /// Get market statistics for security monitoring
     fn get_market_stats(self: @TContractState) -> (u256, u256, u256); // (total_markets, active_markets, resolved_markets)
     
@@ -101,6 +98,17 @@ pub trait IAdditionalAdmin<TContractState> {
     fn emergency_close_multiple_markets(
         ref self: TContractState,
         market_ids: Array<u256>,
-        market_types: Array<u8>
+        market_types: Array<u8>,
     );
+
+    // ================ Token and Betting Management ================
+    
+    /// Set betting token address (admin only)
+    fn set_betting_token(ref self: TContractState, token_address: ContractAddress);
+    
+    /// Set betting restrictions (admin only)
+    fn set_betting_restrictions(ref self: TContractState, min_amount: u256, max_amount: u256);
+    
+    /// Emergency withdraw tokens from contract (admin only)
+    fn emergency_withdraw_tokens(ref self: TContractState, amount: u256, recipient: ContractAddress);
 } 
