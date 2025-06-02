@@ -1,6 +1,6 @@
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, declare,
-    start_cheat_caller_address, stop_cheat_caller_address, start_cheat_block_timestamp,
+    ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp,
+    start_cheat_caller_address, stop_cheat_caller_address,
 };
 use stakcast::interface::{IPredictionHubDispatcher, IPredictionHubDispatcherTrait};
 use stakcast::prediction::{IAdditionalAdminDispatcher, IAdditionalAdminDispatcherTrait};
@@ -73,7 +73,7 @@ fn setup_with_moderator() -> (IPredictionHubDispatcher, IAdditionalAdminDispatch
 #[test]
 fn test_create_prediction_market_success() {
     let (contract, _admin_contract) = setup_with_moderator();
-    
+
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
     let future_time = get_block_timestamp() + 86400; // 1 day from now
 
@@ -184,10 +184,10 @@ fn test_create_prediction_invalid_end_time() {
     let (contract, _admin_contract) = setup_with_moderator();
 
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
-    
+
     let current_time = 10000;
     start_cheat_block_timestamp(contract.contract_address, current_time);
-    
+
     let past_time = current_time - 1;
 
     contract
@@ -225,7 +225,7 @@ fn test_create_prediction_too_short_duration() {
 #[test]
 fn test_create_crypto_prediction_success() {
     let (contract, _admin_contract) = setup_with_moderator();
-    
+
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
     let future_time = get_block_timestamp() + 86400;
 
@@ -260,7 +260,6 @@ fn test_create_crypto_prediction_success() {
     let (choice_0, choice_1) = crypto_market.choices;
     assert(choice_0.label == 'Above $3000', 'Choice 0 label');
     assert(choice_1.label == 'Below $3000', 'Choice 1 label');
-
 }
 
 #[test]
@@ -337,7 +336,7 @@ fn test_create_crypto_prediction_both_comparison_types() {
 #[test]
 fn test_create_sports_prediction_success() {
     let (contract, _admin_contract) = setup_with_moderator();
-    
+
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
     let future_time = get_block_timestamp() + 86400;
 
@@ -370,7 +369,6 @@ fn test_create_sports_prediction_success() {
     let (choice_0, choice_1) = sports_market.choices;
     assert(choice_0.label == 'Lakers', 'Choice 0 Lakers');
     assert(choice_1.label == 'Warriors', 'Choice 1 Warriors');
-
 }
 
 #[test]
@@ -797,9 +795,9 @@ fn test_can_create_market_after_market_creation_unpause() {
 #[test]
 fn test_emergency_pause_functionality() {
     let (_contract, admin_contract) = deploy_contract();
-    
+
     start_cheat_caller_address(admin_contract.contract_address, ADMIN_ADDR());
-    
+
     admin_contract.emergency_pause("Test emergency pause");
 
     // Verify pause was successful (functional test)

@@ -166,7 +166,7 @@ pub mod PredictionHub {
 
             // Check that end_time is in the future first to avoid overflow in subtraction
             assert(end_time > current_time, 'End time must be in future');
-            
+
             let duration = end_time - current_time;
             assert(duration >= min_duration, 'Market duration too short');
             assert(duration <= max_duration, 'Market duration too long');
