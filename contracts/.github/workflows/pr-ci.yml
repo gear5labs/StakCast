@@ -1,0 +1,61 @@
+name: PR CI
+
+on:
+  pull_request:
+    branches: [ develop ]
+
+env:
+  SCARB_VERSION: 2.11.4
+  SNFOUNDRY_VERSION: 0.44.0
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/bin/scarb
+            ~/.local/bin/snforge
+            ~/.local/bin/sncast
+          key: ${{ runner.os }}-tools-scarb-${{ env.SCARB_VERSION }}-snfoundry-${{ env.SNFOUNDRY_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-tools-scarb-${{ env.SCARB_VERSION }}-
+
+      - name: Install Scarb
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://docs.swmansion.com/scarb/install.sh | sh -s -- -v ${{ env.SCARB_VERSION }}
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Starknet Foundry
+        run: |
+          curl -L https://raw.githubusercontent.com/foundry-rs/starknet-foundry/master/scripts/install.sh | sh -s -- -v ${{ env.SNFOUNDRY_VERSION }}
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Verify tool versions
+        run: |
+          scarb --version
+          snforge --version
+
+      - name: Cache project dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.scarb
+            target/
+            .snfoundry_cache/
+          key: ${{ runner.os }}-project-${{ hashFiles('Scarb.lock', 'Scarb.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-project-
+
+      - name: Build contracts
+        run: scarb build
+
+      - name: Run tests
+        run: scarb test 

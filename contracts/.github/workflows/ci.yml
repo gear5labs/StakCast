@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ develop ]
+  push:
+    branches: [ develop ]
+
+env:
+  SCARB_VERSION: 2.11.4
+  SNFOUNDRY_VERSION: 0.44.0
+
+jobs:
+  test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache Scarb
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/bin/scarb
+            ~/.local/bin/snforge
+            ~/.local/bin/sncast
+          key: ${{ runner.os }}-scarb-${{ env.SCARB_VERSION }}-snfoundry-${{ env.SNFOUNDRY_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-scarb-${{ env.SCARB_VERSION }}-
+            ${{ runner.os }}-scarb-
+
+      - name: Install Scarb
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://docs.swmansion.com/scarb/install.sh | sh -s -- -v ${{ env.SCARB_VERSION }}
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Starknet Foundry
+        run: |
+          curl -L https://raw.githubusercontent.com/foundry-rs/starknet-foundry/master/scripts/install.sh | sh -s -- -v ${{ env.SNFOUNDRY_VERSION }}
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Verify installations
+        run: |
+          scarb --version
+          snforge --version
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.scarb
+            target/
+            .snfoundry_cache/
+          key: ${{ runner.os }}-deps-${{ hashFiles('Scarb.lock', 'Scarb.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-
+
+      - name: Build project
+        run: scarb build
+
+      - name: Check Cairo formatting
+        run: scarb fmt --check
+
+      - name: Run tests
+        run: scarb test
+
+      - name: Generate test coverage (if available)
+        run: |
+          if command -v snforge &> /dev/null; then
+            snforge test --coverage || echo "Coverage not available"
+          fi
+        continue-on-error: true
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache Scarb
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/bin/scarb
+          key: ${{ runner.os }}-scarb-${{ env.SCARB_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-scarb-
+
+      - name: Install Scarb
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://docs.swmansion.com/scarb/install.sh | sh -s -- -v ${{ env.SCARB_VERSION }}
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Check Cairo formatting
+        run: scarb fmt --check
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+        continue-on-error: true
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true 
