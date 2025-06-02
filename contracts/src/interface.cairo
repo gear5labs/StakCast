@@ -160,6 +160,11 @@ pub trait IPredictionHub<TContractState> {
         ref self: TContractState, market_id: u256, choice_idx: u8, amount: u256, market_type: u8,
     ) -> bool;
 
+
+    fn place_wager(
+        ref self: TContractState, market_id: u256, choice_idx: u8, amount: u256, market_type: u8,
+    ) -> bool;
+
     /// Returns how many bets a user has placed on a specific market
     fn get_bet_count_for_market(
         self: @TContractState, user: ContractAddress, market_id: u256, market_type: u8,
@@ -169,6 +174,24 @@ pub trait IPredictionHub<TContractState> {
     fn get_choice_and_bet(
         self: @TContractState, user: ContractAddress, market_id: u256, market_type: u8, bet_idx: u8,
     ) -> UserBet;
+
+    /// Returns the betting token contract address
+    fn get_betting_token(self: @TContractState) -> ContractAddress;
+
+    /// Returns total fees collected for a specific market
+    fn get_market_fees(self: @TContractState, market_id: u256) -> u256;
+
+    /// Returns total fees collected across all markets
+    fn get_total_fees_collected(self: @TContractState) -> u256;
+
+    /// Returns current betting restrictions (min, max amounts)
+    fn get_betting_restrictions(self: @TContractState) -> (u256, u256);
+
+    /// Returns market liquidity information
+    fn get_market_liquidity(self: @TContractState, market_id: u256) -> u256;
+
+    /// Returns total value locked across all markets
+    fn get_total_value_locked(self: @TContractState) -> u256;
 
     // ================ Market Resolution ================
 
