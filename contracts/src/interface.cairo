@@ -1,4 +1,5 @@
 use starknet::ContractAddress;
+use starknet::class_hash::ClassHash;
 
 // ================ Market Types ================
 
@@ -260,4 +261,9 @@ pub trait IPredictionHub<TContractState> {
 
     /// Administrative function to reset all prediction markets
     fn remove_all_predictions(ref self: TContractState);
+
+    // ================ Upgrade Functions ================
+
+    /// Upgrades the contract implementation (admin only)
+    fn upgrade(ref self: TContractState, impl_hash: ClassHash);
 }
