@@ -1,10 +1,9 @@
-use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
-use starknet::class_hash::{ClassHash, class_hash_const};
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp,
     start_cheat_caller_address, stop_cheat_caller_address,
 };
 use stakcast::interface::{IPredictionHubDispatcher, IPredictionHubDispatcherTrait};
+use starknet::{ClassHash, ContractAddress, get_block_timestamp};
 
 // ================ Test Constants ================
 
@@ -40,19 +39,11 @@ fn PRAGMA_ORACLE_ADDR() -> ContractAddress {
 }
 
 fn NEW_FEE_RECIPIENT() -> ContractAddress {
-    contract_address_const::<'new_fee_recipient'>()
+    123456.try_into().unwrap()
 }
 
 fn NEW_CLASS_HASH() -> ClassHash {
-    class_hash_const::<'new_implementation'>()
-}
-
-fn NEW_FEE_RECIPIENT() -> ContractAddress {
-    contract_address_const::<'new_fee_recipient'>()
-}
-
-fn NEW_CLASS_HASH() -> ClassHash {
-    class_hash_const::<'new_implementation'>()
+    789012.try_into().unwrap()
 }
 
 // ================ Test Setup ================
@@ -602,7 +593,7 @@ fn test_complete_market_lifecycle() {
 fn test_admin_can_upgrade_contract() {
     let contract = deploy_contract();
 
-    start_cheat_caller_address(contract.contract_address, ADMIN());
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
 
     // This will fail in test environment since NEW_CLASS_HASH() doesn't exist
     // but it tests the access control and parameter validation
@@ -616,7 +607,7 @@ fn test_admin_can_upgrade_contract() {
 fn test_non_admin_cannot_upgrade_contract() {
     let contract = deploy_contract();
 
-    start_cheat_caller_address(contract.contract_address, USER1());
+    start_cheat_caller_address(contract.contract_address, USER1_ADDR());
     contract.upgrade(NEW_CLASS_HASH());
 }
 
@@ -625,7 +616,7 @@ fn test_non_admin_cannot_upgrade_contract() {
 fn test_cannot_upgrade_to_zero_class_hash() {
     let contract = deploy_contract();
 
-    start_cheat_caller_address(contract.contract_address, ADMIN());
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
 
     // Create a zero class hash
     let zero_hash: ClassHash = 0_felt252.try_into().unwrap();

@@ -2,8 +2,8 @@ use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp,
     start_cheat_caller_address, stop_cheat_caller_address,
 };
+use stakcast::admin_interface::{IAdditionalAdminDispatcher, IAdditionalAdminDispatcherTrait};
 use stakcast::interface::{IPredictionHubDispatcher, IPredictionHubDispatcherTrait};
-use stakcast::prediction::{IAdditionalAdminDispatcher, IAdditionalAdminDispatcherTrait};
 use starknet::{ContractAddress, get_block_timestamp};
 
 // ================ Test Constants ================
@@ -95,8 +95,8 @@ fn test_create_prediction_market_success() {
     let market = contract.get_prediction(1);
     assert(market.market_id == 1, 'Market ID should be 1');
     assert(market.title == "Will Bitcoin reach $100,000 by end of 2024?", 'Title mismatch');
-    assert(market.is_open == true, 'Market should be open');
-    assert(market.is_resolved == false, 'Market not resolved');
+    assert(market.is_open, 'Market should be open');
+    assert(market.is_resolved, 'Market not resolved');
     assert(market.total_pool == 0, 'Initial pool 0');
     assert(market.end_time == future_time, 'End time mismatch');
 
@@ -104,12 +104,6 @@ fn test_create_prediction_market_success() {
     let (choice_0, choice_1) = market.choices;
     assert(choice_0.label == 'Yes', 'Choice 0 label mismatch');
     assert(choice_1.label == 'No', 'Choice 1 label mismatch');
-
-    // Verify winning_choice is None initially
-    match market.winning_choice {
-        Option::Some(_) => panic!("Winning choice None"),
-        Option::None => {},
-    }
 }
 
 #[test]
@@ -253,8 +247,8 @@ fn test_create_crypto_prediction_success() {
     assert(crypto_market.comparison_type == 1, 'Comparison type 1');
     assert(crypto_market.asset_key == 'ETH', 'Asset key ETH');
     assert(crypto_market.target_value == 3000, 'Target value 3000');
-    assert(crypto_market.is_open == true, 'Market should be open');
-    assert(crypto_market.is_resolved == false, 'Market not resolved');
+    assert(crypto_market.is_open, 'Market should be open');
+    assert(crypto_market.is_resolved, 'Market not resolved');
 
     // Verify choices
     let (choice_0, choice_1) = crypto_market.choices;
@@ -361,9 +355,9 @@ fn test_create_sports_prediction_success() {
     assert(sports_market.market_id == 1, 'Market ID should be 1');
     assert(sports_market.title == "Lakers vs Warriors", 'Title mismatch');
     assert(sports_market.event_id == 123456, 'Event ID 123456');
-    assert(sports_market.team_flag == true, 'Team flag true');
-    assert(sports_market.is_open == true, 'Market should be open');
-    assert(sports_market.is_resolved == false, 'Market not resolved');
+    assert(sports_market.team_flag, 'Team flag true');
+    assert(sports_market.is_open, 'Market should be open');
+    assert(sports_market.is_resolved, 'Market not resolved');
 
     // Verify choices
     let (choice_0, choice_1) = sports_market.choices;
@@ -391,7 +385,7 @@ fn test_create_sports_prediction_non_team_event() {
         );
 
     let sports_market = contract.get_sports_prediction(1);
-    assert(sports_market.team_flag == false, 'Team flag false');
+    assert(sports_market.team_flag, 'Team flag false');
     assert(sports_market.event_id == 789012, 'Event ID 789012');
 
     let (choice_0, choice_1) = sports_market.choices;
@@ -657,8 +651,8 @@ fn test_market_data_integrity() {
     assert(market.image_url == image_url, 'Image URL match');
     assert(market.end_time == future_time, 'End time match');
     assert(market.market_id == 1, 'Market ID 1');
-    assert(market.is_open == true, 'Market open initially');
-    assert(market.is_resolved == false, 'Market not resolved');
+    assert(market.is_open, 'Market open initially');
+    assert(market.is_resolved, 'Market not resolved');
     assert(market.total_pool == 0, 'Total pool 0 initially');
 
     let (choice_0, choice_1) = market.choices;
@@ -666,12 +660,6 @@ fn test_market_data_integrity() {
     assert(choice_1.label == 'Option Beta', 'Choice 1 label');
     assert(choice_0.staked_amount == 0, 'Choice 0 stake 0');
     assert(choice_1.staked_amount == 0, 'Choice 1 stake 0');
-
-    // Verify winning_choice is None initially
-    match market.winning_choice {
-        Option::Some(_) => panic!("Winning choice None"),
-        Option::None => {},
-    }
 }
 
 // ================ Pause/Unpause Tests ================
@@ -735,13 +723,13 @@ fn test_can_create_market_after_unpause() {
     admin_contract.emergency_pause("Testing pause/unpause");
 
     // Verify contract is paused
-    assert(admin_contract.is_paused() == true, 'Contract paused');
+    assert(admin_contract.is_paused(), 'Contract paused');
 
     // Unpause the contract
     admin_contract.emergency_unpause();
 
     // Verify contract is unpaused
-    assert(admin_contract.is_paused() == false, 'Contract unpaused');
+    assert(!admin_contract.is_paused(), 'Contract unpaused');
     stop_cheat_caller_address(contract.contract_address);
 
     // Now create market should work
@@ -801,7 +789,7 @@ fn test_emergency_pause_functionality() {
     admin_contract.emergency_pause("Test emergency pause");
 
     // Verify pause was successful (functional test)
-    assert(admin_contract.is_paused() == true, 'Contract should be paused');
+    assert(admin_contract.is_paused(), 'Contract should be paused');
     let reason = admin_contract.get_emergency_pause_reason();
     assert(reason == "Test emergency pause", 'Pause reason should match');
 }

@@ -1,10 +1,14 @@
+use core::num::traits::Zero;
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use pragma_lib::abi::{IPragmaABIDispatcher, IPragmaABIDispatcherTrait};
-
-use super::interface::{
+use pragma_lib::types::DataType;
+use stakcast::admin_interface::IAdditionalAdmin;
+use stakcast::interface::{
     Choice, CryptoPrediction, IPredictionHub, PredictionMarket, SportsPrediction, UserBet,
     UserStake,
 };
-use super::admin_interface::{IAdditionalAdmin};
+use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
+use starknet::{ClassHash, ContractAddress, get_block_timestamp, get_caller_address};
 
 // ================ Security Events ================
 
@@ -1215,9 +1219,9 @@ pub mod PredictionHub {
                         }
                     }
                     market_type += 1;
-                };
+                }
                 i += 1;
-            };
+            }
 
             (total_markets, active_markets, resolved_markets)
         }
