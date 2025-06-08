@@ -1,7 +1,7 @@
 use core::num::traits::Zero;
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use pragma_lib::abi::{IPragmaABIDispatcher, IPragmaABIDispatcherTrait};
-use pragma_lib::types::DataType;
+use pragma_lib::types::{DataType, PragmaPricesResponse};
 use stakcast::admin_interface::IAdditionalAdmin;
 use stakcast::interface::{
     Choice, CryptoPrediction, IPredictionHub, PredictionMarket, SportsPrediction, UserBet,
@@ -1397,6 +1397,22 @@ pub mod PredictionHub {
                     choice_1
                 }
             }
+        }
+    }
+
+    #[generate_trait]
+    impl InternalFunctions of InternalFunctionsTrait {
+        fn get_asset_price_median(self: @ContractState, asset_id: felt252) -> u128 {
+            // Retrieve the oracle dispatcher
+            let oracle_dispatcher = IPragmaABIDispatcher {
+                contract_address: self.pragma_oracle.read(),
+            };
+
+            // Call the Oracle contract, for a spot entry
+            let output: PragmaPricesResponse = oracle_dispatcher
+                .get_data_median(DataType::SpotEntry(asset_id));
+
+            return output.price;
         }
     }
 }
