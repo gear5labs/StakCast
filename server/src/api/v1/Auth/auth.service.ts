@@ -5,6 +5,7 @@ import { ApplicationError } from "../../../utils/errorHandler";
 import HttpStatusCodes from "../../../constants/HttpStatusCodes";
 import UserRepository from "../User/user.repository";
 import User from "../User/user.entity";
+import nodemailer from "nodemailer";
 
 @injectable()
 export default class AuthService {
@@ -96,4 +97,65 @@ export default class AuthService {
 		
 		return { accessToken, refreshToken };
 	}
+
+	async changePassword(userId: string, currentPassword: string, newPassword: string) {
+		const auth = await this.authRepository.findByUserId(userId);
+
+		if (!auth || !(await auth.verifyPassword(currentPassword))) {
+			throw new ApplicationError("Password is incorrect", HttpStatusCodes.UNAUTHORIZED);
+		}
+
+		auth.password = newPassword;
+		await auth.hashPassword();
+		await this.authRepository.save(auth);
+	}
+
+	async sendPasswordResetMail(email: string) {
+		const user =  await this.userRepository.findByEmail(email);
+		if (!user) return;
+
+		const resetToken = jwt.sign({ id: user.id }, this.JWT_SECRET, { expiresIn: "1h" });
+		const mailResetPasswordUrl = "";
+
+		const transporter = nodemailer.createTransport({
+      	service: "Gmail",
+      	auth: {
+      	  user: process.env.EMAIL_USERNAME,
+      	  pass: process.env.EMAIL_PASSWORD,
+      	},
+    	});
+    	const mailOptions = {
+ 	   	from: process.env.EMAIL_USERNAME,
+	    to: user.email,
+ 	    subject: "Password Reset Request",
+    	text: `You requested a password reset. Click this link to reset your password: ${mailResetPasswordUrl}`,
+    	};
+
+    	await transporter.sendMail(mailOptions);
+	}
+
+	async resetPassword(token: string, newPassword: string) {
+    try {
+      const decoded = jwt.verify(token, this.JWT_SECRET) as { id: string };
+      const auth = await this.authRepository.findByUserId(decoded.id);
+      if (!auth) throw new ApplicationError("Invalid token", HttpStatusCodes.UNAUTHORIZED);
+
+      auth.password = newPassword;
+      await auth.hashPassword();
+      await this.authRepository.save(auth);
+    } catch {
+      throw new ApplicationError("Invalid or expired token", HttpStatusCodes.UNAUTHORIZED);
+    }
+  }
+
+  async googleSignIn(idToken: string) {
+    const email = "extracted_from_idToken@example.com";
+    let user = await this.userRepository.findByEmail(email);
+    if (!user) {
+      user = await this.userRepository.createUser({ email, firstName: "Google", lastName: "User" });
+      await this.authRepository.createAuth(user.id, crypto.randomUUID());
+    }
+    const tokens = await this.generateTokens(user.id);
+    return { user, ...tokens };
+  }
 }
