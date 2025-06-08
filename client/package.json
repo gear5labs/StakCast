@@ -19,6 +19,7 @@
     "@starknet-react/core": "^3.7.2",
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",
+    "client": "link:",
     "clsx": "^2.1.1",
     "get-starknet": "^3.3.3",
     "install": "^0.13.0",

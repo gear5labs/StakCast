@@ -1,4 +1,5 @@
 packages:
-  - 'indexer'
-  - 'client'
-  - 'landing_page'
+  - "indexer"
+  - "client"
+  - "landing_page"
+  - "server"
