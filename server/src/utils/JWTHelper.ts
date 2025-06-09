@@ -5,19 +5,20 @@ import config from "../config/config";
 
 const accessTokenSecret = config.JWT.accessToken.secret;
 const refreshTokenSecret = config.JWT.refreshToken.secret;
-
+export type TimeUnit = "s" | "m" | "h" | "d" | "w" | "y";
+export type DurationString = `${number}${TimeUnit}`;
 class JwtHelper {
 	public constructor() {}
 
 	public generateAccessToken(userId: string) {
 		return jwt.sign({ userId }, accessTokenSecret, {
-			expiresIn: config.JWT.accessToken.exp,
+			expiresIn: config.JWT.accessToken.exp as DurationString,
 		});
 	}
 
 	public generateRefreshToken(userId: string) {
-		return jwt.sign({ userId }, refreshTokenSecret, {
-			expiresIn: config.JWT.refreshToken.exp,
+		return jwt.sign({ userId }, refreshTokenSecret as string, {
+			expiresIn: config.JWT.refreshToken.exp as number | DurationString | undefined,
 		});
 	}
 
