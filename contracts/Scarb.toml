@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024_07"
 
 [dependencies]
-starknet = "2.11.2"
+starknet = "2.11.4"
 openzeppelin = "1.0.0"
 pragma_lib = { git = "https://github.com/astraly-labs/pragma-lib", branch = "main" }
 
