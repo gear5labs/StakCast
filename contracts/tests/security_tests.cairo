@@ -1,3 +1,4 @@
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp,
     start_cheat_caller_address, stop_cheat_caller_address,
@@ -48,11 +49,12 @@ fn NEW_CLASS_HASH() -> ClassHash {
 
 // ================ Test Setup ================
 
-fn deploy_contract() -> IPredictionHubDispatcher {
+fn deploy_contract() -> (IPredictionHubDispatcher, IERC20Dispatcher) {
     // Deploy mock ERC20 token
     let token_contract = declare("MockERC20").unwrap().contract_class();
     let token_calldata = array![USER1_ADDR().into()];
     let (token_address, _) = token_contract.deploy(@token_calldata).unwrap();
+    let token = IERC20Dispatcher { contract_address: token_address };
 
     let contract = declare("PredictionHub").unwrap().contract_class();
     let constructor_calldata = array![
@@ -62,14 +64,14 @@ fn deploy_contract() -> IPredictionHubDispatcher {
         token_address.into(),
     ];
     let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
-    IPredictionHubDispatcher { contract_address }
+    (IPredictionHubDispatcher { contract_address }, token)
 }
 
 // ================ Access Control Tests ================
 
 #[test]
 fn test_admin_access_control() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     // Test admin can add moderator
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
@@ -97,7 +99,7 @@ fn test_admin_access_control() {
 #[test]
 #[should_panic(expected: ('Only admin allowed',))]
 fn test_non_admin_cannot_add_moderator() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     // Test non-admin cannot add moderator
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
@@ -106,7 +108,7 @@ fn test_non_admin_cannot_add_moderator() {
 
 #[test]
 fn test_moderator_can_create_market() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     // Add moderator
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
@@ -135,7 +137,7 @@ fn test_moderator_can_create_market() {
 #[test]
 #[should_panic(expected: ('Only admin or moderator',))]
 fn test_regular_user_cannot_create_market() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
     let future_time = get_block_timestamp() + 86400;
@@ -156,7 +158,7 @@ fn test_regular_user_cannot_create_market() {
 #[test]
 #[should_panic(expected: ('End time must be in future',))]
 fn test_cannot_create_market_with_past_end_time() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
 
@@ -181,7 +183,7 @@ fn test_cannot_create_market_with_past_end_time() {
 #[test]
 #[should_panic(expected: ('Market duration too short',))]
 fn test_cannot_create_market_with_too_short_duration() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
     let short_future_time = get_block_timestamp() + 1800; // 30 minutes (less than 1 hour minimum)
@@ -199,7 +201,7 @@ fn test_cannot_create_market_with_too_short_duration() {
 
 #[test]
 fn test_valid_market_duration() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
     let valid_future_time = get_block_timestamp() + 7200; // 2 hours (valid duration)
@@ -222,7 +224,7 @@ fn test_valid_market_duration() {
 
 #[test]
 fn test_betting_on_open_market() {
-    let contract = deploy_contract();
+    let (contract, token) = deploy_contract();
 
     // Create market as admin
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
@@ -241,6 +243,8 @@ fn test_betting_on_open_market() {
 
     // Place bet as user
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
+    token.approve(contract.contract_address, 10000000000000000000); // Approve enough tokens
+
     let bet_result = contract
         .place_bet(
             1, 0, 1000000000000000000, 0,
@@ -251,7 +255,7 @@ fn test_betting_on_open_market() {
 #[test]
 #[should_panic(expected: ('Market has ended',))]
 fn test_cannot_bet_on_ended_market() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     // Create market as admin
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
@@ -279,7 +283,7 @@ fn test_cannot_bet_on_ended_market() {
 #[test]
 #[should_panic(expected: ('Amount must be positive',))]
 fn test_cannot_bet_zero_amount() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     // Create market as admin
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
@@ -304,7 +308,7 @@ fn test_cannot_bet_zero_amount() {
 #[test]
 #[should_panic(expected: ('Invalid choice index',))]
 fn test_cannot_bet_invalid_choice() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     // Create market as admin
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
@@ -330,7 +334,7 @@ fn test_cannot_bet_invalid_choice() {
 
 #[test]
 fn test_emergency_pause_functionality() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     // Basic test to verify contract deployment and admin access
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
@@ -347,7 +351,7 @@ fn test_emergency_pause_functionality() {
 
 #[test]
 fn test_market_resolution_by_moderator() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     // Add moderator and create market
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
@@ -380,7 +384,7 @@ fn test_market_resolution_by_moderator() {
 #[test]
 #[should_panic(expected: ('Market not yet ended',))]
 fn test_cannot_resolve_market_before_end_time() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     // Create market as admin
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
@@ -403,7 +407,7 @@ fn test_cannot_resolve_market_before_end_time() {
 #[test]
 #[should_panic(expected: ('Only admin or moderator',))]
 fn test_regular_user_cannot_resolve_market() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     // Create market as admin
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
@@ -432,7 +436,7 @@ fn test_regular_user_cannot_resolve_market() {
 
 #[test]
 fn test_reentrancy_protection_on_betting() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     // Create market
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
@@ -462,7 +466,7 @@ fn test_reentrancy_protection_on_betting() {
 #[test]
 #[should_panic(expected: ('Market does not exist',))]
 fn test_betting_on_nonexistent_market() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
     contract.place_bet(999, 0, 1000, 0); // market_id=999 doesn't exist
@@ -470,7 +474,7 @@ fn test_betting_on_nonexistent_market() {
 
 #[test]
 fn test_multiple_bets_same_user() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     // Create market
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
@@ -499,7 +503,7 @@ fn test_multiple_bets_same_user() {
 
 #[test]
 fn test_crypto_prediction_creation() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
     let future_time = get_block_timestamp() + 86400;
@@ -523,7 +527,7 @@ fn test_crypto_prediction_creation() {
 
 #[test]
 fn test_sports_prediction_creation() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
     let future_time = get_block_timestamp() + 86400;
@@ -548,7 +552,7 @@ fn test_sports_prediction_creation() {
 
 #[test]
 fn test_complete_market_lifecycle() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     // 1. Admin adds moderator
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
@@ -601,7 +605,7 @@ fn test_complete_market_lifecycle() {
 
 #[test]
 fn test_admin_can_upgrade_contract() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
 
@@ -615,7 +619,7 @@ fn test_admin_can_upgrade_contract() {
 #[test]
 #[should_panic(expected: ('Only admin allowed',))]
 fn test_non_admin_cannot_upgrade_contract() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
     contract.upgrade(NEW_CLASS_HASH());
@@ -624,7 +628,7 @@ fn test_non_admin_cannot_upgrade_contract() {
 #[test]
 #[should_panic(expected: ('Class hash cannot be zero',))]
 fn test_cannot_upgrade_to_zero_class_hash() {
-    let contract = deploy_contract();
+    let (contract, _) = deploy_contract();
 
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
 
