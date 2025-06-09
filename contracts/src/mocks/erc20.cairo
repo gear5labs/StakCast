@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod MockERC20 {
-    use starknet::ContractAddress;
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
+    use starknet::ContractAddress;
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
 
@@ -28,9 +28,9 @@ pub mod MockERC20 {
     fn constructor(ref self: ContractState, initial_owner: ContractAddress) {
         let name = "Mock Token";
         let symbol = "MOCK";
-        let total_supply = 10000000000000000000000000_u256; 
-        
+        let total_supply = 10000000000000000000000000_u256;
+
         self.erc20.initializer(name, symbol);
         self.erc20.mint(initial_owner, total_supply);
     }
-} 
+}

@@ -49,9 +49,17 @@ fn NEW_CLASS_HASH() -> ClassHash {
 // ================ Test Setup ================
 
 fn deploy_contract() -> IPredictionHubDispatcher {
+    // Deploy mock ERC20 token
+    let token_contract = declare("MockERC20").unwrap().contract_class();
+    let token_calldata = array![USER1_ADDR().into()];
+    let (token_address, _) = token_contract.deploy(@token_calldata).unwrap();
+
     let contract = declare("PredictionHub").unwrap().contract_class();
     let constructor_calldata = array![
-        ADMIN_ADDR().into(), FEE_RECIPIENT_ADDR().into(), PRAGMA_ORACLE_ADDR().into(),
+        ADMIN_ADDR().into(),
+        FEE_RECIPIENT_ADDR().into(),
+        PRAGMA_ORACLE_ADDR().into(),
+        token_address.into(),
     ];
     let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
     IPredictionHubDispatcher { contract_address }
