@@ -242,7 +242,9 @@ fn test_betting_on_open_market() {
     // Place bet as user
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
     let bet_result = contract
-        .place_bet(1, 0, 1000, 0); // market_id=1, choice=0, amount=1000, market_type=0
+        .place_bet(
+            1, 0, 1000000000000000000, 0,
+        ); // market_id=1, choice=0, amount=1000, market_type=0
     assert(bet_result == true, 'Bet should succeed');
 }
 
@@ -449,7 +451,7 @@ fn test_reentrancy_protection_on_betting() {
 
     // Normal betting should work
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    let result = contract.place_bet(1, 0, 1000, 0);
+    let result = contract.place_bet(1, 0, 1000000000000000000, 0);
     assert(result == true, 'First bet should succeed');
     // Reentrancy protection is implemented in the contract
 // Full reentrancy testing would require a malicious contract setup
@@ -487,8 +489,8 @@ fn test_multiple_bets_same_user() {
 
     // User places multiple bets
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.place_bet(1, 0, 1000, 0);
-    contract.place_bet(1, 1, 500, 0);
+    contract.place_bet(1, 0, 1000000000000000000, 0);
+    contract.place_bet(1, 1, 1000000000000000000, 0);
 
     // Check bet count
     let bet_count = contract.get_bet_count_for_market(USER1_ADDR(), 1, 0);
@@ -570,11 +572,11 @@ fn test_complete_market_lifecycle() {
 
     // 3. Users place bets
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.place_bet(1, 0, 1000, 0);
+    contract.place_bet(1, 0, 1000000000000000000, 0);
     stop_cheat_caller_address(contract.contract_address);
 
     start_cheat_caller_address(contract.contract_address, USER2_ADDR());
-    contract.place_bet(1, 1, 500, 0);
+    contract.place_bet(1, 1, 1000000000000000000, 0);
     stop_cheat_caller_address(contract.contract_address);
 
     // 4. Time passes and market ends
