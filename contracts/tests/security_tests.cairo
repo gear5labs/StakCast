@@ -243,7 +243,7 @@ fn test_betting_on_open_market() {
 
     // Place bet as user
     start_cheat_caller_address(token.contract_address, USER1_ADDR());
-    token.approve(contract.contract_address, 50000000000000000000); // Approve enough tokens
+    token.approve(contract.contract_address, 900000000000000000000); // Approve enough tokens
 
     let bet_result = contract
         .place_bet(
@@ -455,7 +455,7 @@ fn test_reentrancy_protection_on_betting() {
 
     // Normal betting should work
     start_cheat_caller_address(token.contract_address, USER1_ADDR());
-    token.approve(contract.contract_address, 500000000000000000000); // Only 100 tokens
+    token.approve(contract.contract_address, 900000000000000000000); // Only 100 tokens
     let result = contract.place_bet(1, 0, 1000000000000000000, 0);
     assert(result == true, 'First bet should succeed');
     // Reentrancy protection is implemented in the contract
@@ -494,7 +494,7 @@ fn test_multiple_bets_same_user() {
 
     // User places multiple bets
     start_cheat_caller_address(token.contract_address, USER1_ADDR());
-    token.approve(contract.contract_address, 500000000000000000000); // Only 500 tokens
+    token.approve(contract.contract_address, 900000000000000000000); // Only 500 tokens
     contract.place_bet(1, 0, 1000000000000000000, 0);
     contract.place_bet(1, 1, 1000000000000000000, 0);
 
@@ -576,26 +576,37 @@ fn test_complete_market_lifecycle() {
         );
     stop_cheat_caller_address(contract.contract_address);
 
-    // 3. Users place bets
+    // 3. Distribute tokens to USER2
     start_cheat_caller_address(token.contract_address, USER1_ADDR());
-    token.approve(contract.contract_address, 500000000000000000000); // Only 100 tokens
+    token.transfer(USER2_ADDR(), 500000000000000000000); // 500 tokens to USER2
+    stop_cheat_caller_address(token.contract_address);
+
+    // 4. Users approve and place bets
+    start_cheat_caller_address(token.contract_address, USER1_ADDR());
+    token.approve(contract.contract_address, 900000000000000000000); // Approve for USER1
+    stop_cheat_caller_address(token.contract_address);
+
+    start_cheat_caller_address(token.contract_address, USER2_ADDR());
+    token.approve(contract.contract_address, 900000000000000000000); // Approve for USER2
+    stop_cheat_caller_address(token.contract_address);
+
+    start_cheat_caller_address(contract.contract_address, USER1_ADDR());
     contract.place_bet(1, 0, 1000000000000000000, 0);
     stop_cheat_caller_address(contract.contract_address);
 
-    start_cheat_caller_address(token.contract_address, USER2_ADDR());
-    token.approve(contract.contract_address, 500000000000000000000); // Only 100 tokens
+    start_cheat_caller_address(contract.contract_address, USER2_ADDR());
     contract.place_bet(1, 1, 1000000000000000000, 0);
     stop_cheat_caller_address(contract.contract_address);
 
-    // 4. Time passes and market ends
+    // 5. Time passes and market ends
     start_cheat_block_timestamp(contract.contract_address, future_time + 1);
 
-    // 5. Moderator resolves market
+    // 6. Moderator resolves market
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
     contract.resolve_prediction(1, 0); // USER1 wins
     stop_cheat_caller_address(contract.contract_address);
 
-    // 6. Winner collects winnings
+    // 7. Winner collects winnings
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
     contract.collect_winnings(1, 0, 0); // market_id=1, market_type=0, bet_idx=0
 
