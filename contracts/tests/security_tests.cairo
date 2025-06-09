@@ -242,8 +242,8 @@ fn test_betting_on_open_market() {
     stop_cheat_caller_address(contract.contract_address);
 
     // Place bet as user
-    start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    token.approve(contract.contract_address, 10000000000000000000); // Approve enough tokens
+    start_cheat_caller_address(token.contract_address, USER1_ADDR());
+    token.approve(contract.contract_address, 50000000000000000000); // Approve enough tokens
 
     let bet_result = contract
         .place_bet(
@@ -436,7 +436,7 @@ fn test_regular_user_cannot_resolve_market() {
 
 #[test]
 fn test_reentrancy_protection_on_betting() {
-    let (contract, _) = deploy_contract();
+    let (contract, token) = deploy_contract();
 
     // Create market
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
@@ -454,7 +454,8 @@ fn test_reentrancy_protection_on_betting() {
     stop_cheat_caller_address(contract.contract_address);
 
     // Normal betting should work
-    start_cheat_caller_address(contract.contract_address, USER1_ADDR());
+    start_cheat_caller_address(token.contract_address, USER1_ADDR());
+    token.approve(contract.contract_address, 500000000000000000000); // Only 100 tokens
     let result = contract.place_bet(1, 0, 1000000000000000000, 0);
     assert(result == true, 'First bet should succeed');
     // Reentrancy protection is implemented in the contract
@@ -474,7 +475,7 @@ fn test_betting_on_nonexistent_market() {
 
 #[test]
 fn test_multiple_bets_same_user() {
-    let (contract, _) = deploy_contract();
+    let (contract, token) = deploy_contract();
 
     // Create market
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
@@ -492,7 +493,8 @@ fn test_multiple_bets_same_user() {
     stop_cheat_caller_address(contract.contract_address);
 
     // User places multiple bets
-    start_cheat_caller_address(contract.contract_address, USER1_ADDR());
+    start_cheat_caller_address(token.contract_address, USER1_ADDR());
+    token.approve(contract.contract_address, 500000000000000000000); // Only 500 tokens
     contract.place_bet(1, 0, 1000000000000000000, 0);
     contract.place_bet(1, 1, 1000000000000000000, 0);
 
@@ -552,7 +554,7 @@ fn test_sports_prediction_creation() {
 
 #[test]
 fn test_complete_market_lifecycle() {
-    let (contract, _) = deploy_contract();
+    let (contract, token) = deploy_contract();
 
     // 1. Admin adds moderator
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
@@ -575,11 +577,13 @@ fn test_complete_market_lifecycle() {
     stop_cheat_caller_address(contract.contract_address);
 
     // 3. Users place bets
-    start_cheat_caller_address(contract.contract_address, USER1_ADDR());
+    start_cheat_caller_address(token.contract_address, USER1_ADDR());
+    token.approve(contract.contract_address, 500000000000000000000); // Only 100 tokens
     contract.place_bet(1, 0, 1000000000000000000, 0);
     stop_cheat_caller_address(contract.contract_address);
 
-    start_cheat_caller_address(contract.contract_address, USER2_ADDR());
+    start_cheat_caller_address(token.contract_address, USER2_ADDR());
+    token.approve(contract.contract_address, 500000000000000000000); // Only 100 tokens
     contract.place_bet(1, 1, 1000000000000000000, 0);
     stop_cheat_caller_address(contract.contract_address);
 
