@@ -27,7 +27,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const chains = [mainnet, sepolia];
+  const chains = [sepolia, mainnet];
   const providers = publicProvider();
 
   return (
