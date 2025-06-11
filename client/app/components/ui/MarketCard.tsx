@@ -1,6 +1,7 @@
 import React from "react";
 
 import { MarketChoiceData } from "@/app/types";
+import { formatAmount } from "@/app/utils/utils";
 
 interface MarketCardProps {
   name: string;
@@ -107,7 +108,7 @@ const MarketCard: React.FC<MarketCardProps> = ({
             Volume
           </p>
           <p className="text-sm font-medium text-gray-900 dark:text-white">
-            {totalRevenue}
+            {formatAmount(totalRevenue)}
           </p>
         </div>
         <div className="flex items-center space-x-1">

@@ -1,7 +1,10 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { useMarketContext } from "@/app/context/marketContext";
 import { Market } from "@/app/types";
+import { useIsConnected } from "@/app/hooks/useIsConnected";
+import WalletModal from "../ui/ConnectWalletModal";
+import { formatAmount } from "@/app/utils/utils";
 
 interface PurchaseSectionProps {
   market?: Market;
@@ -10,6 +13,8 @@ interface PurchaseSectionProps {
 const PurchaseSection = ({ market }: PurchaseSectionProps) => {
   const { selectedOption, units, pricePerUnit, setUnits, handleOptionSelect } =
     useMarketContext();
+  const connected = useIsConnected();
+  const [showWalletModal, setShowWalletModal] = useState(false);
 
   const handlePurchase = () => {
     if (!selectedOption || units <= 0) {
@@ -25,6 +30,14 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
     );
   };
 
+  const handleClick = () => {
+    if (connected) {
+      handlePurchase();
+    } else {
+      setShowWalletModal(true);
+    }
+  };
+
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
@@ -35,7 +48,7 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
         {market?.choices &&
           [0, 1].map((key) => {
             const choice = market.choices[key as 0 | 1];
-            const label = key === 1 ? "Yes" : "No"; 
+            const label = key === 1 ? "Yes" : "No";
             const isActive = selectedOption === label;
             const odds = 1;
 
@@ -52,7 +65,7 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
                 <div className="flex justify-between">
                   <span className="font-medium">{label}</span>
                   <span className="text-sm text-gray-500 dark:text-gray-400">
-                    Staked: {String(choice.staked_amount)}
+                    Staked: {String(formatAmount(choice.staked_amount))}
                   </span>
                 </div>
               </button>
@@ -83,12 +96,17 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
 
         {/* Purchase Button */}
         <button
-          onClick={handlePurchase}
+          onClick={handleClick}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
         >
-          Purchase
+          {connected ? "Purchase" : "Connect Wallet"}
         </button>
       </div>
+
+      {/* Wallet Modal */}
+      {showWalletModal && (
+        <WalletModal onClose={() => setShowWalletModal(false)} />
+      )}
     </div>
   );
 };
