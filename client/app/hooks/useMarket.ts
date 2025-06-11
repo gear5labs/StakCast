@@ -20,9 +20,15 @@ interface UseMarketDataReturn {
 const contractAddress =
   "0x004acb0f694dbcabcb593a84fcb44a03f8e1b681173da5d0962ed8a171689534";
 
+
+
+
+
 export const useMarketData = (
   params: UseMarketDataParams = {}
 ): UseMarketDataReturn => {
+
+
   const { category = "all" } = params;
 
   const { contract } = useContract({

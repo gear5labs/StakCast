@@ -9,8 +9,9 @@ import "primereact/resources/themes/lara-light-cyan/theme.css";
 // import { AppProvider } from "./context/appContext";
 import { Suspense } from "react";
 
-import { StarknetConfig, publicProvider } from "@starknet-react/core";
+import { StarknetConfig} from "@starknet-react/core";
 import { mainnet, sepolia } from "@starknet-react/chains";
+
 // import { connectors } from "@/components/utils/connectors";
 import "./globals.css";
 import { connectors } from "./components/utils/connectors";
@@ -21,6 +22,14 @@ const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
 });
+import { jsonRpcProvider } from "@starknet-react/core";
+
+const providers = jsonRpcProvider({
+  rpc: () => ({
+    nodeUrl: "https://starknet-sepolia.public.blastapi.io",
+  }),
+});
+
 
 export default function RootLayout({
   children,
@@ -28,7 +37,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const chains = [sepolia, mainnet];
-  const providers = publicProvider();
+  // const providers = publicProvider();
 
   return (
     <html lang="en">
