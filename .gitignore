@@ -6,3 +6,6 @@ env
 ./env
 .env
 .env.production
+.DS_Store
+fullcontract.md
+../indexer/.DS_Store

@@ -47,9 +47,17 @@ fn PRAGMA_ORACLE_ADDR() -> ContractAddress {
 // ================ Test Setup ================
 
 fn deploy_contract() -> (IPredictionHubDispatcher, IAdditionalAdminDispatcher) {
+    // Deploy mock ERC20 token
+    let token_contract = declare("MockERC20").unwrap().contract_class();
+    let token_calldata = array![USER1_ADDR().into()];
+    let (token_address, _) = token_contract.deploy(@token_calldata).unwrap();
+
     let contract = declare("PredictionHub").unwrap().contract_class();
     let constructor_calldata = array![
-        ADMIN_ADDR().into(), FEE_RECIPIENT_ADDR().into(), PRAGMA_ORACLE_ADDR().into(),
+        ADMIN_ADDR().into(),
+        FEE_RECIPIENT_ADDR().into(),
+        PRAGMA_ORACLE_ADDR().into(),
+        token_address.into(),
     ];
     let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
     let prediction_hub = IPredictionHubDispatcher { contract_address };
@@ -96,7 +104,7 @@ fn test_create_prediction_market_success() {
     assert(market.market_id == 1, 'Market ID should be 1');
     assert(market.title == "Will Bitcoin reach $100,000 by end of 2024?", 'Title mismatch');
     assert(market.is_open, 'Market should be open');
-    assert(market.is_resolved, 'Market not resolved');
+    assert(market.is_resolved == false, 'Market not resolved');
     assert(market.total_pool == 0, 'Initial pool 0');
     assert(market.end_time == future_time, 'End time mismatch');
 
@@ -248,7 +256,7 @@ fn test_create_crypto_prediction_success() {
     assert(crypto_market.asset_key == 'ETH', 'Asset key ETH');
     assert(crypto_market.target_value == 3000, 'Target value 3000');
     assert(crypto_market.is_open, 'Market should be open');
-    assert(crypto_market.is_resolved, 'Market not resolved');
+    assert(crypto_market.is_resolved == false, 'Market not resolved');
 
     // Verify choices
     let (choice_0, choice_1) = crypto_market.choices;
@@ -357,7 +365,7 @@ fn test_create_sports_prediction_success() {
     assert(sports_market.event_id == 123456, 'Event ID 123456');
     assert(sports_market.team_flag, 'Team flag true');
     assert(sports_market.is_open, 'Market should be open');
-    assert(sports_market.is_resolved, 'Market not resolved');
+    assert(sports_market.is_resolved == false, 'Market not resolved');
 
     // Verify choices
     let (choice_0, choice_1) = sports_market.choices;
@@ -385,7 +393,7 @@ fn test_create_sports_prediction_non_team_event() {
         );
 
     let sports_market = contract.get_sports_prediction(1);
-    assert(sports_market.team_flag, 'Team flag false');
+    assert(!sports_market.team_flag, 'Team flag should be false');
     assert(sports_market.event_id == 789012, 'Event ID 789012');
 
     let (choice_0, choice_1) = sports_market.choices;
@@ -652,7 +660,7 @@ fn test_market_data_integrity() {
     assert(market.end_time == future_time, 'End time match');
     assert(market.market_id == 1, 'Market ID 1');
     assert(market.is_open, 'Market open initially');
-    assert(market.is_resolved, 'Market not resolved');
+    assert(market.is_resolved == false, 'Market not resolved');
     assert(market.total_pool == 0, 'Total pool 0 initially');
 
     let (choice_0, choice_1) = market.choices;
