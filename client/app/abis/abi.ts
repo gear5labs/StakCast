@@ -914,6 +914,118 @@ export default [
         outputs: [],
         state_mutability: "external",
       },
+      {
+        name: "place_bet_with_token",
+        type: "function",
+        inputs: [
+          {
+            name: "market_id",
+            type: "core::integer::u256",
+          },
+          {
+            name: "choice_idx",
+            type: "core::integer::u8",
+          },
+          {
+            name: "amount",
+            type: "core::integer::u256",
+          },
+          {
+            name: "market_type",
+            type: "core::integer::u8",
+          },
+          {
+            name: "token_name",
+            type: "core::felt252",
+          },
+        ],
+        outputs: [
+          {
+            type: "core::bool",
+          },
+        ],
+        state_mutability: "external",
+      },
+      {
+        name: "place_wager_with_token",
+        type: "function",
+        inputs: [
+          {
+            name: "market_id",
+            type: "core::integer::u256",
+          },
+          {
+            name: "choice_idx",
+            type: "core::integer::u8",
+          },
+          {
+            name: "amount",
+            type: "core::integer::u256",
+          },
+          {
+            name: "market_type",
+            type: "core::integer::u8",
+          },
+          {
+            name: "token_name",
+            type: "core::felt252",
+          },
+        ],
+        outputs: [
+          {
+            type: "core::bool",
+          },
+        ],
+        state_mutability: "external",
+      },
+      {
+        name: "get_supported_token",
+        type: "function",
+        inputs: [
+          {
+            name: "token_name",
+            type: "core::felt252",
+          },
+        ],
+        outputs: [
+          {
+            type: "core::starknet::contract_address::ContractAddress",
+          },
+        ],
+        state_mutability: "view",
+      },
+      {
+        name: "get_market_token",
+        type: "function",
+        inputs: [
+          {
+            name: "market_id",
+            type: "core::integer::u256",
+          },
+        ],
+        outputs: [
+          {
+            type: "core::starknet::contract_address::ContractAddress",
+          },
+        ],
+        state_mutability: "view",
+      },
+      {
+        name: "is_token_supported",
+        type: "function",
+        inputs: [
+          {
+            name: "token_name",
+            type: "core::felt252",
+          },
+        ],
+        outputs: [
+          {
+            type: "core::bool",
+          },
+        ],
+        state_mutability: "view",
+      },
     ],
   },
   {
@@ -1239,6 +1351,54 @@ export default [
           {
             name: "recipient",
             type: "core::starknet::contract_address::ContractAddress",
+          },
+        ],
+        outputs: [],
+        state_mutability: "external",
+      },
+      {
+        name: "emergency_withdraw_specific_token",
+        type: "function",
+        inputs: [
+          {
+            name: "token_name",
+            type: "core::felt252",
+          },
+          {
+            name: "amount",
+            type: "core::integer::u256",
+          },
+          {
+            name: "recipient",
+            type: "core::starknet::contract_address::ContractAddress",
+          },
+        ],
+        outputs: [],
+        state_mutability: "external",
+      },
+      {
+        name: "add_supported_token",
+        type: "function",
+        inputs: [
+          {
+            name: "token_name",
+            type: "core::felt252",
+          },
+          {
+            name: "token_address",
+            type: "core::starknet::contract_address::ContractAddress",
+          },
+        ],
+        outputs: [],
+        state_mutability: "external",
+      },
+      {
+        name: "remove_supported_token",
+        type: "function",
+        inputs: [
+          {
+            name: "token_name",
+            type: "core::felt252",
           },
         ],
         outputs: [],

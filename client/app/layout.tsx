@@ -24,7 +24,7 @@ const manrope = Manrope({
 });
 import { jsonRpcProvider } from "@starknet-react/core";
 
-const providers = jsonRpcProvider({
+export const providers = jsonRpcProvider({
   rpc: () => ({
     nodeUrl: "https://starknet-sepolia.public.blastapi.io",
   }),

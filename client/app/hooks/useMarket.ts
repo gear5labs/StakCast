@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useContract } from "@starknet-react/core";
 import abi from "@/app/abis/abi";
 import { Market } from "../types";
+import { STAKCAST_CONTRACT_ADDRESS } from "../components/utils/constants";
 
 type PredictionCategory = "crypto" | "sports" | "all";
 
@@ -17,23 +18,14 @@ interface UseMarketDataReturn {
   category: PredictionCategory;
 }
 
-const contractAddress =
-  "0x004acb0f694dbcabcb593a84fcb44a03f8e1b681173da5d0962ed8a171689534";
-
-
-
-
-
 export const useMarketData = (
   params: UseMarketDataParams = {}
 ): UseMarketDataReturn => {
-
-
   const { category = "all" } = params;
 
   const { contract } = useContract({
     abi,
-    address: contractAddress as "0x",
+    address: STAKCAST_CONTRACT_ADDRESS as "0x",
   });
 
   const [predictions, setPredictions] = useState<Market[] | null>(null);

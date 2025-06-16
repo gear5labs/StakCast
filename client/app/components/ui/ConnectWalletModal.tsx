@@ -7,6 +7,7 @@ import { X, Wallet, Mail } from "lucide-react";
 import { useArgentSdk } from "../utils/invisible-sdk";
 import { useAppContext } from "@/app/context/appContext";
 import Spinner from "./loading/Spinner";
+
 interface WalletModalProps {
   onClose: () => void;
 }
@@ -15,26 +16,39 @@ const WalletModal: React.FC<WalletModalProps> = ({ onClose }) => {
   const { setConnectionMode } = useAppContext();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const modalRef = useRef<HTMLDivElement>(null);
+
   const { connectAsync, connectors } = useConnect();
+
   const { starknetkitConnectModal } = useStarknetkitConnectModal({
     connectors: connectors as StarknetkitConnector[],
     modalTheme: "system",
   });
-  const { connect } = useArgentSdk();
+
+  const { connect: emailConnect } = useArgentSdk();
+
+  // Handles wallet connection
   const authWalletHandler = async () => {
     setConnectionMode("wallet");
-    const { connector } = await starknetkitConnectModal();
-    if (!connector) return;
     try {
+      setIsLoading(true);
+      const { connector } = await starknetkitConnectModal();
+      if (!connector) {
+        toast.error("No wallet selected");
+        return;
+      }
+
       await connectAsync({ connector });
-      toast.success("Wallet connected");
       localStorage.setItem("connector", connector.id);
-    } catch (_e) {
-      console.log(_e);
-      toast.error("Connection rejected");
+      toast.success("Wallet connected");
+    } catch (error) {
+      console.error("Wallet connect error:", error);
+      toast.error("Wallet connection failed");
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  // Handles click outside to close
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -105,14 +119,14 @@ const WalletModal: React.FC<WalletModalProps> = ({ onClose }) => {
 
         <div className="space-y-4">
           <button
-            onClick={() => {
-              authWalletHandler();
+            onClick={async () => {
+              await authWalletHandler();
               onClose();
             }}
             className="w-full py-4 px-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2"
           >
             <Wallet className="w-5 h-5" />
-            <span> {isLoading ? <Spinner /> : "Connect Wallet"}</span>
+            <span>{isLoading ? <Spinner /> : "Connect Wallet"}</span>
           </button>
 
           <div className="relative flex items-center justify-center my-6">
@@ -126,11 +140,13 @@ const WalletModal: React.FC<WalletModalProps> = ({ onClose }) => {
             onClick={async () => {
               try {
                 setIsLoading(true);
-                await connect();
+                await emailConnect();
                 setConnectionMode("email");
+                toast.success("Email connected");
                 onClose();
               } catch (error) {
-                throw error;
+                console.error("Email connect error:", error);
+                toast.error("Email connection failed");
               } finally {
                 setIsLoading(false);
               }
@@ -138,13 +154,13 @@ const WalletModal: React.FC<WalletModalProps> = ({ onClose }) => {
             className="w-full py-4 px-6 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm hover:shadow transition-all flex items-center justify-center space-x-2"
           >
             <Mail className="w-5 h-5" />
-            <span> {isLoading ? <Spinner /> : "Continue with Email"}</span>
+            <span>{isLoading ? <Spinner /> : "Continue with Email"}</span>
           </button>
         </div>
 
         <p className="mt-6 text-xs text-gray-500 dark:text-gray-400">
           By continuing, you agree to Stakcast&apos;s Terms of Service and
-          Privacy Policy
+          Privacy Policy.
         </p>
       </div>
     </div>

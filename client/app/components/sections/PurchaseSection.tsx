@@ -5,29 +5,36 @@ import { Market } from "@/app/types";
 import { useIsConnected } from "@/app/hooks/useIsConnected";
 import WalletModal from "../ui/ConnectWalletModal";
 import { formatAmount } from "@/app/utils/utils";
+import { usePurchase } from "@/app/hooks/usePurchase";
 
 interface PurchaseSectionProps {
   market?: Market;
 }
 
 const PurchaseSection = ({ market }: PurchaseSectionProps) => {
+  const { placeBet, loading } = usePurchase();
   const { selectedOption, units, pricePerUnit, setUnits, handleOptionSelect } =
     useMarketContext();
   const connected = useIsConnected();
   const [showWalletModal, setShowWalletModal] = useState(false);
 
   const handlePurchase = () => {
-    if (!selectedOption || units <= 0) {
+    if (!selectedOption || units <= 0 || !market) {
       console.log("Please select a choice and enter a valid number of units.");
       return;
     }
 
-    const totalPrice = units * pricePerUnit;
+    const market_id = +market.market_id.toString(16);
+    const choice_idx = selectedOption === "Yes" ? 0x1 : 0x0;
+    const amount = units * 10 ** 18 as number;
+    const market_type = 0;
+    console.log("category", market.category);
+    console.log({ market_id, choice_idx, amount, market_type });
     console.log(
-      `Purchased ${units} units of "${selectedOption}" for $${totalPrice.toFixed(
-        2
-      )}`
+      `Placing bet on "${selectedOption}" with market_id=${market_id}, choice_idx=${choice_idx}, amount=${amount}, market_type=${market_type}`
     );
+
+    placeBet(market_id, choice_idx, amount, market_type);
   };
 
   const handleClick = () => {
@@ -99,7 +106,7 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
           onClick={handleClick}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
         >
-          {connected ? "Purchase" : "Connect Wallet"}
+          {loading ? "loading" : connected ? "Purchase" : "Connect Wallet"}
         </button>
       </div>
 
