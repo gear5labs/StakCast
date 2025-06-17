@@ -63,8 +63,7 @@ export const usePurchase = (): UsePurchaseReturn => {
           STAKCAST_CONTRACT_ADDRESS,
           cairo.uint256(amount),
         ]);
-        console.log(market_id,choice_idx,amount,market_type,selectedToken
-          ,'hiey')
+     
         const populated = await contract.populate("place_bet_with_token", [
           BigInt(market_id),
           BigInt(choice_idx),
