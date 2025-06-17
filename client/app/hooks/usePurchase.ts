@@ -63,14 +63,36 @@ export const usePurchase = (): UsePurchaseReturn => {
           STAKCAST_CONTRACT_ADDRESS,
           cairo.uint256(amount),
         ]);
-     
-        const populated = await contract.populate("place_bet_with_token", [
+        console.log(
+          market_id,
+          choice_idx,
+          amount,
+          market_type,
+          selectedToken,
+          "hiey"
+        );
+
+        await contract.populate("place_bet", [
           BigInt(market_id),
           BigInt(choice_idx),
           amount,
           BigInt(market_type),
-          selectedToken
         ]);
+        const populated =
+          selectedToken == "SK"
+            ? await contract.populate("place_bet", [
+                BigInt(market_id),
+                BigInt(choice_idx),
+                amount,
+                BigInt(market_type),
+              ])
+            : await contract.populate("place_bet_with_token", [
+                BigInt(market_id),
+                BigInt(choice_idx),
+                amount,
+                BigInt(market_type),
+                selectedToken,
+              ]);
 
         setCalls([tokenApproval, populated]);
         setShouldSend(true);
