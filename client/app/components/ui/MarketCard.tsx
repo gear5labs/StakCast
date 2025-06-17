@@ -2,6 +2,7 @@ import React from "react";
 
 import { MarketChoiceData } from "@/app/types";
 import { formatAmount } from "@/app/utils/utils";
+import { Lock } from "lucide-react";
 
 interface MarketCardProps {
   name: string;
@@ -10,6 +11,7 @@ interface MarketCardProps {
   totalRevenue: string;
   onClick?: () => void;
   [key: string]: unknown;
+  isClosed:boolean
 }
 
 const MarketCard: React.FC<MarketCardProps> = ({
@@ -18,6 +20,7 @@ const MarketCard: React.FC<MarketCardProps> = ({
   options = [],
   totalRevenue = "$0",
   onClick,
+  isClosed=false,
   ...props
 }) => {
   
@@ -42,10 +45,21 @@ const MarketCard: React.FC<MarketCardProps> = ({
 
   return (
     <div
-      className="bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 w-full h-full flex flex-col cursor-pointer"
+      className="relative bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 w-full h-full flex flex-col cursor-pointer"
       onClick={onClick}
       {...props}
     >
+         {isClosed && (
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
+          <div className="bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+            <Lock className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            <span className="text-gray-700 dark:text-gray-200 font-medium text-sm">
+              Market Closed
+            </span>
+          </div>
+        </div>
+      )}
+      
       <div className="p-5 border-b border-gray-100 dark:border-gray-800">
         <h3 className="font-medium text-gray-900 dark:text-white text-lg leading-tight">
           {name}

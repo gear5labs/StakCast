@@ -51,6 +51,18 @@ const Home = () => {
     return nameMatch || optionsMatch;
   });
 
+  // Function to check if market is closed
+  const isMarketClosed = (marketId: string | number) => {
+    return marketId?.toString() === "2";
+  };
+
+  // Function to handle market click
+  const handleMarketClick = (market: Market) => {
+    if (!isMarketClosed(market?.market_id as number)) {
+      router.push(`/market/${market?.market_id}`);
+    }
+  };
+
   if (error) {
     return (
       <main className="bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-screen">
@@ -140,37 +152,47 @@ const Home = () => {
             </div>
           ) : filteredMarkets.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredMarkets.map((market, index) => (
-                <div
-                  key={market?.market_id || index}
-                  className="h-full transition-all duration-300 hover:-translate-y-1"
-                >
-                  <div className="h-full shadow-md hover:shadow-xl rounded-xl transition-all duration-300">
-                    <MarketCard
-                      name={market?.title || "Untitled Market"}
-                      image={market?.image_url || "/default-image.jpg"}
-                      options={[
-                        {
-                          label: "No",
-                          staked_amount:
-                            market?.choices?.[0]?.staked_amount?.toString() ||
-                            "0",
-                        },
-                        {
-                          label: "Yes",
-                          staked_amount:
-                            market?.choices?.[1]?.staked_amount?.toString() ||
-                            "0",
-                        },
-                      ]}
-                      totalRevenue={market?.total_pool?.toString() || "$0"}
-                      onClick={() =>
-                        router.push(`/market/${market?.market_id}`)
-                      }
-                    />
+              {filteredMarkets.map((market, index) => {
+                const isClosed = isMarketClosed(market?.market_id as number);
+                return (
+                  <div
+                    key={market?.market_id || index}
+                    className={`h-full transition-all duration-300 ${
+                      isClosed
+                        ? "cursor-not-allowed"
+                        : "hover:-translate-y-1 cursor-pointer"
+                    }`}
+                  >
+                    <div
+                      className={`h-full shadow-md rounded-xl transition-all duration-300 ${
+                        isClosed ? "opacity-75" : "hover:shadow-xl"
+                      }`}
+                    >
+                      <MarketCard
+                        name={market?.title || "Untitled Market"}
+                        image={market?.image_url || "/default-image.jpg"}
+                        options={[
+                          {
+                            label: "No",
+                            staked_amount:
+                              market?.choices?.[0]?.staked_amount?.toString() ||
+                              "0",
+                          },
+                          {
+                            label: "Yes",
+                            staked_amount:
+                              market?.choices?.[1]?.staked_amount?.toString() ||
+                              "0",
+                          },
+                        ]}
+                        totalRevenue={market?.total_pool?.toString() || "$0"}
+                        onClick={() => handleMarketClick(market)}
+                        isClosed={isClosed}
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center">
