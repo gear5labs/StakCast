@@ -11,13 +11,21 @@ interface PurchaseSectionProps {
   market?: Market;
 }
 
+export type Token = "STRK" | "SK";
+
+const AVAILABLE_TOKENS: { value: Token; label: string; symbol: string }[] = [
+  { value: "STRK", label: "Starknet Token", symbol: "STRK" },
+  { value: "SK", label: "Stakcast Token", symbol: "SK" },
+];
+
 const PurchaseSection = ({ market }: PurchaseSectionProps) => {
-  const { placeBet, loading } = usePurchase();
+  
   const { selectedOption, units, pricePerUnit, setUnits, handleOptionSelect } =
     useMarketContext();
   const connected = useIsConnected();
   const [showWalletModal, setShowWalletModal] = useState(false);
-
+  const [selectedToken, setSelectedToken] = useState<Token>("STRK");
+   const { placeBet, loading } = usePurchase(selectedToken);
   const handlePurchase = () => {
     if (!selectedOption || units <= 0 || !market) {
       console.log("Please select a choice and enter a valid number of units.");
@@ -26,15 +34,22 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
 
     const market_id = +market.market_id.toString(16);
     const choice_idx = selectedOption === "Yes" ? 0x1 : 0x0;
-    const amount = units * 10 ** 18 as number;
+    const amount = (units * 10 ** 18) as number;
     const market_type = 0;
     console.log("category", market.category);
-    console.log({ market_id, choice_idx, amount, market_type });
+    console.log("selected token", selectedToken);
+    console.log({
+      market_id,
+      choice_idx,
+      amount,
+      market_type,
+    
+    });
     console.log(
-      `Placing bet on "${selectedOption}" with market_id=${market_id}, choice_idx=${choice_idx}, amount=${amount}, market_type=${market_type}`
+      `Placing bet on "${selectedOption}" with market_id=${market_id}, choice_idx=${choice_idx}, amount=${amount}, market_type=${market_type}, token=${selectedToken}`
     );
 
-    placeBet(market_id, choice_idx, amount, market_type);
+    placeBet(market_id, choice_idx, amount, market_type, selectedToken);
   };
 
   const handleClick = () => {
@@ -79,6 +94,24 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
             );
           })}
 
+        {/* Token Selection Dropdown */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+            Payment Token
+          </label>
+          <select
+            value={selectedToken}
+            onChange={(e) => setSelectedToken(e.target.value as Token)}
+            className="w-full px-3 py-2 border rounded-lg dark:bg-slate-900 dark:text-white border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          >
+            {AVAILABLE_TOKENS.map((token) => (
+              <option key={token.value} value={token.value}>
+                {token.label} ({token.symbol})
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Units Input */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
@@ -89,24 +122,29 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
             value={units}
             onChange={(e) => setUnits(parseInt(e.target.value) || 0)}
             min={1}
-            className="w-full px-3 py-2 border rounded-lg dark:bg-slate-900 dark:text-white"
+            className="w-full px-3 py-2 border rounded-lg dark:bg-slate-900 dark:text-white border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           />
         </div>
 
         {/* Price Summary */}
         <p className="text-sm text-gray-600 dark:text-gray-300">
-          Price per unit: ${pricePerUnit.toFixed(2)}
+          Price per unit: {pricePerUnit.toFixed(2)} {selectedToken}
         </p>
         <p className="text-sm font-semibold text-gray-800 dark:text-white">
-          Total: ${(units * pricePerUnit).toFixed(2)}
+          Total: {(units * pricePerUnit).toFixed(2)} {selectedToken}
         </p>
 
         {/* Purchase Button */}
         <button
           onClick={handleClick}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading}
         >
-          {loading ? "loading" : connected ? "Purchase" : "Connect Wallet"}
+          {loading
+            ? "Processing..."
+            : connected
+            ? `Purchase with ${selectedToken}`
+            : "Connect Wallet"}
         </button>
       </div>
 
