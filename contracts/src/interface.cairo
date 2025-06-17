@@ -59,6 +59,25 @@ pub struct SportsPrediction {
     pub team_flag: bool // Flag indicating if this is a team-based prediction
 }
 
+/// Represents a business prediction market with binary (yes/no) outcomes
+/// Used for predictions about business (e.g., "Will over 50% of Fortune 500 companies adopt
+/// blockchain solutions by 2026?")
+#[derive(Drop, Serde, starknet::Store)]
+pub struct BusinessPrediction {
+    pub title: ByteArray, // Market title/question
+    pub market_id: u256, // Unique identifier for the market
+    pub description: ByteArray, // Detailed description of the prediction
+    pub choices: (Choice, Choice), // Binary choices (typically Yes/No)
+    pub category: felt252, // Category identifier for market classification
+    pub image_url: ByteArray, // URL to market image/icon
+    pub is_resolved: bool, // Whether the market has been resolved
+    pub is_open: bool, // Whether the market is accepting new bets
+    pub end_time: u64, // Timestamp when the market closes
+    pub winning_choice: Option<Choice>, // The winning choice after resolution
+    pub total_pool: u256, // Total amount staked in the market
+    pub event_id: u64 // External API event ID for automatic resolution
+}
+
 // ================ Supporting Types ================
 
 /// Represents a choice in a prediction market with its associated stake
@@ -130,6 +149,18 @@ pub trait IPredictionHub<TContractState> {
         team_flag: bool,
     );
 
+    /// Creates a new business prediction market with binary (yes/no) choices
+    fn create_business_prediction(
+        ref self: TContractState,
+        title: ByteArray,
+        description: ByteArray,
+        choices: (felt252, felt252),
+        category: felt252,
+        image_url: ByteArray,
+        end_time: u64,
+        event_id: u64,
+    );
+
     // ================ Market Queries ================
 
     /// Returns the total number of prediction markets created
@@ -152,6 +183,12 @@ pub trait IPredictionHub<TContractState> {
 
     /// Returns an array of all active sports prediction markets
     fn get_all_sports_predictions(self: @TContractState) -> Array<SportsPrediction>;
+
+    /// Retrieves a specific business prediction market by ID
+    fn get_business_prediction(self: @TContractState, market_id: u256) -> BusinessPrediction;
+
+    /// Returns an array of all active business prediction markets
+    fn get_all_business_predictions(self: @TContractState) -> Array<BusinessPrediction>;
 
     // ================ Betting Functions ================
 
