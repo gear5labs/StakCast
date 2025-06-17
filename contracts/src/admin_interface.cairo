@@ -110,4 +110,19 @@ pub trait IAdditionalAdmin<TContractState> {
     fn emergency_withdraw_tokens(
         ref self: TContractState, amount: u256, recipient: ContractAddress,
     );
+
+    // ================ Multi-Token Support Functions ================
+
+    /// Emergency withdraw specific token from contract (admin only)
+    fn emergency_withdraw_specific_token(
+        ref self: TContractState, token_name: felt252, amount: u256, recipient: ContractAddress,
+    );
+
+    /// Add a new supported token (admin only)
+    fn add_supported_token(
+        ref self: TContractState, token_name: felt252, token_address: ContractAddress,
+    );
+
+    /// Remove a supported token (admin only)
+    fn remove_supported_token(ref self: TContractState, token_name: felt252);
 }

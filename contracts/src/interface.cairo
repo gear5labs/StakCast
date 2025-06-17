@@ -303,4 +303,35 @@ pub trait IPredictionHub<TContractState> {
 
     /// Upgrades the contract implementation (admin only)
     fn upgrade(ref self: TContractState, impl_hash: ClassHash);
+
+    // ================ Multi-Token Support Functions ================
+
+    /// Places a bet using a specific token
+    fn place_bet_with_token(
+        ref self: TContractState,
+        market_id: u256,
+        choice_idx: u8,
+        amount: u256,
+        market_type: u8,
+        token_name: felt252,
+    ) -> bool;
+
+    /// Places a wager using a specific token
+    fn place_wager_with_token(
+        ref self: TContractState,
+        market_id: u256,
+        choice_idx: u8,
+        amount: u256,
+        market_type: u8,
+        token_name: felt252,
+    ) -> bool;
+
+    /// Gets the contract address for a supported token
+    fn get_supported_token(self: @TContractState, token_name: felt252) -> ContractAddress;
+
+    /// Gets the token used for a specific market
+    fn get_market_token(self: @TContractState, market_id: u256) -> ContractAddress;
+
+    /// Checks if a token is supported
+    fn is_token_supported(self: @TContractState, token_name: felt252) -> bool;
 }

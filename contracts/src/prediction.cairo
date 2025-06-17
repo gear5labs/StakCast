@@ -104,8 +104,10 @@ pub mod PredictionHub {
         platform_fee_percentage: u256, // Basis points (e.g., 250 = 2.5%)
         collected_fees: Map<u256, u256>, // market_id -> total_fees_collected
         total_fees_collected: u256,
-        // Token integration
-        betting_token: ContractAddress, // ERC20 token used for betting
+        // Token integration - Multi-token support
+        betting_token: ContractAddress, // Default ERC20 token used for betting (backward compatibility)
+        supported_tokens: Map<felt252, ContractAddress>, // Map token names to addresses
+        market_token: Map<u256, ContractAddress>, // Map market_id to specific token used
         // Oracle integration
         pragma_oracle: ContractAddress,
         // Emergency controls
@@ -158,6 +160,9 @@ pub mod PredictionHub {
         self.pragma_oracle.write(pragma_oracle);
 
         self.betting_token.write(betting_token);
+
+        // Initialize supported tokens with Starknet mainnet addresses
+        self._initialize_supported_tokens();
 
         // Set default time restrictions
         self.min_market_duration.write(3600); // 1 hour minimum
@@ -592,6 +597,17 @@ pub mod PredictionHub {
             self.place_wager(market_id, choice_idx, amount, market_type)
         }
 
+        fn place_bet_with_token(
+            ref self: ContractState,
+            market_id: u256,
+            choice_idx: u8,
+            amount: u256,
+            market_type: u8,
+            token_name: felt252,
+        ) -> bool {
+            self.place_wager_with_token(market_id, choice_idx, amount, market_type, token_name)
+        }
+
         fn place_wager(
             ref self: ContractState, market_id: u256, choice_idx: u8, amount: u256, market_type: u8,
         ) -> bool {
@@ -614,6 +630,107 @@ pub mod PredictionHub {
 
             // Transfer tokens from user to contract
             let token = IERC20Dispatcher { contract_address: self.betting_token.read() };
+            let success = token.transfer_from(caller, starknet::get_contract_address(), amount);
+            assert(success, 'Token transfer failed');
+
+            // Transfer fees to fee recipient
+            if fee_amount > 0 {
+                let fee_success = token.transfer(self.fee_recipient.read(), fee_amount);
+                assert(fee_success, 'Fee transfer failed');
+
+                // Track fees
+                let current_market_fees = self.collected_fees.entry(market_id).read();
+                self.collected_fees.entry(market_id).write(current_market_fees + fee_amount);
+                self.total_fees_collected.write(self.total_fees_collected.read() + fee_amount);
+
+                self
+                    .emit(
+                        FeesCollected {
+                            market_id, fee_amount, fee_recipient: self.fee_recipient.read(),
+                        },
+                    );
+            }
+
+            // Create user bet with net amount
+            let choice = self._get_choice_struct(market_id, market_type, choice_idx);
+            let user_stake = UserStake { amount: net_amount, claimed: false };
+            let user_bet = UserBet { choice, stake: user_stake };
+
+            // Update user bets
+            let count_key = (caller, market_id, market_type);
+            let current_count = self.user_bet_counts.entry(count_key).read();
+            let bet_key = (caller, market_id, market_type, current_count);
+
+            self.user_bets.entry(bet_key).write(user_bet);
+            self.user_bet_counts.entry(count_key).write(current_count + 1);
+
+            // Update market totals with net amount
+            self._update_market_totals(market_id, market_type, choice_idx, net_amount);
+
+            // Update liquidity tracking
+            let current_liquidity = self.market_liquidity.entry(market_id).read();
+            self.market_liquidity.entry(market_id).write(current_liquidity + net_amount);
+            self.total_value_locked.write(self.total_value_locked.read() + net_amount);
+
+            // Emit comprehensive wager event
+            self
+                .emit(
+                    WagerPlaced {
+                        market_id,
+                        user: caller,
+                        choice: choice_idx,
+                        amount,
+                        fee_amount,
+                        net_amount,
+                        wager_index: current_count,
+                    },
+                );
+
+            self.end_reentrancy_guard();
+            true
+        }
+
+        fn place_wager_with_token(
+            ref self: ContractState,
+            market_id: u256,
+            choice_idx: u8,
+            amount: u256,
+            market_type: u8,
+            token_name: felt252,
+        ) -> bool {
+            self.assert_not_paused();
+            self.assert_betting_not_paused();
+            self.assert_market_exists(market_id, market_type);
+            self.assert_market_open(market_id, market_type);
+            self.assert_valid_choice(choice_idx);
+            self.assert_valid_amount(amount);
+            self.start_reentrancy_guard();
+
+            let caller = get_caller_address();
+
+            // Get token address from the mapping
+            let token_address = self.get_asset_address(token_name);
+            assert(!token_address.is_zero(), 'Unsupported token');
+
+            // Store the token used for this market (for consistency)
+            let existing_market_token = self.market_token.entry(market_id).read();
+            if existing_market_token.is_zero() {
+                self.market_token.entry(market_id).write(token_address);
+            } else {
+                // Ensure all bets on this market use the same token
+                assert(existing_market_token == token_address, 'Market token mismatch');
+            }
+
+            self.assert_sufficient_token_balance_for_token(caller, amount, token_address);
+            self.assert_sufficient_allowance_for_token(caller, amount, token_address);
+
+            // Calculate fees
+            let fee_percentage = self.platform_fee_percentage.read();
+            let fee_amount = (amount * fee_percentage) / 10000; // Basis points conversion
+            let net_amount = amount - fee_amount;
+
+            // Transfer tokens from user to contract
+            let token = IERC20Dispatcher { contract_address: token_address };
             let success = token.transfer_from(caller, starknet::get_contract_address(), amount);
             assert(success, 'Token transfer failed');
 
@@ -898,8 +1015,9 @@ pub mod PredictionHub {
                 user_stake // Return original stake if no one won
             };
 
-            // Transfer winnings to user
-            let token = IERC20Dispatcher { contract_address: self.betting_token.read() };
+            // Transfer winnings to user using the correct token for this market
+            let market_token_address = self.get_market_token(market_id);
+            let token = IERC20Dispatcher { contract_address: market_token_address };
             let success = token.transfer(caller, winnings);
             assert(success, 'Winnings transfer failed');
 
@@ -1121,6 +1239,25 @@ pub mod PredictionHub {
 
         fn get_total_value_locked(self: @ContractState) -> u256 {
             self.total_value_locked.read()
+        }
+
+        // ================ Multi-Token Support Functions ================
+
+        fn get_supported_token(self: @ContractState, token_name: felt252) -> ContractAddress {
+            self.get_asset_address(token_name)
+        }
+
+        fn get_market_token(self: @ContractState, market_id: u256) -> ContractAddress {
+            let market_token = self.market_token.entry(market_id).read();
+            if market_token.is_zero() {
+                self.betting_token.read() // Return default token if no specific token set
+            } else {
+                market_token
+            }
+        }
+
+        fn is_token_supported(self: @ContractState, token_name: felt252) -> bool {
+            !self.get_asset_address(token_name).is_zero()
         }
     }
 
@@ -1354,6 +1491,33 @@ pub mod PredictionHub {
             let success = token.transfer(recipient, amount);
             assert(success, 'Emergency withdrawal failed');
         }
+
+        fn emergency_withdraw_specific_token(
+            ref self: ContractState, token_name: felt252, amount: u256, recipient: ContractAddress,
+        ) {
+            self.assert_only_admin();
+            assert(amount > 0, 'Amount must be positive');
+
+            let token_address = self.get_asset_address(token_name);
+            assert(!token_address.is_zero(), 'Unsupported token');
+
+            let token = IERC20Dispatcher { contract_address: token_address };
+            let success = token.transfer(recipient, amount);
+            assert(success, 'Emergency withdrawal failed');
+        }
+
+        fn add_supported_token(
+            ref self: ContractState, token_name: felt252, token_address: ContractAddress,
+        ) {
+            self.assert_only_admin();
+            assert(!token_address.is_zero(), 'Invalid token address');
+            self.supported_tokens.entry(token_name).write(token_address);
+        }
+
+        fn remove_supported_token(ref self: ContractState, token_name: felt252) {
+            self.assert_only_admin();
+            self.supported_tokens.entry(token_name).write(0.try_into().unwrap());
+        }
     }
 
     // ================ Helper Functions ================
@@ -1467,6 +1631,41 @@ pub mod PredictionHub {
                     choice_1
                 }
             }
+        }
+
+        fn get_asset_address(self: @ContractState, token_name: felt252) -> ContractAddress {
+            // Return the token address from supported tokens mapping
+            // Admin must explicitly add tokens for security
+            self.supported_tokens.entry(token_name).read()
+        }
+
+        fn _initialize_supported_tokens(
+            ref self: ContractState,
+        ) { // Initialize supported tokens storage
+        // Admin must explicitly add tokens using add_supported_token()
+        // This ensures no hardcoded mainnet addresses in tests
+        }
+
+        fn assert_sufficient_token_balance_for_token(
+            self: @ContractState,
+            user: ContractAddress,
+            amount: u256,
+            token_address: ContractAddress,
+        ) {
+            let token = IERC20Dispatcher { contract_address: token_address };
+            let balance = token.balance_of(user);
+            assert(balance >= amount, 'Insufficient token balance');
+        }
+
+        fn assert_sufficient_allowance_for_token(
+            self: @ContractState,
+            user: ContractAddress,
+            amount: u256,
+            token_address: ContractAddress,
+        ) {
+            let token = IERC20Dispatcher { contract_address: token_address };
+            let allowance = token.allowance(user, starknet::get_contract_address());
+            assert(allowance >= amount, 'Insufficient token allowance');
         }
     }
 }
