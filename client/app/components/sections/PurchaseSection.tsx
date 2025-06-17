@@ -19,13 +19,12 @@ const AVAILABLE_TOKENS: { value: Token; label: string; symbol: string }[] = [
 ];
 
 const PurchaseSection = ({ market }: PurchaseSectionProps) => {
-  
   const { selectedOption, units, pricePerUnit, setUnits, handleOptionSelect } =
     useMarketContext();
   const connected = useIsConnected();
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [selectedToken, setSelectedToken] = useState<Token>("STRK");
-   const { placeBet, loading } = usePurchase(selectedToken);
+  const { placeBet, loading } = usePurchase(selectedToken);
   const handlePurchase = () => {
     if (!selectedOption || units <= 0 || !market) {
       console.log("Please select a choice and enter a valid number of units.");
@@ -36,6 +35,9 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
     const choice_idx = selectedOption === "Yes" ? 0x1 : 0x0;
     const amount = (units * 10 ** 18) as number;
     const market_type = 0;
+    console.log(
+      `Placing bet on "${selectedOption}" with market_id=${market_id}, choice_idx=${choice_idx}, amount=${amount}, market_type=${market_type}, token=${selectedToken}`
+    );
     console.log("category", market.category);
     console.log("selected token", selectedToken);
     console.log({
@@ -43,13 +45,12 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
       choice_idx,
       amount,
       market_type,
-    
     });
     console.log(
       `Placing bet on "${selectedOption}" with market_id=${market_id}, choice_idx=${choice_idx}, amount=${amount}, market_type=${market_type}, token=${selectedToken}`
     );
 
-    placeBet(market_id, choice_idx, amount, market_type, selectedToken);
+    placeBet(market_id, choice_idx, amount, market_type);
   };
 
   const handleClick = () => {
@@ -126,7 +127,7 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
           />
         </div>
 
-        {/* Price Summary */}
+       
         <p className="text-sm text-gray-600 dark:text-gray-300">
           Price per unit: {pricePerUnit.toFixed(2)} {selectedToken}
         </p>
@@ -134,7 +135,7 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
           Total: {(units * pricePerUnit).toFixed(2)} {selectedToken}
         </p>
 
-        {/* Purchase Button */}
+
         <button
           onClick={handleClick}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
