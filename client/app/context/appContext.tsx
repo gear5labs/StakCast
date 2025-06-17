@@ -3,7 +3,6 @@ import {
   createContext,
   useContext,
   useState,
-
   ReactNode,
   SetStateAction,
   Dispatch,
@@ -11,15 +10,20 @@ import {
 import { useAccount, useBalance } from "@starknet-react/core";
 import { SessionAccountInterface } from "@argent/invisible-sdk";
 import { STRKTokenAddress } from "../components/utils/constants";
+import { AccountInterface } from "starknet";
+import { Token } from "../components/sections/PurchaseSection";
 
 interface AppContextType {
   balance: string;
   address: `0x${string}` | undefined;
   sessionAccount: SessionAccountInterface | undefined;
   status: string;
+  account: AccountInterface | undefined;
   setAccount: Dispatch<SetStateAction<SessionAccountInterface | undefined>>;
   setConnectionMode: (mode: "email" | "wallet") => void;
   connectionMode: "email" | "wallet";
+  selectedToken: Token;
+  setSelectedToken: Dispatch<SetStateAction<Token>>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -32,11 +36,11 @@ const getInitialConnectionMode = (): "email" | "wallet" => {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   let { address } = useAccount();
-
+  const { account, isConnected } = useAccount();
   const [connectionModeState, setConnectionModeState] = useState<
     "email" | "wallet"
   >(getInitialConnectionMode());
-
+  const [selectedToken, setSelectedToken] = useState<Token>("STRK");
   const setConnectionMode = (mode: "email" | "wallet") => {
     localStorage.setItem("connectionMode", mode);
     setConnectionModeState(mode);
@@ -59,16 +63,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ? `${parseFloat(data.formatted).toFixed(2)} ${data.symbol}`
     : "";
 
-  const status = address ? "connected" : "disconnected";
+  const status = isConnected ? "connected" : "disconnected";
 
   return (
     <AppContext.Provider
       value={{
+        selectedToken,
+        setSelectedToken,
         address,
         status,
         sessionAccount,
         balance,
         setAccount,
+        account,
         connectionMode: connectionModeState,
         setConnectionMode,
       }}

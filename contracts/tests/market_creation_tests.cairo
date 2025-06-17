@@ -48,8 +48,8 @@ fn PRAGMA_ORACLE_ADDR() -> ContractAddress {
 
 fn deploy_contract() -> (IPredictionHubDispatcher, IAdditionalAdminDispatcher) {
     // Deploy mock ERC20 token
-    let token_contract = declare("MockERC20").unwrap().contract_class();
-    let token_calldata = array![USER1_ADDR().into()];
+    let token_contract = declare("strktoken").unwrap().contract_class();
+    let token_calldata = array![USER1_ADDR().into(), ADMIN_ADDR().into(), 18];
     let (token_address, _) = token_contract.deploy(@token_calldata).unwrap();
 
     let contract = declare("PredictionHub").unwrap().contract_class();
@@ -401,6 +401,50 @@ fn test_create_sports_prediction_non_team_event() {
     assert(choice_1.label == 'No', 'Choice 1 No');
 }
 
+// ================ Business Prediction Market Tests ================
+
+#[test]
+fn test_create_business_prediction_success() {
+    let (contract, _admin_contract) = setup_with_moderator();
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let future_time = get_block_timestamp() + 86400; // 1 day from now
+
+    contract
+        .create_business_prediction(
+            "Will Microsoft acquire a gaming company by June 2025?",
+            "business Predictions for Microsoft to acquire a specific gaming company by June 2025?",
+            ('Yes', 'No'),
+            'business_acquisition',
+            "https://example.com/microsoft-image.png",
+            future_time,
+            45637 // Event ID
+        );
+
+    // Verify market count increased
+    let count = contract.get_prediction_count();
+    println!("Market count: {}", count);
+    assert(count == 1, 'Market count should be 1');
+
+    // Verify market data
+    let market = contract.get_business_prediction(1);
+    assert(market.market_id == 1, 'Market ID should be 1');
+    assert(
+        market.title == "Will Microsoft acquire a gaming company by June 2025?", 'Title mismatch',
+    );
+    assert(market.is_open, 'Market should be open');
+    assert(!market.is_resolved, 'Market not resolved');
+    assert(market.total_pool == 0, 'Initial pool 0');
+    assert(market.end_time == future_time, 'End time mismatch');
+
+    // Verify choices
+    let (choice_0, choice_1) = market.choices;
+    assert(choice_0.label == 'Yes', 'Choice 0 label mismatch');
+    assert(choice_1.label == 'No', 'Choice 1 label mismatch');
+
+    let business_market = contract.get_all_business_predictions();
+    assert(business_market.len() == 1, 'Should return 1 business market');
+}
 // ================ Mixed Market Type Tests ================
 
 #[test]
@@ -447,28 +491,43 @@ fn test_create_all_market_types() {
             555,
             true,
         );
+    // Create business prediction
+    contract
+        .create_business_prediction(
+            "Will Microsoft acquire a gaming company by June 2025?",
+            "business Predictions for Microsoft to acquire a specific gaming company by June 2025?",
+            ('Yes', 'No'),
+            'business_acquisition',
+            "https://example.com/microsoft-image.png",
+            future_time,
+            45637 // Event ID
+        );
 
     // Verify total count
     let count = contract.get_prediction_count();
-    assert(count == 3, 'Should have 3 markets');
+    assert(count == 4, 'Should have 4 markets');
 
     // Verify each market type exists
     let general_market = contract.get_prediction(1);
     let crypto_market = contract.get_crypto_prediction(2);
     let sports_market = contract.get_sports_prediction(3);
+    let business_market = contract.get_business_prediction(4);
 
     assert(general_market.market_id == 1, 'General market ID 1');
     assert(crypto_market.market_id == 2, 'Crypto market ID 2');
     assert(sports_market.market_id == 3, 'Sports market ID 3');
+    assert(business_market.market_id == 4, 'Business market ID 4');
 
     // Test get_all functions
     let all_general = contract.get_all_predictions();
     let all_crypto = contract.get_all_crypto_predictions();
     let all_sports = contract.get_all_sports_predictions();
+    let all_business = contract.get_all_business_predictions();
 
     assert(all_general.len() == 1, '1 general market');
     assert(all_crypto.len() == 1, '1 crypto market');
     assert(all_sports.len() == 1, '1 sports market');
+    assert(all_business.len() == 1, '1 business market');
 }
 
 // ================ Admin and Moderator Management Tests ================

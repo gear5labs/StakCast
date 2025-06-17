@@ -1,0 +1,123 @@
+import { useCallback, useEffect, useState } from "react";
+import { useContract, useSendTransaction } from "@starknet-react/core";
+import abi from "@/app/abis/abi";
+import {
+  SKTokenAddress,
+  STAKCAST_CONTRACT_ADDRESS,
+  STRKTokenAddress,
+} from "../components/utils/constants";
+import erc20Abi from "../abis/token";
+import { cairo, Call, uint256 } from "starknet";
+import { useAppContext } from "../context/appContext";
+
+interface UsePurchaseReturn {
+  placeBet: (
+    market_id: number | bigint,
+    choice_idx: number,
+    amount: bigint | number,
+    market_type: number
+  ) => Promise<void>;
+  send: ReturnType<typeof useSendTransaction>["send"];
+  loading: boolean;
+  error: string | null;
+  success: boolean;
+  status: string;
+}
+export const usePurchase = (): UsePurchaseReturn => {
+  const { contract } = useContract({
+    abi,
+    address: STAKCAST_CONTRACT_ADDRESS as "0x",
+  });
+  const { selectedToken } = useAppContext();
+  const { contract: ercContract } = useContract({
+    abi: erc20Abi,
+    address:
+      selectedToken == "SK" ? (SKTokenAddress as "0x") : STRKTokenAddress,
+  });
+
+  const [calls, setCalls] = useState<Call[] | undefined>(undefined);
+  const [shouldSend, setShouldSend] = useState(false);
+
+  const { send, error, status, isPending, isSuccess } = useSendTransaction({
+    calls,
+  });
+
+  const placeBet = useCallback(
+    async (
+      market_id: number | bigint,
+      choice_idx: number,
+      amount: bigint | number,
+      market_type: number
+    ): Promise<void> => {
+      if (!contract) {
+        console.warn("Contract not initialized");
+        return Promise.resolve();
+      }
+      if (!ercContract) {
+        console.warn("Contract not initialized");
+        return Promise.resolve();
+      }
+      console.log(uint256.bnToUint256(11));
+      try {
+        const tokenApproval = await ercContract.populate("approve", [
+          STAKCAST_CONTRACT_ADDRESS,
+          cairo.uint256(amount),
+        ]);
+        console.log(
+          market_id,
+          choice_idx,
+          amount,
+          market_type,
+          selectedToken,
+          "hiey"
+        );
+
+        await contract.populate("place_bet", [
+          BigInt(market_id),
+          BigInt(choice_idx),
+          amount,
+          BigInt(market_type),
+        ]);
+        const populated =
+          selectedToken == "SK"
+            ? await contract.populate("place_bet", [
+                BigInt(market_id),
+                BigInt(choice_idx),
+                amount,
+                BigInt(market_type),
+              ])
+            : await contract.populate("place_bet_with_token", [
+                BigInt(market_id),
+                BigInt(choice_idx),
+                amount,
+                BigInt(market_type),
+                selectedToken,
+              ]);
+
+        setCalls([tokenApproval, populated]);
+        setShouldSend(true);
+      } catch (err) {
+        console.error("Failed to populate transaction:", err);
+      }
+
+      return Promise.resolve();
+    },
+    [contract, selectedToken, ercContract]
+  );
+
+  useEffect(() => {
+    if (calls && shouldSend) {
+      send();
+      setShouldSend(false);
+    }
+  }, [calls, shouldSend, send]);
+
+  return {
+    placeBet,
+    send,
+    loading: isPending,
+    success: isSuccess,
+    error: error ? error.message : null,
+    status,
+  };
+};

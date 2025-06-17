@@ -7,37 +7,41 @@ import { SessionAccountInterface } from "@argent/invisible-sdk";
 export function Providers({ children }: { children: React.ReactNode }) {
   const { status, connectionMode, setAccount } = useAppContext();
   const { connectors, connectAsync } = useConnect({});
-  console.log(connectionMode)
+  const [loading, setLoading] = React.useState(true);
+
   useEffect(() => {
-    if (connectionMode === "wallet") {
-      const LS_connector = localStorage.getItem("connector");
+    const reconnect = async () => {
+      if (connectionMode === "wallet") {
+        const LS_connector = localStorage.getItem("connector");
 
-      if (LS_connector && status === "disconnected") {
-        (async () => {
+        if (LS_connector && status === "disconnected") {
           const connector = connectors.find((con) => con.id === LS_connector);
-
+          console.log(connector);
           if (connector) {
             try {
-              await connectAsync({ connector })
-                .then(() => console.log("Wallet reconnected successfully"))
-                .catch((err) => console.log("Reconnection error:", err));
+              await connectAsync({ connector });
+              console.log("Wallet reconnected successfully");
             } catch (error) {
-              console.log("Failed to reconnect wallet:", error);
-              // Si falla la reconexión, limpiar el localStorage
+              console.log("Reconnection error:", error);
               localStorage.removeItem("connector");
             }
           }
-        })();
+        }
+      } else {
+        const LS_session = localStorage.getItem("sessionItem");
+        if (LS_session) {
+          const sessionItem: SessionAccountInterface = JSON.parse(LS_session);
+          setAccount(sessionItem);
+        }
       }
-    } else {
-      console.log("connection", connectionMode);
-      console.log("hhhhere");
-      const LS_session = localStorage.getItem("sessionItem");
-      if (!LS_session) return;
-      const sessionItem: SessionAccountInterface = JSON.parse(LS_session);
-      setAccount(sessionItem);
-    }
+
+      setLoading(false);
+    };
+
+    reconnect();
   }, [status, connectAsync, connectors, connectionMode]);
+
+  if (loading) return <div>Loading wallet...</div>;
 
   return <>{children}</>;
 }
