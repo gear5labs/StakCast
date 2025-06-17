@@ -4,8 +4,8 @@ use pragma_lib::abi::{IPragmaABIDispatcher, IPragmaABIDispatcherTrait};
 use pragma_lib::types::DataType;
 use stakcast::admin_interface::IAdditionalAdmin;
 use stakcast::interface::{
-    Choice, CryptoPrediction, IPredictionHub, PredictionMarket, SportsPrediction, UserBet,
-    UserStake,
+    BusinessPrediction, Choice, CryptoPrediction, IPredictionHub, PredictionMarket,
+    SportsPrediction, UserBet, UserStake,
 };
 use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
 use starknet::{ClassHash, ContractAddress, get_block_timestamp, get_caller_address};
@@ -95,6 +95,7 @@ pub mod PredictionHub {
         predictions: Map<u256, PredictionMarket>,
         crypto_predictions: Map<u256, CryptoPrediction>,
         sports_predictions: Map<u256, SportsPrediction>,
+        business_predictions: Map<u256, BusinessPrediction>,
         // User bets mapping: (user, market_id, market_type, bet_index) -> UserBet
         user_bets: Map<(ContractAddress, u256, u8, u8), UserBet>,
         user_bet_counts: Map<(ContractAddress, u256, u8), u8>,
@@ -257,6 +258,9 @@ pub mod PredictionHub {
                 assert(market.market_id == market_id, 'Market does not exist');
             } else if market_type == 2 {
                 let market = self.sports_predictions.entry(market_id).read();
+                assert(market.market_id == market_id, 'Market does not exist');
+            } else if market_type == 3 {
+                let market = self.business_predictions.entry(market_id).read();
                 assert(market.market_id == market_id, 'Market does not exist');
             } else {
                 panic!("Invalid market type");
@@ -445,6 +449,51 @@ pub mod PredictionHub {
             self.end_reentrancy_guard();
         }
 
+        fn create_business_prediction(
+            ref self: ContractState,
+            title: ByteArray,
+            description: ByteArray,
+            choices: (felt252, felt252),
+            category: felt252,
+            image_url: ByteArray,
+            end_time: u64,
+            event_id: u64,
+        ) {
+            self.assert_not_paused();
+            self.assert_market_creation_not_paused();
+            self.assert_only_moderator_or_admin();
+            self.assert_valid_market_timing(end_time);
+            self.start_reentrancy_guard();
+
+            let market_id = self.prediction_count.read() + 1;
+            self.prediction_count.write(market_id);
+
+            let (choice_0_label, choice_1_label) = choices;
+            let choice_0 = Choice { label: choice_0_label, staked_amount: 0 };
+            let choice_1 = Choice { label: choice_1_label, staked_amount: 0 };
+
+            let market = BusinessPrediction {
+                title,
+                market_id,
+                description,
+                choices: (choice_0, choice_1),
+                category,
+                image_url,
+                is_resolved: false,
+                is_open: true,
+                end_time,
+                winning_choice: Option::None,
+                total_pool: 0,
+                event_id,
+            };
+
+            self.business_predictions.entry(market_id).write(market);
+
+            self.emit(MarketCreated { market_id, creator: get_caller_address(), market_type: 3 });
+
+            self.end_reentrancy_guard();
+        }
+
         // ================ Market Queries ================
 
         fn get_prediction_count(self: @ContractState) -> u256 {
@@ -505,6 +554,27 @@ pub mod PredictionHub {
 
             while i <= count {
                 let market = self.sports_predictions.entry(i).read();
+                if market.market_id != 0 { // Check if market exists
+                    predictions.append(market);
+                }
+                i += 1;
+            }
+
+            predictions
+        }
+
+        fn get_business_prediction(self: @ContractState, market_id: u256) -> BusinessPrediction {
+            self.assert_market_exists(market_id, 3);
+            self.business_predictions.entry(market_id).read()
+        }
+
+        fn get_all_business_predictions(self: @ContractState) -> Array<BusinessPrediction> {
+            let mut predictions = ArrayTrait::new();
+            let count = self.prediction_count.read();
+            let mut i = 1;
+
+            while i <= count {
+                let market = self.business_predictions.entry(i).read();
                 if market.market_id != 0 { // Check if market exists
                     predictions.append(market);
                 }
