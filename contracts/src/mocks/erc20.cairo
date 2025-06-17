@@ -26,8 +26,8 @@ pub mod MockERC20 {
 
     #[constructor]
     fn constructor(ref self: ContractState, initial_owner: ContractAddress) {
-        let name = "SK Token";
-        let symbol = "SK";
+        let name = "Mock Token";
+        let symbol = "MOCK";
         let total_supply = 10000000000000000000000000_u256;
 
         self.erc20.initializer(name, symbol);

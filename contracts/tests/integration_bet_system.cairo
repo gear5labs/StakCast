@@ -57,8 +57,8 @@ fn test_complete_bet_management_workflow() {
     // ================ Setup Phase ================
 
     // Deploy mock ERC20 token
-    let token_contract = declare("MockERC20").unwrap().contract_class();
-    let token_calldata = array![USER1().into()];
+    let token_contract = declare("strktoken").unwrap().contract_class();
+    let token_calldata = array![USER1().into(), ADMIN().into(), 18];
     let (token_address, _) = token_contract.deploy(@token_calldata).unwrap();
     let token = IERC20Dispatcher { contract_address: token_address };
 
@@ -304,8 +304,8 @@ fn test_complete_bet_management_workflow() {
 #[test]
 fn test_edge_cases_and_error_conditions() {
     // Setup similar to above but simplified
-    let token_contract = declare("MockERC20").unwrap().contract_class();
-    let token_calldata = array![USER1().into()];
+    let token_contract = declare("strktoken").unwrap().contract_class();
+    let token_calldata = array![USER1().into(), ADMIN().into(), 18];
     let (token_address, _) = token_contract.deploy(@token_calldata).unwrap();
     let token = IERC20Dispatcher { contract_address: token_address };
 
