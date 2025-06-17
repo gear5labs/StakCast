@@ -8,7 +8,7 @@ export const STRKTokenAddress =
 
 
 export const SKTokenAddress =
-  '"0x0620e07581e4b797d2dbe6f1ef507899cdd186cc19a96791ac18335a17359c4f"';
+  "0x0620e07581e4b797d2dbe6f1ef507899cdd186cc19a96791ac18335a17359c4f";
 
 export const DAITokenAddress =
   "0x00da114221cb83fa859dbdb4c44beeaa0bb37c7537ad5ae66fe5e0efd20e6eb3";

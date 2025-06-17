@@ -6,6 +6,7 @@ import { useIsConnected } from "@/app/hooks/useIsConnected";
 import WalletModal from "../ui/ConnectWalletModal";
 import { formatAmount } from "@/app/utils/utils";
 import { usePurchase } from "@/app/hooks/usePurchase";
+import { useAppContext } from "@/app/context/appContext";
 
 interface PurchaseSectionProps {
   market?: Market;
@@ -23,8 +24,8 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
     useMarketContext();
   const connected = useIsConnected();
   const [showWalletModal, setShowWalletModal] = useState(false);
-  const [selectedToken, setSelectedToken] = useState<Token>("STRK");
-  const { placeBet, loading } = usePurchase(selectedToken);
+  const { selectedToken, setSelectedToken } = useAppContext();
+  const { placeBet, loading } = usePurchase();
   const handlePurchase = () => {
     if (!selectedOption || units <= 0 || !market) {
       console.log("Please select a choice and enter a valid number of units.");
@@ -39,7 +40,7 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
       `Placing bet on "${selectedOption}" with market_id=${market_id}, choice_idx=${choice_idx}, amount=${amount}, market_type=${market_type}, token=${selectedToken}`
     );
     console.log("category", market.category);
-    console.log("selected token", selectedToken);
+
     console.log({
       market_id,
       choice_idx,
@@ -127,14 +128,12 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
           />
         </div>
 
-       
         <p className="text-sm text-gray-600 dark:text-gray-300">
           Price per unit: {pricePerUnit.toFixed(2)} {selectedToken}
         </p>
         <p className="text-sm font-semibold text-gray-800 dark:text-white">
           Total: {(units * pricePerUnit).toFixed(2)} {selectedToken}
         </p>
-
 
         <button
           onClick={handleClick}

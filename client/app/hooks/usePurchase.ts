@@ -8,7 +8,7 @@ import {
 } from "../components/utils/constants";
 import erc20Abi from "../abis/token";
 import { cairo, Call, uint256 } from "starknet";
-import { Token } from "../components/sections/PurchaseSection";
+import { useAppContext } from "../context/appContext";
 
 interface UsePurchaseReturn {
   placeBet: (
@@ -23,15 +23,16 @@ interface UsePurchaseReturn {
   success: boolean;
   status: string;
 }
-
-export const usePurchase = (token?: Token): UsePurchaseReturn => {
+export const usePurchase = (): UsePurchaseReturn => {
   const { contract } = useContract({
     abi,
     address: STAKCAST_CONTRACT_ADDRESS as "0x",
   });
+  const { selectedToken } = useAppContext();
   const { contract: ercContract } = useContract({
     abi: erc20Abi,
-    address: token == "SK" ? (SKTokenAddress as "0x") : STRKTokenAddress,
+    address:
+      selectedToken == "SK" ? (SKTokenAddress as "0x") : STRKTokenAddress,
   });
 
   const [calls, setCalls] = useState<Call[] | undefined>(undefined);
@@ -62,13 +63,14 @@ export const usePurchase = (token?: Token): UsePurchaseReturn => {
           STAKCAST_CONTRACT_ADDRESS,
           cairo.uint256(amount),
         ]);
-        console.log(token, 'is the selected token')
+        console.log(market_id,choice_idx,amount,market_type,selectedToken
+          ,'hiey')
         const populated = await contract.populate("place_bet_with_token", [
           BigInt(market_id),
           BigInt(choice_idx),
           amount,
           BigInt(market_type),
-          token || "SK",
+          selectedToken
         ]);
 
         setCalls([tokenApproval, populated]);
@@ -79,7 +81,7 @@ export const usePurchase = (token?: Token): UsePurchaseReturn => {
 
       return Promise.resolve();
     },
-    [contract]
+    [contract, selectedToken, ercContract]
   );
 
   useEffect(() => {
