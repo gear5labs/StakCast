@@ -1,4 +1,5 @@
 import User from "../api/v1/User/user.entity";
+import { Response } from "express"
 
 class Helper {
 	private static count = 0;
@@ -20,13 +21,21 @@ class Helper {
 	// 	return generatedUsername;
 	// }
 
-	public static SuccessResponse<T>(body: string, data: T) {
-		return {
-			success: true,
-			message: body,
-			data,
-		};
+	public static SuccessResponse<T>(res: Response, message: string, data: T, statusCode = 200) {
+		return res.status(statusCode).json({
+      		status: "success",
+      		message,
+      		data,
+    	});
 	}
+
+	public static errorResponse(res: Response, message: string, statusCode = 500, details: any = null) {
+		return res.status(statusCode).json({
+			status: "error",
+			message,
+			details,
+		});
+  	}
 }
 
 export default Helper;
