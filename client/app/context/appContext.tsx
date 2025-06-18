@@ -24,6 +24,8 @@ interface AppContextType {
   connectionMode: "email" | "wallet";
   selectedToken: Token;
   setSelectedToken: Dispatch<SetStateAction<Token>>;
+  searchQuery: string;
+  setSearchQuery: Dispatch<SetStateAction<string>>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -41,6 +43,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     "email" | "wallet"
   >(getInitialConnectionMode());
   const [selectedToken, setSelectedToken] = useState<Token>("STRK");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const setConnectionMode = (mode: "email" | "wallet") => {
     localStorage.setItem("connectionMode", mode);
     setConnectionModeState(mode);
@@ -78,6 +81,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         account,
         connectionMode: connectionModeState,
         setConnectionMode,
+        searchQuery,
+        setSearchQuery,
       }}
     >
       {children}

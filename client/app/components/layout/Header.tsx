@@ -229,6 +229,7 @@ const Header = () => {
               >
                 About Us
               </Link>
+              
               <div className="pt-2">
                 {!isConnected ? (
                   <button
