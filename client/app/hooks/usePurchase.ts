@@ -9,7 +9,7 @@ import {
 import erc20Abi from "../abis/token";
 import { cairo, Call, uint256 } from "starknet";
 import { useAppContext } from "../context/appContext";
-
+import { toast } from "react-toastify";
 interface UsePurchaseReturn {
   placeBet: (
     market_id: number | bigint,
@@ -95,9 +95,19 @@ export const usePurchase = (): UsePurchaseReturn => {
               ]);
 
         setCalls([tokenApproval, populated]);
+
         setShouldSend(true);
+        toast.info(
+          ` staked ${choice_idx == 0 ? "NO" : "Yes"} at ${
+            Number(amount) / 10 ** 18
+          }${selectedToken}`
+        );
+        toast.info("please approve the transaction with your wallet");
       } catch (err) {
         console.error("Failed to populate transaction:", err);
+        toast.error(
+          typeof err == "string" ? err : "failed to initiate transaction"
+        );
       }
 
       return Promise.resolve();

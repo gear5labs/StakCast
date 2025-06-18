@@ -7,7 +7,7 @@ import WalletModal from "../ui/ConnectWalletModal";
 import { formatAmount } from "@/app/utils/utils";
 import { usePurchase } from "@/app/hooks/usePurchase";
 import { useAppContext } from "@/app/context/appContext";
-
+import {toast} from 'react-toastify'
 interface PurchaseSectionProps {
   market?: Market;
 }
@@ -28,7 +28,7 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
   const { placeBet, loading } = usePurchase();
   const handlePurchase = () => {
     if (!selectedOption || units <= 0 || !market) {
-      console.log("Please select a choice and enter a valid number of units.");
+      toast.error("Please select a choice and enter a valid number of units.");
       return;
     }
 
