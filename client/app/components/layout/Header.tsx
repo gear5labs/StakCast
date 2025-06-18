@@ -178,7 +178,7 @@ const Header = () => {
                   </div>
                 ) : (
                   <button
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow"
+                    className="bg-gradient-to-r from-green-500 to-green-700 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow"
                     onClick={connectWalletModal}
                   >
                     Connect Wallet
@@ -229,6 +229,7 @@ const Header = () => {
               >
                 About Us
               </Link>
+              
               <div className="pt-2">
                 {!isConnected ? (
                   <button
