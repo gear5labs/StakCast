@@ -5,13 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Target, User, Link2, Trophy, Search, X } from "lucide-react";
 import { useAppContext } from "@/app/context/appContext";
 import { Button } from "@/components/ui/button";
-
-const categories = [
-  { name: "All Markets", slug: "All", icon: <Target size={16} />, count: 10 },
-  { name: "General", slug: "General", icon: <User size={16} />, count: 0 },
-  { name: "Crypto", slug: "Crypto", icon: <Link2 size={16} />, count: 0 },
-  { name: "Sports", slug: "Sports", icon: <Trophy size={16} />, count: 0 },
-];
+import { useMarketData } from "@/app/hooks/useMarket";
 
 const Categories = () => {
   const router = useRouter();
@@ -19,6 +13,34 @@ const Categories = () => {
   const currentCategory = searchParams.get("category") || "All";
   const { searchQuery, setSearchQuery } = useAppContext();
   const [searchFocused, setSearchFocused] = useState(false);
+  const { counts } = useMarketData();
+  console.log(counts);
+  const categories = [
+    {
+      name: "All Markets",
+      slug: "All",
+      icon: <Target size={16} />,
+      count: counts.all,
+    },
+    {
+      name: "General",
+      slug: "General",
+      icon: <User size={16} />,
+      count: counts.general,
+    },
+    {
+      name: "Crypto",
+      slug: "Crypto",
+      icon: <Link2 size={16} />,
+      count: counts.crypto,
+    },
+    {
+      name: "Sports",
+      slug: "Sports",
+      icon: <Trophy size={16} />,
+      count: counts.sports,
+    },
+  ];
 
   const handleCategoryClick = (slug: string) => {
     if (slug === "All") {
