@@ -21,7 +21,7 @@ class Helper {
 	// 	return generatedUsername;
 	// }
 
-	public static SuccessResponse<T>(res: Response, message: string, data: T, statusCode = 200) {
+	public static successResponse<T>(res: Response, message: string, data: T, statusCode = 200) {
 		return res.status(statusCode).json({
       		status: "success",
       		message,

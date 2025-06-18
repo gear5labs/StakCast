@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { injectable } from "tsyringe";
 import AuthService from "./auth.service";
-import { Helper } from "../../../utils/Helper"
+import Helper from "../../../utils/Helper";
 import { ApplicationError } from "../../../utils/errorHandler";
 
 @injectable()
@@ -37,7 +37,7 @@ export default class AuthController {
 				return res.status(401).json({ error: "Unauthorized" });
 			}
 			await this.authService.logout(userId);
-			return Helper.successResponse(res, "Logged out successfully");
+			res.json({ message: "Logged out successfully" })
 		} catch (error) {
 			const err = error as ApplicationError;
       		return Helper.errorResponse(res, err.message, err.statusCode || 401, err.details);
