@@ -231,6 +231,38 @@ pub trait IPredictionHub<TContractState> {
     /// Returns total value locked across all markets
     fn get_total_value_locked(self: @TContractState) -> u256;
 
+    /// Returns an array of all active general prediction markets
+    fn get_active_prediction_markets(self: @TContractState) -> Array<PredictionMarket>;
+
+    /// Returns an array of all active sport prediction markets
+    fn get_active_sport_markets(self: @TContractState) -> Array<SportsPrediction>;
+
+    /// Returns an array of all active crypto prediction markets
+    fn get_active_crypto_markets(self: @TContractState) -> Array<CryptoPrediction>;
+
+    /// Returns an array of all active business prediction markets
+    fn get_active_business_markets(self: @TContractState) -> Array<BusinessPrediction>;
+
+    /// Returns an array of all resolved general prediction markets
+    fn get_resolved_prediction_markets(self: @TContractState) -> Array<PredictionMarket>;
+
+    /// Returns an array of all resolved sport prediction markets
+    fn get_resolved_sport_markets(self: @TContractState) -> Array<SportsPrediction>;
+
+    /// Returns an array of all resolved crypto prediction markets
+    fn get_resolved_crypto_markets(self: @TContractState) -> Array<CryptoPrediction>;
+
+    /// Returns an array of all resolved business prediction markets
+    fn get_resolved_business_markets(self: @TContractState) -> Array<BusinessPrediction>;
+
+    fn is_prediction_market_open_for_betting(ref self: TContractState, market_id: u256) -> bool;
+
+    fn is_crypto_market_open_for_betting(ref self: TContractState, market_id: u256) -> bool;
+
+    fn is_sport_market_open_for_betting(ref self: TContractState, market_id: u256) -> bool;
+
+    fn is_business_market_open_for_betting(ref self: TContractState, market_id: u256) -> bool;
+
     // ================ Market Resolution ================
 
     /// Resolves a general prediction market by setting the winning option
