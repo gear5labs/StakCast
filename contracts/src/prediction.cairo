@@ -1199,6 +1199,50 @@ pub mod PredictionHub {
             self.resolve_sports_prediction_manually(market_id, winning_choice);
         }
 
+        fn resolve_business_prediction_manually(
+            ref self: ContractState, market_id: u256, winning_choice: u8,
+        ) {
+            self.assert_not_paused();
+            self.assert_resolution_not_paused();
+            self.assert_only_moderator_or_admin();
+            self.assert_market_exists(market_id, 3);
+            self.assert_valid_choice(winning_choice);
+            self.start_reentrancy_guard();
+
+            let mut market = self.business_predictions.entry(market_id).read();
+            assert(!market.is_resolved, 'Market already resolved');
+
+            let current_time = get_block_timestamp();
+            assert(current_time >= market.end_time, 'Market not yet ended');
+
+            let resolution_deadline = market.end_time + self.resolution_window.read();
+            assert(current_time <= resolution_deadline, 'Resolution window expired');
+
+            market.is_resolved = true;
+            market.is_open = false;
+
+            let winning_choice_struct = if winning_choice == 0 {
+                let (choice_0, _choice_1) = market.choices;
+                choice_0
+            } else {
+                let (_choice_0, choice_1) = market.choices;
+                choice_1
+            };
+
+            // Verify choice label is valid ('Yes' or 'No')
+            assert(
+                winning_choice_struct.label == 'Yes' || winning_choice_struct.label == 'No',
+                'Invalid winning choice label',
+            );
+
+            market.winning_choice = Option::Some(winning_choice_struct);
+            self.business_predictions.entry(market_id).write(market);
+
+            self.emit(MarketResolved { market_id, resolver: get_caller_address(), winning_choice });
+
+            self.end_reentrancy_guard();
+        }
+
         // ================ Winnings Management ================
 
         fn collect_winnings(

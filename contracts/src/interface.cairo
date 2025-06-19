@@ -286,6 +286,11 @@ pub trait IPredictionHub<TContractState> {
     /// Resolves a sports prediction automatically based on event outcome
     fn resolve_sports_prediction(ref self: TContractState, market_id: u256, winning_choice: u8);
 
+    /// Manually resolves a business prediction market
+    /// Override for the automatic resolution
+    fn resolve_business_prediction_manually(
+        ref self: TContractState, market_id: u256, winning_choice: u8,
+    );
     // ================ Winnings Management ================
 
     /// Allows a user to claim their winnings from a resolved prediction
