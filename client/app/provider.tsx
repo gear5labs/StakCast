@@ -41,7 +41,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
     reconnect();
   }, [status, connectAsync, connectors, connectionMode]);
 
-  if (loading) return <div>Loading wallet...</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64 w-full">
+        <div className="flex items-center space-x-3 text-gray-600">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-t-transparent border-gray-400" />
+          <span className="text-sm font-medium">Loading wallet...</span>
+        </div>
+      </div>
+    );
+  }
 
   return <>{children}</>;
 }

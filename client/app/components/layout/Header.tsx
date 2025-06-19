@@ -77,13 +77,13 @@ const Header = () => {
               onClick={() => router.push("/")}
             >
               <Image
-                src="/stakcast-logo.png"
+                src="/stakcast-logo-2.png"
                 alt="Stakcast"
                 width={230}
                 height={230}
-                className="h-10 w-auto"
+                className="h-[5.3rem] w-auto"
               />{" "}
-              <span className="text-green-700 font-bold">Stakcast</span>
+              {/* <span className="text-green-700 font-bold">Stakcast</span> */}
             </div>
 
             {/* Desktop Navigation */}

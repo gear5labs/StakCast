@@ -1,22 +1,24 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
+
 import { ArrowLeft, TrendingUp, MessageSquare, Activity } from "lucide-react";
 import CommentSection from "@/app/components/sections/CommentSection";
 import RecentActivity from "@/app/components/sections/RecentActivity";
 import ChartSection from "@/app/components/sections/ChartSection";
 import PurchaseSection from "@/app/components/sections/PurchaseSection";
+
 import { Button } from "@/components/ui/button";
 //import { useMarketContext } from "@/app/context/marketContext";
 import { Market } from "@/app/types";
 import { useMarketData } from "@/app/hooks/useMarket";
 import Spinner from "@/app/components/ui/loading/Spinner";
+import StakcastBanner from "@/app/components/ui/banners/banner";
 
 const Page = () => {
   const params = useParams();
   const router = useRouter();
-// const { units, pricePerUnit, selectedOption } = useMarketContext();
+  // const { units, pricePerUnit, selectedOption } = useMarketContext();
   const [activeTab, setActiveTab] = useState("chart");
 
   const { predictions: allMarkets, loading } = useMarketData();
@@ -72,15 +74,9 @@ const Page = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
+            {/* Replace the Image section with StakcastBanner */}
             <div className="bg-white dark:bg-slate-950 rounded-2xl shadow-sm overflow-hidden">
-              <div className="relative h-64 w-full">
-                <Image
-                  src={market.image_url}
-                  alt={market.title}
-                  fill
-                  className="object-cover"
-                />
-              </div>
+              <StakcastBanner />
             </div>
 
             {/* Tabs Navigation */}
