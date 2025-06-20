@@ -210,7 +210,7 @@ fn test_multiple_bets_same_user() {
         events.events.len() >= 3, 'Expected multiple events',
     ); // FeesCollected, WagerPlaced, BetPlaced
 
-    let expected_balance = 9500000000000000000000000 - 1000000000000000000000; // 9.5M - 1k
+    let _expected_balance = 9500000000000000000000000 - 1000000000000000000000; // 9.5M - 1k
     // Verify user bet was recorded
     let bet_count = prediction_hub.get_bet_count_for_market(USER1_ADDR(), market_id, 0);
     assert(bet_count == 1, 'Bet count incorrect');

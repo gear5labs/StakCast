@@ -1737,6 +1737,96 @@ pub mod PredictionHub {
             };
         }
 
+        fn emergency_resolve_market(
+            ref self: ContractState, market_id: u256, market_type: u8, winning_choice: u8,
+        ) {
+            self.assert_only_admin();
+            self.assert_market_exists(market_id, market_type);
+            assert(winning_choice <= 1, 'Invalid winning choice');
+
+            if market_type == 0 {
+                let mut market = self.predictions.entry(market_id).read();
+                assert(!market.is_resolved, 'Market already resolved');
+
+                let (choice_0, choice_1) = market.choices;
+                let winning_choice_struct = if winning_choice == 0 {
+                    choice_0
+                } else {
+                    choice_1
+                };
+                market.winning_choice = Option::Some(winning_choice_struct);
+                market.is_resolved = true;
+                market.is_open = false;
+
+                self.predictions.entry(market_id).write(market);
+            } else if market_type == 1 {
+                let mut market = self.crypto_predictions.entry(market_id).read();
+                assert(!market.is_resolved, 'Market already resolved');
+
+                let (choice_0, choice_1) = market.choices;
+                let winning_choice_struct = if winning_choice == 0 {
+                    choice_0
+                } else {
+                    choice_1
+                };
+                market.winning_choice = Option::Some(winning_choice_struct);
+                market.is_resolved = true;
+                market.is_open = false;
+
+                self.crypto_predictions.entry(market_id).write(market);
+            } else if market_type == 2 {
+                let mut market = self.sports_predictions.entry(market_id).read();
+                assert(!market.is_resolved, 'Market already resolved');
+
+                let (choice_0, choice_1) = market.choices;
+                let winning_choice_struct = if winning_choice == 0 {
+                    choice_0
+                } else {
+                    choice_1
+                };
+                market.winning_choice = Option::Some(winning_choice_struct);
+                market.is_resolved = true;
+                market.is_open = false;
+
+                self.sports_predictions.entry(market_id).write(market);
+            } else {
+                let mut market = self.business_predictions.entry(market_id).read();
+                assert(!market.is_resolved, 'Market already resolved');
+
+                let (choice_0, choice_1) = market.choices;
+                let winning_choice_struct = if winning_choice == 0 {
+                    choice_0
+                } else {
+                    choice_1
+                };
+                market.winning_choice = Option::Some(winning_choice_struct);
+                market.is_resolved = true;
+                market.is_open = false;
+
+                self.business_predictions.entry(market_id).write(market);
+            }
+        }
+
+        fn emergency_resolve_multiple_markets(
+            ref self: ContractState,
+            market_ids: Array<u256>,
+            market_types: Array<u8>,
+            winning_choices: Array<u8>,
+        ) {
+            self.assert_only_admin();
+            assert(market_ids.len() == market_types.len(), 'Arrays length mismatch');
+            assert(market_ids.len() == winning_choices.len(), 'Arrays length mismatch');
+
+            let mut i = 0;
+            while i < market_ids.len() {
+                let market_id = *market_ids.at(i);
+                let market_type = *market_types.at(i);
+                let winning_choice = *winning_choices.at(i);
+                self.emergency_resolve_market(market_id, market_type, winning_choice);
+                i += 1;
+            };
+        }
+
         fn set_betting_token(ref self: ContractState, token_address: ContractAddress) {
             self.assert_only_admin();
             self.betting_token.write(token_address);

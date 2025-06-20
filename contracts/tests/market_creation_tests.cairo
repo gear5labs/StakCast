@@ -611,7 +611,7 @@ fn test_create_all_market_types() {
     let general_market = contract.get_prediction(general_market_id);
     let crypto_market = contract.get_crypto_prediction(crypto_market_id);
     let sports_market = contract.get_sports_prediction(sports_market_id);
-    let business_market = contract.get_business_prediction(business_market_id);
+    let _business_market = contract.get_business_prediction(business_market_id);
 
     assert(general_market.market_id == general_market_id, 'General market ID mismatch');
     assert(crypto_market.market_id == crypto_market_id, 'Crypto market ID mismatch');

@@ -934,3 +934,144 @@ fn test_emergencyclose_market() {
     let market = contract.get_active_prediction_markets();
     assert(market.len() == 0, 'active Market count should be 0');
 }
+//test if emergency resolve market is working. Admin can resolve market before it ends
+#[test]
+fn test_emergency_resolve_market() {
+    let (contract, admin_contract) = setup_with_moderator();
+    let mut spy = spy_events();
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let future_time = get_block_timestamp() + 86400; // 1 day from now
+
+    contract
+        .create_prediction(
+            "Will Bitcoin reach $100,000 by end of 2026?",
+            "Prediction market for Bitcoin price reaching $100,000 USD by December 31, 2026",
+            ('Yes', 'No'),
+            'crypto_milestone',
+            "https://example.com/btc-image.png",
+            future_time,
+        );
+    let market_id = match spy.get_events().events.into_iter().last() {
+        Option::Some((
+            _, event,
+        )) => {
+            let market_id_felt = *event.data.at(0);
+            market_id_felt.into()
+        },
+        Option::None => panic!("No MarketCreated event emitted"),
+    };
+
+    // Verify market is active and not resolved
+    let market = contract.get_active_prediction_markets();
+    assert(market.len() == 1, 'active Market count should be 1');
+
+    let prediction = contract.get_prediction(market_id);
+    assert(!prediction.is_resolved, 'Dont resolved yet');
+
+    // Admin emergency resolves the market before it ends
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    admin_contract
+        .emergency_resolve_market(market_id, 0, 0); // Resolve with choice 0 (Yes) as winner
+    stop_cheat_caller_address(contract.contract_address);
+
+    // Verify market is now resolved and moved to resolved markets
+    let active_markets = contract.get_active_prediction_markets();
+    assert(active_markets.len() == 0, 'active Market count should be 0');
+
+    let resolved_markets = contract.get_resolved_prediction_markets();
+    assert(resolved_markets.len() == 1, 'resolved count should be 1');
+
+    let resolved_prediction = contract.get_prediction(market_id);
+    assert(resolved_prediction.is_resolved, 'Market should be resolved');
+    assert(!resolved_prediction.is_open, 'Market should be closed');
+
+    // Verify winning choice is set correctly
+    let winning_choice = resolved_prediction.winning_choice.unwrap();
+    assert(winning_choice.label == 'Yes', 'Winning choice should be Yes');
+}
+
+//test if batch emergency resolve market is working. Admin can resolve multiple markets before they
+//end
+#[test]
+fn test_emergency_resolve_multiple_markets() {
+    let (contract, admin_contract) = setup_with_moderator();
+    let mut spy = spy_events();
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let future_time = get_block_timestamp() + 86400; // 1 day from now
+
+    // Create multiple markets
+    contract
+        .create_prediction(
+            "Will Bitcoin reach $100,000 by end of 2026?",
+            "Prediction market for Bitcoin price reaching $100,000 USD by December 31, 2026",
+            ('Yes', 'No'),
+            'crypto_milestone',
+            "https://example.com/btc-image.png",
+            future_time,
+        );
+    let market_id1 = match spy.get_events().events.into_iter().last() {
+        Option::Some((
+            _, event,
+        )) => {
+            let market_id_felt = *event.data.at(0);
+            market_id_felt.into()
+        },
+        Option::None => panic!("No MarketCreated event emitted"),
+    };
+
+    contract
+        .create_prediction(
+            "Will Ethereum reach $10,000 by end of 2026?",
+            "Prediction market for Ethereum price reaching $10,000 USD by December 31, 2026",
+            ('Yes', 'No'),
+            'crypto_milestone',
+            "https://example.com/eth-image.png",
+            future_time,
+        );
+    let market_id2 = match spy.get_events().events.into_iter().last() {
+        Option::Some((
+            _, event,
+        )) => {
+            let market_id_felt = *event.data.at(0);
+            market_id_felt.into()
+        },
+        Option::None => panic!("No MarketCreated event emitted"),
+    };
+
+    // Verify markets are active and not resolved
+    let active_markets = contract.get_active_prediction_markets();
+    assert(active_markets.len() == 2, 'active Market count should be 2');
+
+    let prediction1 = contract.get_prediction(market_id1);
+    let prediction2 = contract.get_prediction(market_id2);
+    assert(!prediction1.is_resolved, 'Market 1 is not resolved yet');
+    assert(!prediction2.is_resolved, 'Market 2 is not resolved yet');
+
+    // Admin emergency resolves multiple markets before they end
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    let market_ids = array![market_id1, market_id2];
+    let market_types = array![0, 0]; // Both are general prediction markets
+    let winning_choices = array![0, 1]; // First market: choice 0 wins, Second market: choice 1 wins
+    admin_contract.emergency_resolve_multiple_markets(market_ids, market_types, winning_choices);
+    stop_cheat_caller_address(contract.contract_address);
+
+    // Verify markets are now resolved and moved to resolved markets
+    let active_markets = contract.get_active_prediction_markets();
+    assert(active_markets.len() == 0, 'active Market count should be 0');
+
+    let resolved_markets = contract.get_resolved_prediction_markets();
+    assert(resolved_markets.len() == 2, 'Market count should be 2');
+
+    let resolved_prediction1 = contract.get_prediction(market_id1);
+    let resolved_prediction2 = contract.get_prediction(market_id2);
+    assert(resolved_prediction1.is_resolved, 'Market 1 should be resolved');
+    assert(resolved_prediction2.is_resolved, 'Market 2 should be resolved');
+    assert(!resolved_prediction1.is_open, 'Market 1 should be closed');
+    assert(!resolved_prediction2.is_open, 'Market 2 should be closed');
+
+    // Verify winning choices are set correctly
+    let winning_choice1 = resolved_prediction1.winning_choice.unwrap();
+    let winning_choice2 = resolved_prediction2.winning_choice.unwrap();
+    assert(winning_choice1.label == 'Yes', 'Market 1 winning is Yes');
+    assert(winning_choice2.label == 'No', 'Market 2 winning is No');
+}

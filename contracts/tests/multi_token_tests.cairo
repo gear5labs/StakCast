@@ -486,7 +486,7 @@ fn test_backward_compatibility_default_token() {
 
 #[test]
 fn test_market_token_fallback() {
-    let (prediction_hub, _admin_interface, usdc_token, _strk, _eth, _custom) =
+    let (prediction_hub, _admin_interface, _usdc_token, _strk, _eth, _custom) =
         setup_multi_token_environment();
     let market_id = create_test_market(prediction_hub);
 
@@ -502,7 +502,7 @@ fn test_market_token_fallback() {
 fn test_multi_token_fee_collection() {
     let mut spy = spy_events();
 
-    let (prediction_hub, admin_interface, usdc_token, strk_token, _eth, _custom) =
+    let (prediction_hub, _admin_interface, usdc_token, strk_token, _eth, _custom) =
         setup_multi_token_environment();
 
     // Create two markets
