@@ -1,232 +1,387 @@
 "use client";
-import React, { useState } from "react";
-// import { useAppContext } from "../context/appContext";
+
+import type React from "react";
+import { useState } from "react";
 import {
   Wallet,
   TrendingUp,
   PlusCircle,
   History,
-  HelpCircle,
+  ArrowLeft,
+  Activity,
+  DollarSign,
+  Target,
+  Award,
+  PieChart,
 } from "lucide-react";
-import { DummyMarketType } from "../types";
-import { Button } from "@/components/ui/button";
-// import {
-//   Form,
-//   FormControl,
-//   FormField,
-//   FormItem,
-//   FormLabel,
-//   // Input,
-// } from "@/components/ui/form";
-
-// import { z } from "zod";
-import { Input } from "@/components/ui/input";
 import { useAccount } from "@starknet-react/core";
-import Header from "../components/layout/Header";
 import { useAppContext } from "../context/appContext";
+import Header from "../components/layout/Header";
+import { useMarketData } from "../hooks/useMarket";
 
-// const formSchema = z.object({
-//   name: z.string().min(2, {
-//     message: "Market name must be at least 2 characters.",
-//   }),
-//   image: z.string().url({ message: "Invalid URL format." }).optional(),
-// });
+type TimeFrame = "7d" | "1m" | "all";
 
 const DashboardPage = () => {
   const { address } = useAccount();
+  const { status, balanceInUSD: balance } = useAppContext();
+  const { counts } = useMarketData();
+  const [activeTimeFrame, setActiveTimeFrame] = useState<TimeFrame>("1m");
 
-  const [_markets, setMarkets] = useState<DummyMarketType[]>([]);
-  console.log(_markets);
-  const [newMarket, setNewMarket] = useState<Omit<DummyMarketType, "id">>({
-    name: "",
-    image: "",
-    totalRevenue: "",
-    categories: [],
-    status: "inactive",
-    startTime: 0,
-    endTime: 0,
-    createdBy: address || "",
-    options: [],
-  });
-  const { status, balance } = useAppContext();
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setNewMarket((prev) => ({ ...prev, [name]: value }));
+  const handleGoBack = () => {
+    window.history.back();
   };
 
-  const handleAddMarket = (e: React.FormEvent) => {
-    e.preventDefault();
-    setMarkets((prev) => [...prev, { ...newMarket, id: prev.length + 1 }]);
-    setNewMarket({
-      name: "",
-      image: "",
-      totalRevenue: "",
-      categories: [],
-      status: "inactive",
-      startTime: 0,
-      endTime: 0,
-      createdBy: address || "",
-      options: [],
-    });
+  // Mock data for different timeframes
+  const earningsData = {
+    "7d": { value: "$0", trend: "+12%", description: "last 7 days" },
+    "1m": { value: "$0", trend: "+65%", description: "last month" },
+    all: { value: "$0", trend: "+156%", description: "all time" },
   };
 
-  // function CreateMarketForm({ handleAddMarket }: Props) {
-  //   const form = useForm<Market>({
-  //     resolver: zodResolver(formSchema),
-  //     defaultValues: {
-  //       name: "",
-  //       image: "",
-  //     },
-  //   });
-  console.log(status);
   if (status !== "connected") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-950">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
         <Header />
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            Connect Wallet to View Dashboard
-          </h1>
-          <p className="text-gray-600 dark:text-white">
-            Please connect your wallet to access your dashboard.
-          </p>
+        <div className="w-full max-w-md mx-4 bg-white dark:bg-inherit rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700">
+          <div className="p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+              <Wallet className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">
+              Connect Your Wallet
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400">
+              Please connect your wallet to access your dashboard 
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">
-            Welcome back, {address?.slice(0, 6)}...{address?.slice(-4)}
-          </p>
+        {/* Header with Back Button */}
+        <div className="flex items-center gap-4 mb-8">
+          <button
+            onClick={handleGoBack}
+            className="flex items-center justify-center w-10 h-10 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+          </button>
+          <div className="flex-1">
+            <h1 className="text-3xl  bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
+              Dashboard
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">
+              Welcome back, {address?.slice(0, 6)}...{address?.slice(-4)}
+            </p>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-sm font-medium">
+            <div className="w-2 h-2 bg-green-500 rounded-full" />
+            Connected
+          </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Total Earned with Tabs */}
+          <div className="relative overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700">
+            <div className="absolute inset-0 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-700" />
+            <div className="relative p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-2.5 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl text-white shadow-lg">
+                  <DollarSign className="w-5 h-5" />
+                </div>
+                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                  <TrendingUp className="w-3 h-3" />
+                  {earningsData[activeTimeFrame].trend}
+                </div>
+              </div>
+
+              {/* Time Frame Tabs */}
+              <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1 mb-4">
+                {(["7d", "1m", "all"] as TimeFrame[]).map((timeFrame) => (
+                  <button
+                    key={timeFrame}
+                    onClick={() => setActiveTimeFrame(timeFrame)}
+                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                      activeTimeFrame === timeFrame
+                        ? "bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm"
+                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                    }`}
+                  >
+                    {timeFrame === "7d"
+                      ? "7 Days"
+                      : timeFrame === "1m"
+                      ? "1 Month"
+                      : "All Time"}
+                  </button>
+                ))}
+              </div>
+
+              <div>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
+                  {earningsData[activeTimeFrame].value}
+                </p>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                  Total Earned
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                  {earningsData[activeTimeFrame].description}
+                </p>
+              </div>
+            </div>
+          </div>
+
           <StatsCard
-            title="Total Balance"
-            value={balance || " 0.00 ETH"}
-            icon={<Wallet className="w-6 h-6" />}
-            trend="+0.00%"
+            title="Active Markets"
+            value={counts.all.toString()}
+            icon={<Target className="w-5 h-5" />}
+            trend="+7"
+            trendUp={true}
+            description="Active markets"
           />
           <StatsCard
-            title="Active Positions"
-            value="0"
-            icon={<TrendingUp className="w-6 h-6" />}
-            trend="0 markets"
-          />
-          <StatsCard
-            title="Created Markets"
-            value="0"
-            icon={<PlusCircle className="w-6 h-6" />}
-            trend="0 active"
+            title="Win Rate"
+            value="65%"
+            icon={<Award className="w-5 h-5" />}
+            trend="+7.8%"
+            trendUp={true}
+            description="improvement"
           />
         </div>
 
-        {/* Add Market Form */}
-        <DashboardCard title="Create New Market">
-          <form onSubmit={handleAddMarket} className="p-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Market Name
-              </label>
-              <Input
-                type="text"
-                name="name"
-                value={newMarket.name}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Image URL
-              </label>
-              <Input
-                type="text"
-                name="image"
-                value={newMarket.image}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-            <Button
-              type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-            >
-              Create Market
-            </Button>
-          </form>
-        </DashboardCard>
-
-        {/* Display Markets
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {markets.map((market) => (
-            <div key={market.id} className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900">{market.name}</h3>
-              {market.image && (
-                <img src={market.image} alt={market.name} className="mt-2 w-full h-40 object-cover rounded" />
-              )}
-            </div>
-          ))}
-        </div> */}
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Active Positions */}
-            <DashboardCard title="Active Positions">
-              <div className="p-6 text-center text-gray-500">
-                <History className="w-12 h-12 mx-auto mb-4" />
-                <p>No active positions yet</p>
+        {/* Balance and Portfolio Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          {/* Wallet Balances */}
+          <div className="lg:col-span-2 relative overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-600/5" />
+            <div className="relative p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
+                  <Wallet className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    Wallet Balances
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Your token holdings
+                  </p>
+                </div>
               </div>
-            </DashboardCard>
 
-            {/* Created Markets */}
-            <DashboardCard title="Your Created Markets">
-              <div className="p-6 text-center text-gray-500">
-                <PlusCircle className="w-12 h-12 mx-auto mb-4" />
-                <p>You haven&apos;t created any markets yet</p>
+              {/* Token Balances */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">SK</span>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-white">
+                        SK Balance
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        StarkNet Token
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                    {balance || "0.00"}
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">ST</span>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-white">
+                        STRK Balance
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Starknet Token
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                    {balance || "0.00"}
+                  </p>
+                </div>
               </div>
-            </DashboardCard>
+
+              {/* Action Buttons with Tooltips */}
+              <div className="space-y-3">
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                  Available Rewards:{" "}
+                  <span className="font-semibold text-green-600">
+                    $1,255.68
+                  </span>
+                </p>
+                <div className="flex gap-3">
+                  <div className="flex-1 relative group">
+                    <button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl">
+                      Withdraw Tokens
+                    </button>
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                      Transfer tokens to external wallet
+                    </div>
+                  </div>
+                  <div className="flex-1 relative group">
+                    <button className="w-full border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-3 px-4 rounded-lg transition-colors">
+                      Claim Rewards
+                    </button>
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                      Add earned rewards to balance
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* Quick Actions */}
-            <DashboardCard title="Quick Actions">
-              <div className="p-4 space-y-2">
-                <QuickActionButton
-                  label="Create New Market"
-                  icon={<PlusCircle className="w-5 h-5" />}
-                  onClick={() => {
-                    /* Add navigation logic */
-                  }}
-                />
-                <QuickActionButton
-                  label="View Tutorial"
-                  icon={<HelpCircle className="w-5 h-5" />}
-                  onClick={() => {
-                    /* Add navigation logic */
-                  }}
-                />
+          {/* Portfolio Overview */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
+                  <PieChart className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    Portfolio
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Asset allocation
+                  </p>
+                </div>
               </div>
-            </DashboardCard>
 
-            <DashboardCard title="Recent Activity">
-              <div className="p-6 text-center text-gray-500">
-                <History className="w-12 h-12 mx-auto mb-4" />
-                <p>No recent activity</p>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      SK Token
+                    </span>
+                  </div>
+                  <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                    50%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      STRK Token
+                    </span>
+                  </div>
+                  <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                    50%
+                  </span>
+                </div>
+
+                {/* Portfolio Value */}
+                <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
+                    Total Portfolio Value
+                  </p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    ${(Number.parseFloat(balance || "0") * 2 || 0).toFixed(2)}
+                  </p>
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                    +12.5% today
+                  </p>
+                </div>
               </div>
-            </DashboardCard>
+            </div>
           </div>
+        </div>
+
+        {/* Chart Section */}
+        <div className="mb-8">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg">
+                  <Activity className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    Performance Chart
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Your trading performance over time
+                  </p>
+                </div>
+              </div>
+              <div className="h-64 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-600 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-500">
+                <div className="text-center">
+                  <TrendingUp className="w-16 h-16 mx-auto mb-4 text-slate-400" />
+                  <p className="text-slate-600 dark:text-slate-300 font-medium text-lg">
+                    Advanced Analytics Coming Soon
+                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Interactive charts and performance metrics will appear here
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Active Predictions */}
+          <DashboardCard
+            title="Active Predictions"
+            description="Your current market positions"
+            icon={<Target className="w-5 h-5" />}
+            iconBg="from-blue-500 to-purple-600"
+          >
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-full flex items-center justify-center mb-4">
+                <History className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
+                No Active Predictions
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400 text-center mb-4">
+                Start making predictions to see them here
+              </p>
+              <button className="flex items-center gap-2 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors text-sm font-medium">
+                <PlusCircle className="w-4 h-4" />
+                Make Prediction
+              </button>
+            </div>
+          </DashboardCard>
+
+          {/* Recent Activity */}
+          <DashboardCard
+            title="Recent Activity"
+            description="Your latest transactions and updates"
+            icon={<Activity className="w-5 h-5" />}
+            iconBg="from-green-500 to-emerald-600"
+          >
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-full flex items-center justify-center mb-4">
+                <History className="w-8 h-8 text-green-600 dark:text-green-400" />
+              </div>
+              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
+                No Recent Activity
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400 text-center mb-4">
+                Your recent transactions will appear here
+              </p>
+              <button className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors text-sm font-medium">
+                View All Activity
+              </button>
+            </div>
+          </DashboardCard>
         </div>
       </div>
     </div>
@@ -238,21 +393,44 @@ const StatsCard = ({
   value,
   icon,
   trend,
+  trendUp,
+  description,
 }: {
   title: string;
   value: string;
   icon: React.ReactNode;
   trend: string;
+  trendUp: boolean;
+  description: string;
 }) => (
-  <div className="bg-white rounded-2xl shadow-sm p-6">
-    <div className="flex items-center justify-between mb-4">
-      <h3 className="text-gray-500 text-sm">{title}</h3>
-      <div className="text-blue-500">{icon}</div>
-    </div>
-    <div className="flex items-end justify-between">
+  <div className="relative overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700">
+    <div className="absolute inset-0 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-700" />
+    <div className="relative p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="p-2.5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl text-white shadow-lg">
+          {icon}
+        </div>
+        <div
+          className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+            trendUp
+              ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+              : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+          }`}
+        >
+          <TrendingUp className="w-3 h-3" />
+          {trend}
+        </div>
+      </div>
       <div>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-        <p className="text-sm text-gray-500">{trend}</p>
+        <p className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
+          {value}
+        </p>
+        <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+          {title}
+        </p>
+        <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+          {description}
+        </p>
       </div>
     </div>
   </div>
@@ -260,35 +438,43 @@ const StatsCard = ({
 
 const DashboardCard = ({
   title,
+  description,
+  icon,
+  iconBg,
   children,
 }: {
   title: string;
+  description?: string;
+  icon?: React.ReactNode;
+  iconBg?: string;
   children: React.ReactNode;
 }) => (
-  <div className="bg-white rounded-2xl shadow-sm">
-    <div className="px-6 py-4 border-b border-gray-100">
-      <h3 className="font-semibold text-gray-900">{title}</h3>
+  <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 h-full">
+    <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+      <div className="flex items-center gap-3">
+        {icon && (
+          <div
+            className={`p-2 bg-gradient-to-br ${
+              iconBg || "from-slate-500 to-slate-600"
+            } rounded-lg`}
+          >
+            <div className="text-white">{icon}</div>
+          </div>
+        )}
+        <div>
+          <h3 className="font-semibold text-slate-900 dark:text-white">
+            {title}
+          </h3>
+          {description && (
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              {description}
+            </p>
+          )}
+        </div>
+      </div>
     </div>
-    {children}
+    <div>{children}</div>
   </div>
-);
-
-const QuickActionButton = ({
-  label,
-  icon,
-  onClick,
-}: {
-  label: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-}) => (
-  <button
-    onClick={onClick}
-    className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-  >
-    <div className="text-blue-500">{icon}</div>
-    <span className="text-gray-700">{label}</span>
-  </button>
 );
 
 export default DashboardPage;
