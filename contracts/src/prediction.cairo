@@ -1715,6 +1715,10 @@ pub mod PredictionHub {
                 let mut market = self.sports_predictions.entry(market_id).read();
                 market.is_open = false;
                 self.sports_predictions.entry(market_id).write(market);
+            } else {
+                let mut market = self.business_predictions.entry(market_id).read();
+                market.is_open = false;
+                self.business_predictions.entry(market_id).write(market);
             }
         }
 

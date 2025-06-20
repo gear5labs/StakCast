@@ -897,3 +897,40 @@ fn test_resolve_multiple_predictions() {
     let market = contract.get_resolved_business_markets(); // get business resolve market count
     assert(market.len() == 1, 'resolve count should be 1');
 }
+
+//test if emergency close market is working. And a closed market does not show up in the
+//get_active_prediction_markets()
+#[test]
+fn test_emergencyclose_market() {
+    let (contract, admin_contract) = setup_with_moderator();
+    let mut spy = spy_events();
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let future_time = get_block_timestamp() + 86400; // 1 day from now
+
+    contract
+        .create_prediction(
+            "Will Bitcoin reach $100,000 by end of 2026?",
+            "Prediction market for Bitcoin price reaching $100,000 USD by December 31, 2026",
+            ('Yes', 'No'),
+            'crypto_milestone',
+            "https://example.com/btc-image.png",
+            future_time,
+        );
+    let market_id = match spy.get_events().events.into_iter().last() {
+        Option::Some((
+            _, event,
+        )) => {
+            let market_id_felt = *event.data.at(0);
+            market_id_felt.into()
+        },
+        Option::None => panic!("No MarketCreated event emitted"),
+    };
+    let market = contract.get_active_prediction_markets();
+    assert(market.len() == 1, 'active Market count should be 1');
+
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    admin_contract.emergency_close_market(market_id, 0);
+    stop_cheat_caller_address(contract.contract_address);
+    let market = contract.get_active_prediction_markets();
+    assert(market.len() == 0, 'active Market count should be 0');
+}
