@@ -53,6 +53,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      framer-motion:
+        specifier: ^11.16.3
+        version: 11.18.2(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       get-starknet:
         specifier: ^3.3.3
         version: 3.3.3(starknet@6.24.1)
