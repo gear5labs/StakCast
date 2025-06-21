@@ -9,11 +9,15 @@ import {
   SetStateAction,
   Dispatch,
 } from "react";
-import { useAccount, useBalance } from "@starknet-react/core";
+import { useAccount, useBalance, useContract } from "@starknet-react/core";
 import { SessionAccountInterface } from "@argent/invisible-sdk";
-import { STRKTokenAddress } from "../components/utils/constants";
+import {
+  SKTokenAddress,
+  STRKTokenAddress,
+} from "../components/utils/constants";
 import { AccountInterface } from "starknet";
 import { Token } from "../components/sections/PurchaseSection";
+import erc20Abi from "../abis/token";
 
 interface AppContextType {
   balance: string;
@@ -30,6 +34,7 @@ interface AppContextType {
   searchQuery: string;
   setSearchQuery: Dispatch<SetStateAction<string>>;
   tokenPrice: number | null;
+  skPrice: number | null;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -41,32 +46,27 @@ const getInitialConnectionMode = (): "email" | "wallet" => {
 };
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  let { address } = useAccount();
-  const { account, isConnected } = useAccount();
+  const { account, address: walletAddress, isConnected } = useAccount();
 
   const [sessionAccount, setAccount] = useState<
     SessionAccountInterface | undefined
-  >();
-
+  >(undefined);
   const [connectionModeState, setConnectionModeState] = useState<
     "email" | "wallet"
   >(getInitialConnectionMode());
-
   const [selectedToken, setSelectedToken] = useState<Token>("STRK");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [tokenPrice, setTokenPrice] = useState<number | null>(null);
+  const [skPrice, setSkPrice] = useState<number | null>(null);
 
-  const setConnectionMode = (mode: "email" | "wallet") => {
-    localStorage.setItem("connectionMode", mode);
-    setConnectionModeState(mode);
-  };
+  const { contract } = useContract({ address: SKTokenAddress, abi: erc20Abi });
 
-  // Override address with sessionAccount address if available
-  address = sessionAccount ? sessionAccount.address : address;
+  // Use sessionAccount address if present
+  const address = sessionAccount ? sessionAccount.address : walletAddress;
 
   const { data, isFetching } = useBalance({
     token: STRKTokenAddress,
-    address: address as "0x",
+    address: address as `0x${string}`,
   });
 
   const balance = isFetching
@@ -75,7 +75,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ? `${parseFloat(data.formatted).toFixed(2)} ${data.symbol}`
     : "";
 
-  // Fetch token price from CoinGecko
+  const balanceValue = parseFloat(data?.formatted || "0");
+  const balanceInUSD =
+    tokenPrice !== null
+      ? `$${(balanceValue * tokenPrice).toFixed(2)}`
+      : "loading...";
+
+  const status = isConnected ? "connected" : "disconnected";
+
+  const setConnectionMode = (mode: "email" | "wallet") => {
+    localStorage.setItem("connectionMode", mode);
+    setConnectionModeState(mode);
+  };
+
   useEffect(() => {
     async function fetchPrice() {
       try {
@@ -86,22 +98,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setTokenPrice(data?.starknet?.usd ?? null);
       } catch (err) {
         console.error("Failed to fetch STRK price in USD:", err);
+        setTokenPrice(null);
       }
     }
 
     fetchPrice();
-    const interval = setInterval(fetchPrice, 5 * 60 * 1000); // every 5 min
+    const interval = setInterval(fetchPrice, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Convert balance to USD
-  const balanceValue = parseFloat(balance);
-  const balanceInUSD =
-    !isNaN(balanceValue) && tokenPrice !== null
-      ? `$${(balanceValue * tokenPrice).toFixed(2)}`
-      : "loading...";
+  useEffect(() => {
+    async function fetchSKPrice() {
+      if (contract && address) {
+        try {
+          const result = (await contract.call("balance_of", [
+            address,
+          ])) as unknown as { balance: string };
 
-  const status = isConnected ? "connected" : "disconnected";
+          const parsed = parseFloat(result.balance);
+          const normalized = parsed / 1e18;
+          console.log(normalized, "SK Balance Parsed");
+          setSkPrice(isNaN(normalized) ? null : normalized);
+        } catch (err) {
+          console.error("Failed to fetch SK token balance:", err);
+          setSkPrice(null);
+        }
+      }
+    }
+
+    fetchSKPrice();
+  }, [contract, address]);
 
   return (
     <AppContext.Provider
@@ -120,6 +146,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         searchQuery,
         setSearchQuery,
         tokenPrice,
+        skPrice,
       }}
     >
       {children}

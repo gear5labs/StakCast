@@ -16,14 +16,18 @@ import {
 } from "lucide-react";
 import { useAccount } from "@starknet-react/core";
 import { useAppContext } from "../context/appContext";
-import Header from "../components/layout/Header";
 import { useMarketData } from "../hooks/useMarket";
+
+import { DashboardCard } from "./dashboardCard";
+import { StatsCard } from "./statsCard";
+import { Chart } from "./chart";
+import Disconnected from "./disconnected";
 
 type TimeFrame = "7d" | "1m" | "all";
 
 const DashboardPage = () => {
   const { address } = useAccount();
-  const { status, balanceInUSD: balance } = useAppContext();
+  const { status, balanceInUSD: balance, skPrice } = useAppContext();
   const { counts } = useMarketData();
   const [activeTimeFrame, setActiveTimeFrame] = useState<TimeFrame>("1m");
 
@@ -39,24 +43,7 @@ const DashboardPage = () => {
   };
 
   if (status !== "connected") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
-        <Header />
-        <div className="w-full max-w-md mx-4 bg-white dark:bg-inherit rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700">
-          <div className="p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-              <Wallet className="w-8 h-8 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">
-              Connect Your Wallet
-            </h2>
-            <p className="text-slate-600 dark:text-slate-400">
-              Please connect your wallet to access your dashboard 
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <Disconnected />;
   }
 
   return (
@@ -190,7 +177,7 @@ const DashboardPage = () => {
                     </div>
                   </div>
                   <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                    {balance || "0.00"}
+                    {`${skPrice?.toFixed(2)} SK` || "0.00"}
                   </p>
                 </div>
 
@@ -214,7 +201,6 @@ const DashboardPage = () => {
                 </div>
               </div>
 
-              {/* Action Buttons with Tooltips */}
               <div className="space-y-3">
                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
                   Available Rewards:{" "}
@@ -244,7 +230,6 @@ const DashboardPage = () => {
             </div>
           </div>
 
-          {/* Portfolio Overview */}
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700">
             <div className="p-6">
               <div className="flex items-center gap-3 mb-4">
@@ -303,36 +288,7 @@ const DashboardPage = () => {
         </div>
 
         {/* Chart Section */}
-        <div className="mb-8">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700">
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg">
-                  <Activity className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                    Performance Chart
-                  </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Your trading performance over time
-                  </p>
-                </div>
-              </div>
-              <div className="h-64 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-600 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-500">
-                <div className="text-center">
-                  <TrendingUp className="w-16 h-16 mx-auto mb-4 text-slate-400" />
-                  <p className="text-slate-600 dark:text-slate-300 font-medium text-lg">
-                    Advanced Analytics Coming Soon
-                  </p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Interactive charts and performance metrics will appear here
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <Chart />
 
         {/* Main Content Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -387,94 +343,5 @@ const DashboardPage = () => {
     </div>
   );
 };
-
-const StatsCard = ({
-  title,
-  value,
-  icon,
-  trend,
-  trendUp,
-  description,
-}: {
-  title: string;
-  value: string;
-  icon: React.ReactNode;
-  trend: string;
-  trendUp: boolean;
-  description: string;
-}) => (
-  <div className="relative overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700">
-    <div className="absolute inset-0 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-700" />
-    <div className="relative p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="p-2.5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl text-white shadow-lg">
-          {icon}
-        </div>
-        <div
-          className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-            trendUp
-              ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-              : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
-          }`}
-        >
-          <TrendingUp className="w-3 h-3" />
-          {trend}
-        </div>
-      </div>
-      <div>
-        <p className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
-          {value}
-        </p>
-        <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-          {title}
-        </p>
-        <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-          {description}
-        </p>
-      </div>
-    </div>
-  </div>
-);
-
-const DashboardCard = ({
-  title,
-  description,
-  icon,
-  iconBg,
-  children,
-}: {
-  title: string;
-  description?: string;
-  icon?: React.ReactNode;
-  iconBg?: string;
-  children: React.ReactNode;
-}) => (
-  <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 h-full">
-    <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-      <div className="flex items-center gap-3">
-        {icon && (
-          <div
-            className={`p-2 bg-gradient-to-br ${
-              iconBg || "from-slate-500 to-slate-600"
-            } rounded-lg`}
-          >
-            <div className="text-white">{icon}</div>
-          </div>
-        )}
-        <div>
-          <h3 className="font-semibold text-slate-900 dark:text-white">
-            {title}
-          </h3>
-          {description && (
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              {description}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-    <div>{children}</div>
-  </div>
-);
 
 export default DashboardPage;
