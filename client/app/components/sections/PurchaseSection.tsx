@@ -40,7 +40,7 @@ const AVAILABLE_TOKENS: {
     value: "SK",
     label: "Stakcast Token",
     symbol: "SK",
-    logo: "/logos/stakcast-logo.svg", // Add your actual logo path
+    logo: "/stakcast-logo-1.pnleg", // Add your actual logo path
     color: "from-green-500 to-emerald-500",
   },
 ];

@@ -32,8 +32,13 @@ const erc20Abi = [
   },
   {
     type: "function",
-    name: "balanceOf",
-    inputs: [{ name: "account", type: "felt" }],
+    name: "balance_of",
+    inputs: [
+      {
+        name: "account",
+        type: "core::starknet::contract_address::ContractAddress",
+      },
+    ],
     outputs: [{ name: "balance", type: "Uint256" }],
     state_mutability: "view",
   },
