@@ -25,7 +25,7 @@ const StakcastBanner: React.FC<StakcastBannerProps> = ({ className = "" }) => {
       <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
 
       {/* Content Container */}
-      <div className="relative z-10 h-full flex flex-col justify-between p-8">
+      <div className="relative z-1 h-full flex flex-col justify-between p-8">
         {/* Top Section - Logo and Starknet Badge */}
         <div className="flex items-start justify-between">
           <div className="flex items-center">

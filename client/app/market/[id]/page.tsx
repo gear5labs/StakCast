@@ -58,9 +58,9 @@ const Page = () => {
         <div className="flex items-center space-x-4 mb-8">
           <Button
             onClick={() => router.push("/")}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+            className="p-2 bg-inherit hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
           >
-            <ArrowLeft className="w-6 h-6 text-gray-600 dark:text-white" />
+            <ArrowLeft className="w-6 h-6 text-gray-600  dark:text-white" />
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
