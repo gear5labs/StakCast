@@ -51,7 +51,7 @@ const Categories = () => {
   };
 
   return (
-    <div className="w-full px-4 py-4 space-y-4 lg:space-y-0 lg:flex lg:items-center lg:justify-between">
+    <div className="mx-1 md:mx-[3rem] lg:mx-[4rem] xl:mx-[5.1rem] w-full px-4 py-4 space-y-4 lg:space-y-0 lg:flex lg:items-center lg:justify-between">
       {/* Search Bar */}
       <div className="w-full max-w-xs lg:mr-4">
         <div

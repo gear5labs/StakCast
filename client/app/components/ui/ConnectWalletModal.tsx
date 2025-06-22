@@ -67,7 +67,7 @@ const WalletModal: React.FC<WalletModalProps> = ({ onClose }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div
         ref={modalRef}
-        className="relative w-full max-w-sm p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl text-center transform transition-all duration-300 ease-in-out"
+        className="relative w-full max-w-sm p-8 z-[90000] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl text-center transform transition-all duration-300 ease-in-out"
       >
         <button
           onClick={onClose}
