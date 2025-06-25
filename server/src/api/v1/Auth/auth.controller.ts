@@ -51,4 +51,46 @@ export default class AuthController {
 			res.status(401).json({ error: (error as Error).message });
 		}
 	}
+
+	async changePassword(req: Request, res: Response) {
+		try {
+
+			const { currentPassword, newPassword } = req.body;
+			const userId = req.user.id;
+			await this.authService.changePassword(userId, currentPassword, newPassword);
+			res.json({ message: "Password changed successfully" });
+		} catch (error) {
+			res.status(400).json({ error: (error as Error).message });
+		}
+    }
+
+	async forgotPassword(req: Request, res: Response) {
+		try {
+			const { email } = req.body;
+			await this.authService.sendPasswordResetMail(email);
+			res.json({ message: "Password reset link sent" });
+		} catch (error) {
+			res.status(400).json({ error: (error as Error).message });
+		}
+	}
+
+	async resetPassword(req: Request, res: Response) {
+		try {
+			const { token, newPassword } = req.body;
+			await this.authService.resetPassword(token, newPassword);
+			res.json({ message: "Password has been reset" });
+		} catch (error) {
+			res.status(400).json({ error: (error as Error).message });
+		}
+	}
+
+  async googleSignIn(req: Request, res: Response) {
+		try {
+			const { idToken } = req.body;
+			const result = await this.authService.googleSignIn(idToken);
+			res.json(result);
+		} catch (error) {
+			res.status(401).json({ error: (error as Error).message });
+		}
+  }
 }
