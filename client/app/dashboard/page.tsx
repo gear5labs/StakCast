@@ -17,11 +17,13 @@ import {
 import { useAccount } from "@starknet-react/core";
 import { useAppContext } from "../context/appContext";
 import { useMarketData } from "../hooks/useMarket";
+import { useUserPredictions } from "../hooks/useUserPredictions";
 
 import { DashboardCard } from "./dashboardCard";
 import { StatsCard } from "./statsCard";
 import { Chart } from "./chart";
 import Disconnected from "./disconnected";
+import UserPredictionsSection from "./UserPredictionsSection";
 
 type TimeFrame = "7d" | "1m" | "all";
 
@@ -29,6 +31,7 @@ const DashboardPage = () => {
   const { address } = useAccount();
   const { status, balanceInUSD: balance, skPrice } = useAppContext();
   const { counts } = useMarketData();
+  const { winRate } = useUserPredictions();
   const [activeTimeFrame, setActiveTimeFrame] = useState<TimeFrame>("1m");
 
   const handleGoBack = () => {
@@ -132,7 +135,7 @@ const DashboardPage = () => {
           />
           <StatsCard
             title="Win Rate"
-            value="65%"
+            value={winRate}
             icon={<Award className="w-5 h-5" />}
             trend="+7.8%"
             trendUp={true}
@@ -286,6 +289,9 @@ const DashboardPage = () => {
             </div>
           </div>
         </div>
+
+        {/* My Predictions Section */}
+        <UserPredictionsSection />
 
         {/* Chart Section */}
         <Chart />

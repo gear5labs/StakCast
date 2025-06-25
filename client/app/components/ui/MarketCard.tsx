@@ -16,6 +16,7 @@ interface MarketCardProps {
   trending?: boolean;
   participants?: number;
   timeLeft?: string;
+  endTime?: number | string;
 }
 
 const MarketCard: React.FC<MarketCardProps> = ({
@@ -28,6 +29,7 @@ const MarketCard: React.FC<MarketCardProps> = ({
   trending = false,
   participants = 0,
   timeLeft = "",
+  endTime,
   ...props
 }) => {
   const totalStaked = options.reduce((sum, option) => {
@@ -101,6 +103,14 @@ const MarketCard: React.FC<MarketCardProps> = ({
         <h3 className="font-semibold text-gray-900 dark:text-white text-base leading-snug">
           {name}
         </h3>
+        {endTime && (
+          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <Clock className="w-3 h-3" />
+            <span>
+              {isClosed ? "Ended:" : "Ends:"} {formatEndTime(endTime)}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Options Grid */}
@@ -181,5 +191,10 @@ const MarketCard: React.FC<MarketCardProps> = ({
     </div>
   );
 };
+
+function formatEndTime(endTime: number | string) {
+  const date = new Date(Number(endTime) * 1000);
+  return date.toLocaleString();
+}
 
 export default MarketCard;

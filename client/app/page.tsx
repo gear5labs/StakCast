@@ -159,6 +159,7 @@ const Home = () => {
                         totalRevenue={market?.total_pool?.toString() || "$0"}
                         onClick={() => handleMarketClick(market)}
                         isClosed={isClosed}
+                        endTime={market?.end_time ? Number(market.end_time) : undefined}
                       />
                     </div>
                   </div>
