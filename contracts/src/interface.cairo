@@ -2,10 +2,11 @@ use starknet::ContractAddress;
 use starknet::class_hash::ClassHash;
 
 // ================ Market Types ================
-
-/// Represents a general prediction market with binary (yes/no) outcomes
-/// Used for any type of prediction that doesn't fit crypto or sports categories
-#[derive(Drop, Serde, starknet::Store)]
+/// Represents a prediction market that can be of various types
+/// Each market can be a general prediction, crypto prediction or sports prediction
+/// prediction This struct serves as a base for all prediction markets, allowing for flexible market
+/// management
+#[derive(Drop, Serde, starknet::Store, Clone)]
 pub struct PredictionMarket {
     pub title: ByteArray, // Market title/question
     pub market_id: u256, // Unique identifier for the market
@@ -17,65 +18,16 @@ pub struct PredictionMarket {
     pub is_open: bool, // Whether the market is accepting new bets
     pub end_time: u64, // Timestamp when the market closes
     pub winning_choice: Option<Choice>, // The winning choice after resolution
-    pub total_pool: u256 // Total amount staked in the market
-}
-
-/// Represents a cryptocurrency price prediction market
-/// Used for predictions about crypto asset prices (e.g., "Will BTC be above $X by date Y?")
-#[derive(Drop, Serde, starknet::Store)]
-pub struct CryptoPrediction {
-    pub title: ByteArray,
-    pub market_id: u256,
-    pub description: ByteArray,
-    pub choices: (Choice, Choice),
-    pub category: felt252,
-    pub image_url: ByteArray,
-    pub is_resolved: bool,
-    pub is_open: bool,
-    pub end_time: u64,
-    pub winning_choice: Option<Choice>,
-    pub total_pool: u256,
-    pub comparison_type: u8, // 0 -> less than amount, 1 -> greater than amount
-    pub asset_key: felt252, // Identifier for the crypto asset (e.g., BTC, ETH)
-    pub target_value: u128 // Target price value for the prediction
-}
-
-/// Represents a sports event prediction market
-/// Used for predictions about sports match outcomes
-#[derive(Drop, Serde, starknet::Store)]
-pub struct SportsPrediction {
-    pub title: ByteArray,
-    pub market_id: u256,
-    pub description: ByteArray,
-    pub choices: (Choice, Choice),
-    pub category: felt252,
-    pub image_url: ByteArray,
-    pub is_resolved: bool,
-    pub is_open: bool,
-    pub end_time: u64,
-    pub winning_choice: Option<Choice>,
-    pub total_pool: u256,
-    pub event_id: u64, // External API event ID for automatic resolution
-    pub team_flag: bool // Flag indicating if this is a team-based prediction
-}
-
-/// Represents a business prediction market with binary (yes/no) outcomes
-/// Used for predictions about business (e.g., "Will over 50% of Fortune 500 companies adopt
-/// blockchain solutions by 2026?")
-#[derive(Drop, Serde, starknet::Store)]
-pub struct BusinessPrediction {
-    pub title: ByteArray, // Market title/question
-    pub market_id: u256, // Unique identifier for the market
-    pub description: ByteArray, // Detailed description of the prediction
-    pub choices: (Choice, Choice), // Binary choices (typically Yes/No)
-    pub category: felt252, // Category identifier for market classification
-    pub image_url: ByteArray, // URL to market image/icon
-    pub is_resolved: bool, // Whether the market has been resolved
-    pub is_open: bool, // Whether the market is accepting new bets
-    pub end_time: u64, // Timestamp when the market closes
-    pub winning_choice: Option<Choice>, // The winning choice after resolution
+    // logic - if total pool is 0 then its a normal prediction, and crpto prediction has to
     pub total_pool: u256, // Total amount staked in the market
-    pub event_id: u64 // External API event ID for automatic resolution
+    pub prediction_market_type: u8, // 0 - normal predicion market, 1 - crypto prediction market, 2 - sports prediction, 3 - buisness market
+    //Some((asset_key target_value))
+    //the crypto asset (e.g., BTC, ETH) | target_value:  Target price value for the prediction
+    pub crypto_prediction: Option<(felt252, u128)>, // Optional crypto prediction details
+    //Some((event_id,team_flag))
+    // event_id: External API event ID for automatic resolution | team_flag: Flag indicating if this
+    // is a team-based prediction
+    pub sports_prediction: Option<(u64, bool)> // Optional sports prediction details
 }
 
 // ================ Supporting Types ================
@@ -109,8 +61,8 @@ pub struct UserBet {
 pub trait IPredictionHub<TContractState> {
     // ================ Market Creation ================
 
-    /// Creates a new general prediction market with binary (yes/no) choices
-    fn create_prediction(
+    //create a new prediction market with binary (yes/no) choices
+    fn create_predictions(
         ref self: TContractState,
         title: ByteArray,
         description: ByteArray,
@@ -118,47 +70,10 @@ pub trait IPredictionHub<TContractState> {
         category: felt252,
         image_url: ByteArray,
         end_time: u64,
-    );
-
-    /// Creates a cryptocurrency price prediction market
-    /// Used for predictions about crypto asset prices
-    fn create_crypto_prediction(
-        ref self: TContractState,
-        title: ByteArray,
-        description: ByteArray,
-        choices: (felt252, felt252),
-        category: felt252,
-        image_url: ByteArray,
-        end_time: u64,
-        comparison_type: u8,
-        asset_key: felt252,
-        target_value: u128,
-    );
-
-    /// Creates a sports event prediction market
-    /// Used for predictions about sports match outcomes
-    fn create_sports_prediction(
-        ref self: TContractState,
-        title: ByteArray,
-        description: ByteArray,
-        choices: (felt252, felt252),
-        category: felt252,
-        image_url: ByteArray,
-        end_time: u64,
-        event_id: u64,
-        team_flag: bool,
-    );
-
-    /// Creates a new business prediction market with binary (yes/no) choicesAdd commentMore actions
-    fn create_business_prediction(
-        ref self: TContractState,
-        title: ByteArray,
-        description: ByteArray,
-        choices: (felt252, felt252),
-        category: felt252,
-        image_url: ByteArray,
-        end_time: u64,
-        event_id: u64,
+        prediction_market_type: u8,
+        crypto_prediction: Option<(felt252, u128)>,
+        sports_prediction: Option<(u64, bool)>,
+        buisness_prediction: Option<u64>,
     );
 
     // ================ Market Queries ================
@@ -167,28 +82,24 @@ pub trait IPredictionHub<TContractState> {
     fn get_prediction_count(self: @TContractState) -> u256;
 
     /// Retrieves a specific prediction market by ID
-    fn get_prediction(self: @TContractState, market_id: u256) -> PredictionMarket;
+    fn get_prediction(self: @TContractState, market_id: u256, market_type: u8) -> PredictionMarket;
 
-    /// Returns an array of all active general prediction markets
+    /// Returns an array of all active prediction markets
+    fn get_all_predictions_by_market_type(
+        self: @TContractState, market_type: u8,
+    ) -> Array<PredictionMarket>;
+
+    /// Returns an array of all active prediction markets
     fn get_all_predictions(self: @TContractState) -> Array<PredictionMarket>;
 
-    /// Retrieves a specific crypto prediction by ID
-    fn get_crypto_prediction(self: @TContractState, market_id: u256) -> CryptoPrediction;
+    /// Returns an array of all active general prediction markets
+    fn get_all_general_predictions(self: @TContractState) -> Array<PredictionMarket>;
 
     /// Returns an array of all active crypto prediction markets
-    fn get_all_crypto_predictions(self: @TContractState) -> Array<CryptoPrediction>;
-
-    /// Retrieves a specific sports prediction by ID
-    fn get_sports_prediction(self: @TContractState, market_id: u256) -> SportsPrediction;
+    fn get_all_crypto_predictions(self: @TContractState) -> Array<PredictionMarket>;
 
     /// Returns an array of all active sports prediction markets
-    fn get_all_sports_predictions(self: @TContractState) -> Array<SportsPrediction>;
-
-    /// Retrieves a specific business prediction market by IDAdd commentMore actions
-    fn get_business_prediction(self: @TContractState, market_id: u256) -> BusinessPrediction;
-
-    /// Returns an array of all active business prediction markets
-    fn get_all_business_predictions(self: @TContractState) -> Array<BusinessPrediction>;
+    fn get_all_sports_predictions(self: @TContractState) -> Array<PredictionMarket>;
 
     // get current market status of markets
     fn get_market_status(self: @TContractState, market_id: u256, market_type: u8) -> (bool, bool);
@@ -237,37 +148,31 @@ pub trait IPredictionHub<TContractState> {
     /// Returns total value locked across all markets
     fn get_total_value_locked(self: @TContractState) -> u256;
 
-    /// Returns an array of all active general prediction markets
+    /// Returns an array of all active predictiona markets
     fn get_active_prediction_markets(self: @TContractState) -> Array<PredictionMarket>;
 
+    /// Returns an array of all active general prediction markets
+    fn get_active_general_prediction_markets(self: @TContractState) -> Array<PredictionMarket>;
+
     /// Returns an array of all active sport prediction markets
-    fn get_active_sport_markets(self: @TContractState) -> Array<SportsPrediction>;
+    fn get_active_sport_markets(self: @TContractState) -> Array<PredictionMarket>;
 
     /// Returns an array of all active crypto prediction markets
-    fn get_active_crypto_markets(self: @TContractState) -> Array<CryptoPrediction>;
-
-    /// Returns an array of all active business prediction markets
-    fn get_active_business_markets(self: @TContractState) -> Array<BusinessPrediction>;
+    fn get_active_crypto_markets(self: @TContractState) -> Array<PredictionMarket>;
 
     /// Returns an array of all resolved general prediction markets
-    fn get_resolved_prediction_markets(self: @TContractState) -> Array<PredictionMarket>;
+    fn get_all_resolved_prediction_markets(self: @TContractState) -> Array<PredictionMarket>;
+
+    /// Returns an array of all resolved general prediction markets
+    fn get_resolved_general_prediction_markets(self: @TContractState) -> Array<PredictionMarket>;
 
     /// Returns an array of all resolved sport prediction markets
-    fn get_resolved_sport_markets(self: @TContractState) -> Array<SportsPrediction>;
+    fn get_resolved_sport_markets(self: @TContractState) -> Array<PredictionMarket>;
 
     /// Returns an array of all resolved crypto prediction markets
-    fn get_resolved_crypto_markets(self: @TContractState) -> Array<CryptoPrediction>;
-
-    /// Returns an array of all resolved business prediction markets
-    fn get_resolved_business_markets(self: @TContractState) -> Array<BusinessPrediction>;
+    fn get_resolved_crypto_markets(self: @TContractState) -> Array<PredictionMarket>;
 
     fn is_prediction_market_open_for_betting(ref self: TContractState, market_id: u256) -> bool;
-
-    fn is_crypto_market_open_for_betting(ref self: TContractState, market_id: u256) -> bool;
-
-    fn is_sport_market_open_for_betting(ref self: TContractState, market_id: u256) -> bool;
-
-    fn is_business_market_open_for_betting(ref self: TContractState, market_id: u256) -> bool;
 
     // ================ Market Resolution ================
 
@@ -292,11 +197,6 @@ pub trait IPredictionHub<TContractState> {
     /// Resolves a sports prediction automatically based on event outcome
     fn resolve_sports_prediction(ref self: TContractState, market_id: u256, winning_choice: u8);
 
-    /// Manually resolves a business prediction market
-    /// Override for the automatic resolution
-    fn resolve_business_prediction_manually(
-        ref self: TContractState, market_id: u256, winning_choice: u8,
-    );
     // ================ Winnings Management ================
 
     /// Allows a user to claim their winnings from a resolved prediction
@@ -307,20 +207,25 @@ pub trait IPredictionHub<TContractState> {
 
     // ================ User Queries ================
 
+    /// Returns all prediction markets a specific user has participated in
+    fn get_all_user_predictions(
+        self: @TContractState, user: ContractAddress,
+    ) -> Array<PredictionMarket>;
+
     /// Returns all general prediction markets a specific user has participated in
-    fn get_user_predictions(
+    fn get_user_general_predictions(
         self: @TContractState, user: ContractAddress,
     ) -> Array<PredictionMarket>;
 
     /// Returns all crypto prediction markets a specific user has participated in
     fn get_user_crypto_predictions(
         self: @TContractState, user: ContractAddress,
-    ) -> Array<CryptoPrediction>;
+    ) -> Array<PredictionMarket>;
 
     /// Returns all sports prediction markets a specific user has participated in
     fn get_user_sports_predictions(
         self: @TContractState, user: ContractAddress,
-    ) -> Array<SportsPrediction>;
+    ) -> Array<PredictionMarket>;
 
     // ================ Administrative Functions ================
 
