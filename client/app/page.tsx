@@ -125,6 +125,18 @@ const Home = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredMarkets.map((market, index) => {
                 const isClosed = isMarketClosed(market?.market_id as number);
+                const timestamp = market.end_time;
+                const milliseconds = Number(timestamp) * 1000; 
+                const date = new Date(milliseconds);
+                 console.log(date)
+                
+                const day = date.getUTCDate(); 
+                const month = date.getUTCMonth() + 1; 
+                const year = date.getUTCFullYear() % 100; 
+
+                const formatted = `${day}/${month}/${year}`;
+                
+
                 return (
                   <div
                     key={market?.market_id || index}
@@ -159,6 +171,7 @@ const Home = () => {
                         totalRevenue={market?.total_pool?.toString() || "$0"}
                         onClick={() => handleMarketClick(market)}
                         isClosed={isClosed}
+                        timeLeft={formatted}
                       />
                     </div>
                   </div>

@@ -37,7 +37,7 @@ export interface CairoOption<T = unknown> {
 
 export interface Market {
   market_id: bigint | string | number;
-  category: bigint;
+  category: bigint | string;
   title: string;
   description: string;
   image_url: string;
