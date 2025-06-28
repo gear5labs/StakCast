@@ -24,5 +24,8 @@
   },
   "lint-staged": {
     "**/*.{js,ts,tsx}": "pnpm exec eslint --fix"
+  },
+  "dependencies": {
+    "tsyringe": "^4.10.0"
   }
 }
