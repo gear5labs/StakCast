@@ -51,7 +51,7 @@ const UserPredictionsSection = () => {
       }
       toast.success("Winnings claimed successfully!");
     } catch (ex) {
-      console.log(ex)
+      console.log(ex);
       toast.error("Failed to claim winnings");
     } finally {
       setClaiming(null);
