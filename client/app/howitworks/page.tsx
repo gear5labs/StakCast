@@ -8,6 +8,10 @@ const HowItWorks: React.FC = () => {
           <h2 className="text-4xl md:text-5xl font-light text-black dark:text-white mb-4">
             How Stakcast Works
           </h2>
+          <p>
+            For more information , contact us at{" "}
+            <a href="mailto:">contact@stakcast.com</a>
+          </p>
           <div className="w-16 h-px bg-black dark:bg-white"></div>
         </div>
 

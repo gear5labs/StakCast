@@ -10,8 +10,8 @@ import { Chart } from "./(components)/chart";
 import Disconnected from "./disconnected";
 import { useUserPredictions } from "../hooks/useBet";
 import ActivePredictions from "./(components)/activepredictions";
-import BalanceAndPortfolio from "./(components)/balanceAndPortfolio";
-import RecentActivity from "./(components)/recentActivity";
+// import RecentActivity from "./(components)/recentActivity";
+import Claimable from "./(components)/claimable";
 
 type TimeFrame = "7d" | "1m" | "all";
 
@@ -129,7 +129,12 @@ const DashboardPage = () => {
         </div>
 
         {/* Balance and Portfolio Section */}
-        <BalanceAndPortfolio />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+          <ActivePredictions />
+          <Claimable />
+        </div>
+        {/* <BalanceAndPortfolio /> */}
 
         {/* Chart Section */}
         <Chart />
@@ -137,10 +142,11 @@ const DashboardPage = () => {
         {/* Main Content Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Active Predictions */}
-          <ActivePredictions />
+          {/* <ActivePredictions /> */}
           {/* Recent Activity */}
-          <RecentActivity />
+          {/* <RecentActivity /> */}
         </div>
+        
       </div>
     </div>
   );
