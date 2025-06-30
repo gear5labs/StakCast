@@ -11,7 +11,7 @@ import { Table } from "@/app/components/shared/table";
 import { TrendingUp, Clock, Award, Filter, Wallet } from "lucide-react";
 import { useIsConnected } from "@/app/hooks/useIsConnected";
 import Header from "@/app/components/layout/Header";
-import { DashboardCard } from "../dashboardCard";
+import { DashboardCard } from "../(cards)/dashboardCard";
 
 // interface Stake {
 //   amount: string;
