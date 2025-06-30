@@ -11,7 +11,7 @@ import { Table } from "@/app/components/shared/table";
 import { TrendingUp, Clock, Award, Filter, Wallet } from "lucide-react";
 import { useIsConnected } from "@/app/hooks/useIsConnected";
 import Header from "@/app/components/layout/Header";
-import { DashboardCard } from "../(cards)/dashboardCard";
+
 
 // interface Stake {
 //   amount: string;
@@ -26,7 +26,7 @@ import { DashboardCard } from "../(cards)/dashboardCard";
 // }
 
 const UserPredictionsSection = () => {
-  const { predictions, loading, error, claimableAmount } = useUserPredictions();
+  const { predictions, loading, error} = useUserPredictions();
   const [filter, setFilter] = useState<"active" | "resolved">("active");
   const [claiming, setClaiming] = useState<string | null>(null);
   const isConnected = useIsConnected();
@@ -63,16 +63,16 @@ const UserPredictionsSection = () => {
     filter === "active" ? !p.market.is_resolved : p.market.is_resolved
   );
 
-  const totalStaked = predictions.reduce(
-    (sum, p) =>
-      sum +
-      p.userBets.reduce(
-        (betSum, bet) =>
-          betSum + (bet.stake?.amount ? Number(bet.stake.amount) : 0),
-        0
-      ),
-    0
-  );
+  // const totalStaked = predictions.reduce(
+  //   (sum, p) =>
+  //     sum +
+  //     p.userBets.reduce(
+  //       (betSum, bet) =>
+  //         betSum + (bet.stake?.amount ? Number(bet.stake.amount) : 0),
+  //       0
+  //     ),
+  //   0
+  // );
 
   const activePredictions = predictions.filter(
     (p) => !p.market.is_resolved
@@ -103,7 +103,7 @@ const UserPredictionsSection = () => {
         const noLabel = marketChoices[1]?.label?.toString();
 
         return (
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
             {p.userBets.map((bet, idx) => {
               const label = bet.choice?.label?.toString();
               let text = label;
@@ -121,18 +121,9 @@ const UserPredictionsSection = () => {
               }
 
               return (
-                <div key={idx} className="flex items-center gap-2">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}
-                  >
-                    {text}
-                  </span>
-                  <span className="text-sm font-semibold">
-                    {formatAmount(
-                      (bet.stake?.amount as unknown as string) || "0"
-                    )}
-                  </span>
-                </div>
+                <span key={idx} className={`flex px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}> 
+                  {text} <span className="ml-1 font-semibold">{formatAmount((bet.stake?.amount as unknown as string) || "0")}</span>{idx < p.userBets.length - 1 && <span className="mx-1 text-slate-400 dark:text-slate-500">,</span>}
+                </span>
               );
             })}
           </div>
@@ -299,7 +290,7 @@ const UserPredictionsSection = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        {/* <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <DashboardCard
             title="Total Staked"
             icon={<TrendingUp />}
@@ -341,7 +332,7 @@ const UserPredictionsSection = () => {
               </div>
             </div>
           </DashboardCard>
-        </div>
+        </div> */}
 
         {/* Table */}
         {filtered.length === 0 ? (
