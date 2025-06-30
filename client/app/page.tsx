@@ -2,7 +2,7 @@
 import React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { MarketCard } from "./components/ui";
-import { SearchX} from "lucide-react";
+import { SearchX } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import Header from "./components/layout/Header";
@@ -53,10 +53,10 @@ const Home = () => {
 
   // Function to check if market is closed
   const isMarketClosed = (marketId: string | number) => {
-    return marketId?.toString() === "2";
+    return marketId?.toString() === "2" || marketId?.toString() === "1";
   };
 
-  // Function to handle market click
+
   const handleMarketClick = (market: Market) => {
     if (!isMarketClosed(market?.market_id as number)) {
       router.push(`/market/${market?.market_id}`);
@@ -126,16 +126,15 @@ const Home = () => {
               {filteredMarkets.map((market, index) => {
                 const isClosed = isMarketClosed(market?.market_id as number);
                 const timestamp = market.end_time;
-                const milliseconds = Number(timestamp) * 1000; 
+                const milliseconds = Number(timestamp) * 1000;
                 const date = new Date(milliseconds);
-                 console.log(date)
-                
-                const day = date.getUTCDate(); 
-                const month = date.getUTCMonth() + 1; 
-                const year = date.getUTCFullYear() % 100; 
+                console.log(date);
+
+                const day = date.getUTCDate();
+                const month = date.getUTCMonth() + 1;
+                const year = date.getUTCFullYear() % 100;
 
                 const formatted = `${day}/${month}/${year}`;
-                
 
                 return (
                   <div

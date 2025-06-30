@@ -1,8 +1,8 @@
 import React from "react";
-import { DashboardCard } from "./dashboardCard";
+import { DashboardCard } from "../(cards)/dashboardCard";
 import { Target, History, PlusCircle, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useUserPredictions } from "../hooks/useBet";
+import { AugmentedMarket, useUserPredictions } from "../../hooks/useBet";
 
 const ActivePredictions = () => {
   const router = useRouter();
@@ -57,7 +57,7 @@ const ActivePredictions = () => {
               You have {count} active prediction{count > 1 && "s"}
             </h3>
             <ul className="text-slate-600 dark:text-slate-300 text-sm mb-4 list-disc pl-5 max-h-[160px] overflow-y-auto w-full pr-2">
-              {predictions.map((p, index) => (
+              {predictions.map((p: { market: AugmentedMarket }, index) => (
                 <li key={index}>{p.market.title}</li>
               ))}
             </ul>
