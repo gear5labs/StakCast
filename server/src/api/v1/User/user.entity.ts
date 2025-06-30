@@ -14,6 +14,9 @@ export class User {
 	@Column()
 	lastName!: string;
 
+	@Column({ default: false })
+	isAdmin!: boolean;
+
 	@CreateDateColumn()
 	createdAt!: Date;
 
