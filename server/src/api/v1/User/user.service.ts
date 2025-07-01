@@ -57,4 +57,23 @@ export default class UserService {
 			await queryRunner.release();
 		}
 	}
+
+	// Interact with smart contract to claim winnings
+	async claimWinnings(userId: string): Promise<any> {
+		// TODO: Integrate with contract's collect_winnings
+		// Example: return contract.collect_winnings(userId, ...)
+		return { message: 'Claim winnings logic not yet implemented', userId };
+	}
+
+	// Interact with smart contract to get claimable amount
+	async getClaimableAmount(userId: string): Promise<number> {
+		// TODO: Integrate with contract's get_user_claimable_amount
+		return 0; // placeholder
+	}
+
+	// Fetch user's bet history (from DB or contract events)
+	async getBetHistory(userId: string): Promise<any[]> {
+		// TODO: Query bet history for user
+		return [];
+	}
 }

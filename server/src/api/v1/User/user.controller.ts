@@ -43,4 +43,38 @@ export default class UserController {
             res.status(400).json({ error: (error as Error).message });
         }
     }
+
+    async claimWinnings(req: Request, res: Response) {
+        try {
+            const userId = req.user?.id;
+            if (!userId) return res.status(401).json({ error: "Unauthorized" });
+            // TODO: Add marketId, marketType, betIdx from req.body if needed
+            const result = await this.userService.claimWinnings(userId);
+            res.json({ success: true, tx: result });
+        } catch (error) {
+            res.status(400).json({ error: (error as Error).message });
+        }
+    }
+
+    async getClaimableAmount(req: Request, res: Response) {
+        try {
+            const userId = req.user?.id;
+            if (!userId) return res.status(401).json({ error: "Unauthorized" });
+            const amount = await this.userService.getClaimableAmount(userId);
+            res.json({ claimableAmount: amount });
+        } catch (error) {
+            res.status(400).json({ error: (error as Error).message });
+        }
+    }
+
+    async getBetHistory(req: Request, res: Response) {
+        try {
+            const userId = req.user?.id;
+            if (!userId) return res.status(401).json({ error: "Unauthorized" });
+            const history = await this.userService.getBetHistory(userId);
+            res.json({ betHistory: history });
+        } catch (error) {
+            res.status(400).json({ error: (error as Error).message });
+        }
+    }
 }
