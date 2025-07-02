@@ -1,76 +1,54 @@
 import { Request, Response } from "express";
 import { injectable } from "tsyringe";
 import AdminService from "./admin.service";
+import { ApplicationError } from "../../../utils/errorHandler";
 
 @injectable()
 export default class AdminController {
 	constructor(private adminService: AdminService) {}
 
-	async pauseContract(req: Request, res: Response) {
-		try {
-			const result = await this.adminService.pauseContract();
-			res.json({ success: true, result });
-		} catch (error) {
-			res.status(400).json({ error: (error as Error).message });
-		}
-	}
+	pauseContract = async (req: Request, res: Response) => {
+		const result = await this.adminService.pauseContract();
+		res.json({ success: true, result });
+	};
 
-	async unpauseContract(req: Request, res: Response) {
-		try {
-			const result = await this.adminService.unpauseContract();
-			res.json({ success: true, result });
-		} catch (error) {
-			res.status(400).json({ error: (error as Error).message });
-		}
-	}
+	unpauseContract = async (req: Request, res: Response) => {
+		const result = await this.adminService.unpauseContract();
+		res.json({ success: true, result });
+	};
 
-	async setFee(req: Request, res: Response) {
-		try {
-			const { fee } = req.body;
-			const result = await this.adminService.setFee(fee);
-			res.json({ success: true, result });
-		} catch (error) {
-			res.status(400).json({ error: (error as Error).message });
-		}
-	}
+	setFee = async (req: Request, res: Response) => {
+		const { fee } = req.body;
+		if (!fee) throw new ApplicationError("Fee is required", 400);
+		const result = await this.adminService.setFee(fee);
+		res.json({ success: true, result });
+	};
 
-	async addSupportedToken(req: Request, res: Response) {
-		try {
-			const { tokenAddress } = req.body;
-			const result = await this.adminService.addSupportedToken(tokenAddress);
-			res.json({ success: true, result });
-		} catch (error) {
-			res.status(400).json({ error: (error as Error).message });
-		}
-	}
+	addSupportedToken = async (req: Request, res: Response) => {
+		const { tokenAddress } = req.body;
+		if (!tokenAddress) throw new ApplicationError("Token address is required", 400);
+		const result = await this.adminService.addSupportedToken(tokenAddress);
+		res.json({ success: true, result });
+	};
 
-	async removeSupportedToken(req: Request, res: Response) {
-		try {
-			const { tokenAddress } = req.body;
-			const result = await this.adminService.removeSupportedToken(tokenAddress);
-			res.json({ success: true, result });
-		} catch (error) {
-			res.status(400).json({ error: (error as Error).message });
-		}
-	}
+	removeSupportedToken = async (req: Request, res: Response) => {
+		const { tokenAddress } = req.body;
+		if (!tokenAddress) throw new ApplicationError("Token address is required", 400);
+		const result = await this.adminService.removeSupportedToken(tokenAddress);
+		res.json({ success: true, result });
+	};
 
-	async closeMarket(req: Request, res: Response) {
-		try {
-			const { marketId } = req.body;
-			const result = await this.adminService.closeMarket(marketId);
-			res.json({ success: true, result });
-		} catch (error) {
-			res.status(400).json({ error: (error as Error).message });
-		}
-	}
+	closeMarket = async (req: Request, res: Response) => {
+		const { marketId } = req.body;
+		if (!marketId) throw new ApplicationError("Market ID is required", 400);
+		const result = await this.adminService.closeMarket(marketId);
+		res.json({ success: true, result });
+	};
 
-	async emergencyWithdraw(req: Request, res: Response) {
-		try {
-			const { to, amount } = req.body;
-			const result = await this.adminService.emergencyWithdraw(to, amount);
-			res.json({ success: true, result });
-		} catch (error) {
-			res.status(400).json({ error: (error as Error).message });
-		}
-	}
+	emergencyWithdraw = async (req: Request, res: Response) => {
+		const { to, amount } = req.body;
+		if (!to || !amount) throw new ApplicationError("To and amount are required", 400);
+		const result = await this.adminService.emergencyWithdraw(to, amount);
+		res.json({ success: true, result });
+	};
 }

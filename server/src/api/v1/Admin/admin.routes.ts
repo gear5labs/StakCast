@@ -7,24 +7,14 @@ const router = Router();
 const adminController = container.resolve(AdminController);
 
 // Contract control endpoints
-router.post("/pause", authenticateToken, requireAdmin, adminController.pauseContract.bind(adminController));
-router.post("/unpause", authenticateToken, requireAdmin, adminController.unpauseContract.bind(adminController));
-router.post("/set-fee", authenticateToken, requireAdmin, adminController.setFee.bind(adminController));
-router.post("/add-token", authenticateToken, requireAdmin, adminController.addSupportedToken.bind(adminController));
-router.post(
-	"/remove-token",
-	authenticateToken,
-	requireAdmin,
-	adminController.removeSupportedToken.bind(adminController)
-);
+router.post("/pause", authenticateToken, requireAdmin, adminController.pauseContract);
+router.post("/unpause", authenticateToken, requireAdmin, adminController.unpauseContract);
+router.post("/set-fee", authenticateToken, requireAdmin, adminController.setFee);
+router.post("/add-token", authenticateToken, requireAdmin, adminController.addSupportedToken);
+router.post("/remove-token", authenticateToken, requireAdmin, adminController.removeSupportedToken);
 
 // Emergency endpoints
-router.post("/close-market", authenticateToken, requireAdmin, adminController.closeMarket.bind(adminController));
-router.post(
-	"/emergency-withdraw",
-	authenticateToken,
-	requireAdmin,
-	adminController.emergencyWithdraw.bind(adminController)
-);
+router.post("/close-market", authenticateToken, requireAdmin, adminController.closeMarket);
+router.post("/emergency-withdraw", authenticateToken, requireAdmin, adminController.emergencyWithdraw);
 
 export default router;
