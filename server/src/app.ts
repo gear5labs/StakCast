@@ -3,6 +3,7 @@ import { ErrorHandler } from "./utils/errorHandler";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
+import marketRoutes from './api/v1/market/market.routes';
 
 import appRoutes from ".";
 const app: Application = express();
@@ -19,6 +20,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api", appRoutes);
-app.use(ErrorHandler);
+app.use("/api", marketRoutes);
+app.use(ErrorHandler); 
 
 export default app;

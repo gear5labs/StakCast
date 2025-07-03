@@ -18,6 +18,6 @@
 		"noImplicitAny": true, // Added for stricter typing
 		"moduleResolution": "node" // Added for proper module resolution
 	},
-	"include": ["src/**/*", "src/@types/express/index.d.ts"],
+	"include": ["src/**/*", "src/@types/express/index.d.ts", "src/api/v1/market/market.controller.ts", "src/api/v1/market/market.routes.ts"],
 	"exclude": ["node_modules", "dist"] // Added exclude
 }
