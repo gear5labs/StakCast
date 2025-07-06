@@ -17,7 +17,7 @@ pub struct ModeratorRemoved {
 #[derive(Drop, starknet::Event)]
 pub struct EmergencyPaused {
     pub paused_by: ContractAddress,
-    pub reason: ByteArray, 
+    pub reason: ByteArray,
 }
 
 #[derive(Drop, starknet::Event)]

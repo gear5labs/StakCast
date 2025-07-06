@@ -5,7 +5,7 @@ use snforge_std::{
 };
 use stakcast::admin_interface::{IAdditionalAdminDispatcher, IAdditionalAdminDispatcherTrait};
 use stakcast::interface::{IPredictionHubDispatcher, IPredictionHubDispatcherTrait};
-use starknet::{ContractAddress, get_block_timestamp, contract_address_const};
+use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
 use crate::test_utils::{
     ADMIN_ADDR, FEE_RECIPIENT_ADDR, MODERATOR_ADDR, USER1_ADDR, USER2_ADDR,
     create_business_prediction, create_crypto_prediction, create_sports_prediction,
