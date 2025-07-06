@@ -1,7 +1,6 @@
 use starknet::ContractAddress;
-use starknet::ByteArray;
 
-// ================ Security Events ================
+// ================ Individual Event Structs ================
 
 #[derive(Drop, starknet::Event)]
 pub struct ModeratorAdded {
@@ -18,7 +17,7 @@ pub struct ModeratorRemoved {
 #[derive(Drop, starknet::Event)]
 pub struct EmergencyPaused {
     pub paused_by: ContractAddress,
-    pub reason: ByteArray,
+    pub reason: ByteArray, 
 }
 
 #[derive(Drop, starknet::Event)]
@@ -67,4 +66,19 @@ pub struct BetPlaced {
     pub user: ContractAddress,
     pub choice: u8,
     pub amount: u256,
+}
+
+// ================ Main Event Enum ================
+
+#[derive(Drop, starknet::Event)]
+pub enum Event {
+    ModeratorAdded: ModeratorAdded,
+    ModeratorRemoved: ModeratorRemoved,
+    EmergencyPaused: EmergencyPaused,
+    MarketCreated: MarketCreated,
+    MarketResolved: MarketResolved,
+    WagerPlaced: WagerPlaced,
+    FeesCollected: FeesCollected,
+    WinningsCollected: WinningsCollected,
+    BetPlaced: BetPlaced,
 }

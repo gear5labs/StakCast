@@ -9,7 +9,7 @@ use stakcast::interface::{
 };
 use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
 use starknet::{ClassHash, ContractAddress, get_block_timestamp, get_caller_address};
-use stakcast::events::{ModeratorAdded, ModeratorRemoved, EmergencyPaused, MarketCreated, MarketResolved, WagerPlaced, FeesCollected, WinningsCollected, BetPlaced};
+use stakcast::events::{Event, ModeratorAdded, ModeratorRemoved, EmergencyPaused, MarketCreated, MarketResolved, WagerPlaced, FeesCollected, WinningsCollected, BetPlaced};
 
 // ================ Contract Storage ================
 
@@ -70,18 +70,7 @@ pub mod PredictionHub {
     }
 
     #[event]
-    #[derive(Drop, starknet::Event)]
-    pub enum Event {
-        ModeratorAdded: ModeratorAdded,
-        ModeratorRemoved: ModeratorRemoved,
-        EmergencyPaused: EmergencyPaused,
-        MarketCreated: MarketCreated,
-        MarketResolved: MarketResolved,
-        WagerPlaced: WagerPlaced,
-        FeesCollected: FeesCollected,
-        WinningsCollected: WinningsCollected,
-        BetPlaced: BetPlaced,
-    }
+    use stakcast::events::Event;
 
     // ================ Constructor ================
 
