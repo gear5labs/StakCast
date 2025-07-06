@@ -1,3 +1,6 @@
+use starknet::ContractAddress;
+use starknet::ByteArray;
+
 // ================ Security Events ================
 
 #[derive(Drop, starknet::Event)]
