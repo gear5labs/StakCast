@@ -17,7 +17,7 @@ pub trait IAdditionalAdmin<TContractState> {
     // ================ Emergency Controls ================
 
     /// Emergency pause the entire contract (admin only)
-    fn emergency_pause(ref self: TContractState, reason: ByteArray);
+    fn emergency_pause(ref self: TContractState);
 
     /// Remove emergency pause (admin only)
     fn emergency_unpause(ref self: TContractState);
@@ -59,9 +59,6 @@ pub trait IAdditionalAdmin<TContractState> {
 
     /// Check if contract is paused
     fn is_paused(self: @TContractState) -> bool;
-
-    /// Get emergency pause reason
-    fn get_emergency_pause_reason(self: @TContractState) -> ByteArray;
 
     /// Get current time restrictions
     fn get_time_restrictions(self: @TContractState) -> (u64, u64, u64);
@@ -113,29 +110,14 @@ pub trait IAdditionalAdmin<TContractState> {
 
     // ================ Token and Betting Management ================
 
-    /// Set betting token address (admin only)
-    fn set_betting_token(ref self: TContractState, token_address: ContractAddress);
+    /// Set protocol token address (admin only)
+    fn set_protocol_token(ref self: TContractState, token_address: ContractAddress);
 
-    /// Set betting restrictions (admin only)
-    fn set_betting_restrictions(ref self: TContractState, min_amount: u256, max_amount: u256);
+    /// Set protocol restrictions (admin only)
+    fn set_protocol_restrictions(ref self: TContractState, min_amount: u256, max_amount: u256);
 
     /// Emergency withdraw tokens from contract (admin only)
     fn emergency_withdraw_tokens(
         ref self: TContractState, amount: u256, recipient: ContractAddress,
     );
-
-    // ================ Multi-Token Support Functions ================
-
-    /// Emergency withdraw specific token from contract (admin only)
-    fn emergency_withdraw_specific_token(
-        ref self: TContractState, token_name: felt252, amount: u256, recipient: ContractAddress,
-    );
-
-    /// Add a new supported token (admin only)
-    fn add_supported_token(
-        ref self: TContractState, token_name: felt252, token_address: ContractAddress,
-    );
-
-    /// Remove a supported token (admin only)
-    fn remove_supported_token(ref self: TContractState, token_name: felt252);
 }

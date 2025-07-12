@@ -5,341 +5,395 @@ use snforge_std::{
 };
 use stakcast::admin_interface::{IAdditionalAdminDispatcher, IAdditionalAdminDispatcherTrait};
 use stakcast::interface::{IPredictionHubDispatcher, IPredictionHubDispatcherTrait};
-use starknet::get_block_timestamp;
+use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
 use crate::test_utils::{
     ADMIN_ADDR, FEE_RECIPIENT_ADDR, MODERATOR_ADDR, USER1_ADDR, USER2_ADDR, create_test_market,
+    default_create_crypto_prediction, default_create_predictions, default_create_sports_prediction,
     setup_test_environment,
 };
 
-#[test]
-fn test_place_wager_success() {
-    let (prediction_hub, _admin_interface, token) = setup_test_environment();
-    let market_id = create_test_market(prediction_hub);
+// ================ General Prediction Market Tests ================
 
+#[test]
+fn test_create_prediction_market_success() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    default_create_predictions(contract);
+    stop_cheat_caller_address(contract.contract_address);
+    let count = contract.get_prediction_count();
+    assert(count == 1, 'Market count should be 1');
+}
+
+#[test]
+fn test_create_multiple_prediction_markets() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
     let mut spy = spy_events();
-
-    // Place wager
-    start_cheat_caller_address(prediction_hub.contract_address, USER1_ADDR());
-    let user_balance_before = token.balance_of(USER1_ADDR());
-
-    let result = prediction_hub.place_wager(market_id, 0, 1000000000000000000000, 0); // 1000 tokens
-    stop_cheat_caller_address(prediction_hub.contract_address);
-
-    assert(result, 'Wager placement failed');
-
-    // Check events were emitted
-    let events = spy.get_events();
-    assert(
-        events.events.len() >= 3, 'Expected multiple events',
-    ); // FeesCollected, WagerPlaced, BetPlaced
-
-    // Verify user bet was recorded
-    let bet_count = prediction_hub.get_bet_count_for_market(USER1_ADDR(), market_id, 0);
-    assert(bet_count == 1, 'Bet count incorrect');
-
-    // Verify token balances changed
-    let user_balance = token.balance_of(USER1_ADDR());
-    let expected_balance = user_balance_before - 1000000000000000000000; // 9.5M - 1k
-    assert(user_balance == expected_balance, 'User balance incorrect');
-}
-
-#[test]
-fn test_place_wager_with_custom_fees() {
-    let (prediction_hub, admin_interface, token) = setup_test_environment();
-    let market_id = create_test_market(prediction_hub);
-
-    // Set platform fee to 5% (500 basis points)
-    start_cheat_caller_address(prediction_hub.contract_address, ADMIN_ADDR());
-    admin_interface.set_platform_fee(500);
-    stop_cheat_caller_address(prediction_hub.contract_address);
-
-    // Place wager
-    start_cheat_caller_address(prediction_hub.contract_address, USER1_ADDR());
-    let result = prediction_hub.place_wager(market_id, 0, 1000000000000000000000, 0); // 1000 tokens
-    stop_cheat_caller_address(prediction_hub.contract_address);
-
-    assert(result, 'Wager placement failed');
-
-    // Check fee calculation
-    let market_fees = prediction_hub.get_market_fees(market_id);
-    let expected_fee = 1000000000000000000000 * 500 / 10000; // 50 tokens (5%)
-    assert(market_fees == expected_fee, 'Market fees incorrect');
-
-    // Check fee recipient balance
-    let fee_recipient_balance = token.balance_of(FEE_RECIPIENT_ADDR());
-    assert(fee_recipient_balance == expected_fee, 'Fee recipient balance incorrect');
-}
-
-
-#[test]
-fn test_multiple_bets_same_user() {
-    let (prediction_hub, _admin_interface, token) = setup_test_environment();
-    let market_id = create_test_market(prediction_hub);
-
-    let mut spy = spy_events();
-
-    // Place wager
-    start_cheat_caller_address(prediction_hub.contract_address, USER1_ADDR());
-    let user_balance_before = token.balance_of(USER1_ADDR());
-    let result = prediction_hub.place_wager(market_id, 0, 1000000000000000000000, 0); // 1000 tokens
-    stop_cheat_caller_address(prediction_hub.contract_address);
-    assert(result, 'Wager placement failed');
-
-    // Check events were emitted
-    let events = spy.get_events();
-    assert(
-        events.events.len() >= 3, 'Expected multiple events',
-    ); // FeesCollected, WagerPlaced, BetPlaced
-
-    let _expected_balance = 9500000000000000000000000 - 1000000000000000000000; // 9.5M - 1k
-    // Verify user bet was recorded
-    let bet_count = prediction_hub.get_bet_count_for_market(USER1_ADDR(), market_id, 0);
-    assert(bet_count == 1, 'Bet count incorrect');
-
-    // Verify token balances changed
-    let user_balance = token.balance_of(USER1_ADDR());
-    let expected_balance = user_balance_before - 1000000000000000000000; // 9.5M - 1k
-    assert(user_balance == expected_balance, 'User balance incorrect');
-
-    start_cheat_caller_address(prediction_hub.contract_address, USER1_ADDR());
-    let result2 = prediction_hub
-        .place_wager(market_id, 0, 1000000000000000000000, 0); // 1000 tokens
-    stop_cheat_caller_address(prediction_hub.contract_address);
-    assert(result2, 'Wager placement failed');
-}
-
-#[test]
-fn test_multiple_wagers_same_user() {
-    let (prediction_hub, _admin_interface, _token) = setup_test_environment();
-    let market_id = create_test_market(prediction_hub);
-
-    // Place first wager
-    start_cheat_caller_address(prediction_hub.contract_address, USER1_ADDR());
-    prediction_hub.place_wager(market_id, 0, 1000000000000000000000, 0); // 1000 tokens on choice 0
-    stop_cheat_caller_address(prediction_hub.contract_address);
-
-    // Place second wager by same user
-    start_cheat_caller_address(prediction_hub.contract_address, USER1_ADDR());
-    prediction_hub.place_wager(market_id, 1, 500000000000000000000, 0); // 500 tokens on choice 1
-    stop_cheat_caller_address(prediction_hub.contract_address);
-
-    // Verify bet counts
-    let bet_count = prediction_hub.get_bet_count_for_market(USER1_ADDR(), market_id, 0);
-    assert(bet_count == 2, 'Bet count incorrect');
-
-    // Verify both bets are recorded
-    let bet1 = prediction_hub.get_choice_and_bet(USER1_ADDR(), market_id, 0, 0);
-    let bet2 = prediction_hub.get_choice_and_bet(USER1_ADDR(), market_id, 0, 1);
-
-    // Verify bet amounts (accounting for 2.5% default fee)
-    let expected_net1 = 1000000000000000000000 - (1000000000000000000000 * 250 / 10000);
-    let expected_net2 = 500000000000000000000 - (500000000000000000000 * 250 / 10000);
-
-    assert(bet1.stake.amount == expected_net1, 'First bet amount incorrect');
-    assert(bet2.stake.amount == expected_net2, 'Second bet amount incorrect');
-}
-
-
-#[test]
-fn test_multiple_users_wagers() {
-    let (prediction_hub, _admin_interface, _token) = setup_test_environment();
-    let market_id = create_test_market(prediction_hub);
-
-    // USER1 places wager
-    start_cheat_caller_address(prediction_hub.contract_address, USER1_ADDR());
-    prediction_hub.place_wager(market_id, 0, 1000000000000000000000, 0); // 1000 tokens
-    stop_cheat_caller_address(prediction_hub.contract_address);
-
-    // USER2 places wager
-    start_cheat_caller_address(prediction_hub.contract_address, USER2_ADDR());
-    prediction_hub.place_wager(market_id, 1, 800000000000000000000, 0); // 800 tokens
-    stop_cheat_caller_address(prediction_hub.contract_address);
-
-    // Verify market liquidity
-    let market_liquidity = prediction_hub.get_market_liquidity(market_id);
-
-    // Calculate expected liquidity (net of fees)
-    let net1 = 1000000000000000000000 - (1000000000000000000000 * 250 / 10000);
-    let net2 = 800000000000000000000 - (800000000000000000000 * 250 / 10000);
-    let expected_liquidity = net1 + net2;
-
-    assert(market_liquidity == expected_liquidity, 'Market liquidity incorrect');
-
-    // Verify total value locked
-    let tvl = prediction_hub.get_total_value_locked();
-    assert(tvl == expected_liquidity, 'TVL incorrect');
-}
-
-
-// ================ Error Condition Tests ================
-
-#[test]
-#[should_panic(expected: ('Insufficient token balance',))]
-fn test_insufficient_balance() {
-    let (prediction_hub, _admin_interface, _token) = setup_test_environment();
-    let market_id = create_test_market(prediction_hub);
-
-    start_cheat_caller_address(prediction_hub.contract_address, USER2_ADDR());
-    // USER2 has 500k tokens, trying to bet 600k
-    prediction_hub.place_wager(market_id, 0, 600000000000000000000000, 0);
-    stop_cheat_caller_address(prediction_hub.contract_address);
-}
-
-#[test]
-#[should_panic(expected: ('Insufficient token allowance',))]
-fn test_insufficient_allowance() {
-    let (prediction_hub, _admin_interface, token) = setup_test_environment();
-    let market_id = create_test_market(prediction_hub);
-
-    // Reduce allowance for USER2
-    start_cheat_caller_address(token.contract_address, USER2_ADDR());
-    token.approve(prediction_hub.contract_address, 100000000000000000000); // Only 100 tokens
-    stop_cheat_caller_address(token.contract_address);
-
-    start_cheat_caller_address(prediction_hub.contract_address, USER2_ADDR());
-    // Trying to bet 1000 tokens but only 100 approved
-    prediction_hub.place_wager(market_id, 0, 1000000000000000000000, 0);
-    stop_cheat_caller_address(prediction_hub.contract_address);
-}
-
-#[test]
-#[should_panic(expected: ('Amount below minimum',))]
-fn test_bet_below_minimum() {
-    let (prediction_hub, _admin_interface, _token) = setup_test_environment();
-    let market_id = create_test_market(prediction_hub);
-
-    start_cheat_caller_address(prediction_hub.contract_address, USER1_ADDR());
-    // Trying to bet below minimum (1 token)
-    prediction_hub.place_wager(market_id, 0, 500000000000000000, 0); // 0.5 tokens
-    stop_cheat_caller_address(prediction_hub.contract_address);
-}
-
-// ================ Pool Management Tests ================
-
-#[test]
-fn test_pool_updates_correctly() {
-    let (prediction_hub, _admin_interface, _token) = setup_test_environment();
-    let market_id = create_test_market(prediction_hub);
-
-    // Place wagers on both choices
-    start_cheat_caller_address(prediction_hub.contract_address, USER1_ADDR());
-    prediction_hub.place_wager(market_id, 0, 1000000000000000000000, 0); // 1000 tokens on choice 0
-    stop_cheat_caller_address(prediction_hub.contract_address);
-
-    start_cheat_caller_address(prediction_hub.contract_address, USER2_ADDR());
-    prediction_hub.place_wager(market_id, 1, 800000000000000000000, 0); // 800 tokens on choice 1
-    stop_cheat_caller_address(prediction_hub.contract_address);
-
-    // Check market state
-    let market = prediction_hub.get_prediction(market_id);
-
-    // Calculate expected net amounts (after 2.5% fee)
-    let net1 = 1000000000000000000000 - (1000000000000000000000 * 250 / 10000);
-    let net2 = 800000000000000000000 - (800000000000000000000 * 250 / 10000);
-
-    let (choice_0, choice_1) = market.choices;
-    assert(choice_0.staked_amount == net1, 'Choice 0 stake incorrect');
-    assert(choice_1.staked_amount == net2, 'Choice 1 stake incorrect');
-    assert(market.total_pool == net1 + net2, 'Total pool incorrect');
-}
-
-// ================ Administrative Functions Tests ================
-
-#[test]
-fn test_set_betting_restrictions() {
-    let (prediction_hub, admin_interface, _token) = setup_test_environment();
-
-    start_cheat_caller_address(prediction_hub.contract_address, ADMIN_ADDR());
-    admin_interface
-        .set_betting_restrictions(5000000000000000000, 50000000000000000000); // 5-50 tokens
-    stop_cheat_caller_address(prediction_hub.contract_address);
-
-    let (min_bet, max_bet) = prediction_hub.get_betting_restrictions();
-    assert(min_bet == 5000000000000000000, 'Min bet incorrect');
-    assert(max_bet == 50000000000000000000, 'Max bet incorrect');
-}
-
-#[test]
-fn test_fee_tracking() {
-    let (prediction_hub, _admin_interface, _token) = setup_test_environment();
-    let market_id = create_test_market(prediction_hub);
-
-    // Place multiple wagers
-    start_cheat_caller_address(prediction_hub.contract_address, USER1_ADDR());
-    prediction_hub.place_wager(market_id, 0, 1000000000000000000000, 0); // 1000 tokens
-    stop_cheat_caller_address(prediction_hub.contract_address);
-
-    start_cheat_caller_address(prediction_hub.contract_address, USER2_ADDR());
-    prediction_hub.place_wager(market_id, 1, 800000000000000000000, 0); // 800 tokens
-    stop_cheat_caller_address(prediction_hub.contract_address);
-
-    // Check fee tracking
-    let market_fees = prediction_hub.get_market_fees(market_id);
-    let total_fees = prediction_hub.get_total_fees_collected();
-
-    let expected_fees = (1000000000000000000000 * 250 / 10000)
-        + (800000000000000000000 * 250 / 10000);
-    assert(market_fees == expected_fees, 'Market fees incorrect');
-    assert(total_fees == expected_fees, 'Total fees incorrect');
-}
-
-// ================ Backward Compatibility Tests ================
-
-#[test]
-fn test_place_bet_backward_compatibility() {
-    let (prediction_hub, _admin_interface, _token) = setup_test_environment();
-    let market_id = create_test_market(prediction_hub);
-
-    // Test that place_bet still works (calls place_wager internally)
-    start_cheat_caller_address(prediction_hub.contract_address, USER1_ADDR());
-    let result = prediction_hub.place_bet(market_id, 0, 1000000000000000000000, 0);
-    stop_cheat_caller_address(prediction_hub.contract_address);
-
-    assert(result, 'place_bet failed');
-
-    let bet_count = prediction_hub.get_bet_count_for_market(USER1_ADDR(), market_id, 0);
-    assert(bet_count == 1, 'Bet not recorded');
-}
-
-#[test]
-fn test_get_active_prediction_market() {
-    let (prediction_hub, _admin_interface, _token) = setup_test_environment();
-    let mut spy = spy_events();
-    start_cheat_caller_address(prediction_hub.contract_address, MODERATOR_ADDR());
-    let future_time = get_block_timestamp() + 86400; // 1 day from now
-
-    let market = prediction_hub.get_active_prediction_markets();
-    assert(market.len() == 0, 'Market count should be 0');
-
-    create_test_market(prediction_hub);
-    create_test_market(prediction_hub);
-    create_test_market(prediction_hub);
-
-    // Fetch market_id from MarketCreated event
-    let market_id = match spy.get_events().events.into_iter().last() {
-        Option::Some((
-            _, event,
-        )) => {
-            let market_id_felt = *event.data.at(0);
-            market_id_felt.into()
-        },
+    let future_time = get_block_timestamp() + 86400;
+    // Create first market
+    default_create_predictions(contract);
+
+    // Fetch market_id for first market
+    let market1_id = match spy.get_events().events.into_iter().last() {
+        Option::Some((_, event)) => (*event.data.at(0)).into(),
         Option::None => panic!("No MarketCreated event emitted"),
     };
+    // spy.clear_events(); // Clear events to avoid confusion
+
+    // Create second market
+    contract
+        .create_predictions(
+            "Market 2",
+            "Description 2",
+            ('True', 'False'),
+            'category2',
+            future_time + 3600,
+            0, // Normal general prediction market
+            None,
+            None,
+        );
+
+    // Fetch market_id for second market
+    let market2_id = match spy.get_events().events.into_iter().last() {
+        Option::Some((_, event)) => (*event.data.at(0)).into(),
+        Option::None => panic!("No MarketCreated event emitted"),
+    };
+
     // Verify market count
-    let count = prediction_hub.get_prediction_count();
-    assert(count == 3, 'Should have 3 markets');
+    let count = contract.get_prediction_count();
+    assert(count == 2, 'Should have 2 markets');
 
-    start_cheat_block_timestamp(
-        prediction_hub.contract_address, get_block_timestamp() + 86400 + 3600,
-    );
+    // Verify both markets exist and have correct IDs
+    let market1 = contract.get_prediction(market1_id, 0);
+    let market2 = contract.get_prediction(market2_id, 0);
 
-    start_cheat_caller_address(prediction_hub.contract_address, MODERATOR_ADDR());
+    assert(market1.market_id == market1_id, 'Market 1 ID mismatch');
+    assert(market2.market_id == market2_id, 'Market 2 ID mismatch');
 
-    // Resolve market
-    prediction_hub.resolve_prediction(market_id, 0); // BTC reaches $100k (choice 0 wins)
-
-    stop_cheat_caller_address(prediction_hub.contract_address);
-
-    let market = prediction_hub.get_active_prediction_markets();
-    assert(market.len() == 2, 'active Market count should be 2');
+    stop_cheat_caller_address(contract.contract_address);
 }
+
+#[test]
+#[should_panic(expected: 'Contract is paused')]
+fn test_create_market_should_panic_if_contract_is_pasued() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    let admin_dispatcher = IAdditionalAdminDispatcher {
+        contract_address: contract.contract_address,
+    };
+
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR().into());
+    admin_dispatcher.emergency_pause();
+    stop_cheat_caller_address(contract.contract_address);
+
+    // try creating a new market
+    default_create_predictions(contract);
+}
+
+#[test]
+fn test_create_market_should_work_after_contract_unpasued() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    let admin_dispatcher = IAdditionalAdminDispatcher {
+        contract_address: contract.contract_address,
+    };
+
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR().into());
+
+    admin_dispatcher.emergency_pause();
+
+    admin_dispatcher.emergency_unpause();
+
+    default_create_predictions(contract);
+}
+
+#[test]
+#[should_panic(expected: 'Market creation paused')]
+fn test_create_market_should_panic_if_market_creation_is_pasued() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    let admin_dispatcher = IAdditionalAdminDispatcher {
+        contract_address: contract.contract_address,
+    };
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR().into());
+    admin_dispatcher.pause_market_creation();
+    stop_cheat_caller_address(contract.contract_address);
+    default_create_predictions(contract);
+}
+
+#[test]
+fn test_create_market_should_work_after_market_creation_unpasued() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    let admin_dispatcher = IAdditionalAdminDispatcher {
+        contract_address: contract.contract_address,
+    };
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR().into());
+
+    admin_dispatcher.pause_market_creation();
+
+    admin_dispatcher.unpause_market_creation();
+
+    default_create_predictions(contract);
+}
+
+#[test]
+#[should_panic(expected: 'Only admin or moderator')]
+fn test_create_market_should_panic_if_non_admin_tries_to_create() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    start_cheat_caller_address(contract.contract_address, USER2_ADDR().into());
+    default_create_predictions(contract);
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+#[should_panic(expected: 'End time must be in future')]
+fn test_create_market_should_panic_if_end_time_not_in_future() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR().into());
+    let current_time = 10000;
+    start_cheat_block_timestamp(contract.contract_address, current_time);
+
+    let past_time = current_time - 1;
+
+    contract
+        .create_predictions(
+            "Invalid Time Market",
+            "This should fail due to past end time",
+            ('Yes', 'No'),
+            'test',
+            past_time,
+            0, // Normal general prediction market
+            None,
+            None,
+        );
+}
+
+#[test]
+#[should_panic(expected: 'Market duration too short')]
+fn test_create_market_should_panic_if_end_time_is_too_short() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR().into());
+    let small_time = get_block_timestamp() + 10;
+    contract
+        .create_predictions(
+            "Market 2", "Description 2", ('True', 'False'), 'category2', small_time, 0, None, None,
+        );
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+#[should_panic(expected: 'Market duration too long')]
+fn test_create_market_should_panic_if_end_time_is_too_long() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR().into());
+    let large_time = get_block_timestamp() + 1000000000;
+    contract
+        .create_predictions(
+            "Market 2", "Description 2", ('True', 'False'), 'category2', large_time, 0, None, None,
+        );
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+fn test_create_market_create_crypto_market() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR().into());
+    default_create_crypto_prediction(contract);
+    let count = contract.get_prediction_count();
+    assert(count == 1, 'Market count should be 1');
+}
+
+
+#[test]
+fn test_create_market_create_multiple_market_types() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    let mut spy = spy_events();
+
+    let all_general = contract.get_all_predictions();
+    let all_crypto = contract.get_all_crypto_predictions();
+    let all_sports = contract.get_all_sports_predictions();
+
+    assert(all_general.len() == 0, 'Empty general array');
+    assert(all_crypto.len() == 0, 'Empty crypto array');
+    assert(all_sports.len() == 0, 'Empty sports array');
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let future_time = get_block_timestamp() + 86400;
+
+    contract
+        .create_predictions(
+            "General Market",
+            "General prediction description",
+            ('Option A', 'Option B'),
+            'general',
+            future_time,
+            0,
+            None,
+            None,
+        );
+
+    let mut general_market_id = 0;
+
+    if let Some((_, event)) = spy.get_events().events.into_iter().last() {
+        general_market_id = (*event.data.at(0)).into();
+    }
+
+    contract
+        .create_predictions(
+            "Crypto Market",
+            "Crypto prediction description",
+            ('Up', 'Down'),
+            'crypto',
+            future_time + 3600,
+            1,
+            Some(('BTC', 50000)),
+            None,
+        );
+
+    let mut crypto_market_id = 0;
+
+    if let Some((_, event)) = spy.get_events().events.into_iter().last() {
+        crypto_market_id = (*event.data.at(0)).into();
+    }
+
+    contract
+        .create_predictions(
+            "Sports Market",
+            "Sports prediction description",
+            ('Team A', 'Team B'),
+            'sports',
+            future_time + 7200,
+            2,
+            None,
+            Some((555, true)),
+        );
+
+    let mut sports_market_id = 0;
+
+    if let Some((_, event)) = spy.get_events().events.into_iter().last() {
+        sports_market_id = (*event.data.at(0)).into();
+    }
+
+    let count = contract.get_prediction_count();
+    assert(count == 3, 'Should have 4 markets');
+
+    let general_market = contract.get_prediction(general_market_id, 0);
+    let crypto_market = contract.get_prediction(crypto_market_id, 1);
+    let sports_market = contract.get_prediction(sports_market_id, 2);
+
+    assert(general_market.market_id == general_market_id, 'General market ID mismatch');
+    assert(crypto_market.market_id == crypto_market_id, 'Crypto market ID mismatch');
+    assert(sports_market.market_id == sports_market_id, 'Sports market ID mismatch');
+    assert(general_market.title == "General Market", 'General market title mismatch');
+    assert(crypto_market.title == "Crypto Market", 'Crypto market title mismatch');
+    assert(sports_market.title == "Sports Market", 'Sports market title mismatch');
+
+    let all_general = contract.get_all_general_predictions();
+    let all_crypto = contract.get_all_crypto_predictions();
+    let all_sports = contract.get_all_sports_predictions();
+    assert(all_general.len() == 1, 'general market should be 1');
+    assert(all_crypto.len() == 1, 'crypto market should be 1');
+    assert(all_sports.len() == 1, 'sport market should be 1');
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+
+#[test]
+fn test_creat_market_multiple_moderators_can_create_markets() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    let mut spy = spy_events();
+
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.add_moderator(contract_address_const::<0x02>());
+    stop_cheat_caller_address(contract.contract_address);
+
+    let future_time = get_block_timestamp() + 86400;
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    contract
+        .create_predictions(
+            "Moderator 1 Market",
+            "Market by moderator 1",
+            ('Yes', 'No'),
+            'mod1',
+            future_time,
+            0,
+            None,
+            None,
+        );
+
+    let mut market1_id = 0;
+
+    if let Some((_, event)) = spy.get_events().events.into_iter().last() {
+        market1_id = (*event.data.at(0)).into();
+    }
+
+    stop_cheat_caller_address(contract.contract_address);
+
+    // Second moderator creates a market
+    start_cheat_caller_address(contract.contract_address, contract_address_const::<0x02>());
+    contract
+        .create_predictions(
+            "Moderator 2 Market",
+            "Market by moderator 2",
+            ('True', 'False'),
+            'mod2',
+            future_time + 3600,
+            0, // Normal general prediction market
+            None,
+            None,
+        );
+
+    // Fetch market_id for second market
+    let mut market2_id = 0;
+
+    if let Some((_, event)) = spy.get_events().events.into_iter().last() {
+        market2_id = (*event.data.at(0)).into();
+    }
+
+    stop_cheat_caller_address(contract.contract_address);
+
+    let count = contract.get_prediction_count();
+    assert(count == 2, '2 moderator markets');
+
+    let market1 = contract.get_prediction(market1_id, 0);
+    let market2 = contract.get_prediction(market2_id, 0);
+
+    assert(market1.title == "Moderator 1 Market", 'Market 1 title');
+    assert(market2.title == "Moderator 2 Market", 'Market 2 title');
+}
+
+
+#[test]
+fn test_get_market_status() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR().into());
+    let market_id = create_test_market(contract);
+    stop_cheat_caller_address(contract.contract_address);
+
+    let (is_open, is_resolved) = contract.get_market_status(market_id, 0);
+    assert(is_open, 'Market should be open');
+    assert(!is_resolved, 'Should not be resolved');
+}
+
+#[test]
+#[should_panic(expected: ('Market does not exist',))]
+fn test_get_market_should_panic_if_non_existent_market() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    contract.get_prediction(999, 0);
+}
+
+
+#[test]
+#[should_panic(expected: ('Market does not exist',))]
+fn test_get_market_should_panic_if_non_existent_crypto_market() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    contract.get_prediction(999, 1);
+}
+
+#[test]
+#[should_panic(expected: ('Market does not exist',))]
+fn test_get_market_should_panic_if_non_existent_sports_market() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    contract.get_prediction(999, 2);
+}
+
