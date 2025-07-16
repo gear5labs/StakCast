@@ -35,17 +35,17 @@ fn test_buy_share_success() {
 
     // user 1 buys 10 shares of option 1
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.buy_shares(market_id, 0, 10, contract_address_const::<'hi'>());
+    contract.buy_shares(market_id, 0, 10);
     stop_cheat_caller_address(contract.contract_address);
 
     // user 2 buys 20 shares of option 2
     start_cheat_caller_address(contract.contract_address, USER2_ADDR());
-    contract.buy_shares(market_id, 0, 20, contract_address_const::<'hi'>());
+    contract.buy_shares(market_id, 0, 20);
     stop_cheat_caller_address(contract.contract_address);
 
     // user 3 buys 40 shares of option 2
     start_cheat_caller_address(contract.contract_address, USER3_ADDR());
-    contract.buy_shares(market_id, 1, 40, contract_address_const::<'hi'>());
+    contract.buy_shares(market_id, 1, 40);
     stop_cheat_caller_address(contract.contract_address);
 
     let market_shares_after = contract.calculate_share_prices(market_id);
@@ -100,7 +100,7 @@ fn test_get_market_activity() {
 
     // place bet to trigger market activity
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.buy_shares(market_id, 0, 10, contract_address_const::<'hi'>());
+    contract.buy_shares(market_id, 0, 10);
     stop_cheat_caller_address(contract.contract_address);
 
     market_activity = contract.get_market_activity(market_id);

@@ -470,13 +470,35 @@ pub mod PredictionHub {
             market_id: u256,
             choice: u8,
             amount: u256,
-            token: ContractAddress,
         ) {
+            
+            let caller = get_caller_address();
+            let token_contract_address = self.protocol_token.read();
+
             self.assert_not_paused();
             self.assert_betting_not_paused();
             self.assert_resolution_not_paused();
             self.assert_valid_choice(choice);
-            // self.assert_valid_amount(amount);
+            self.assert_valid_amount(amount);
+            // Assert sufficient balance and allowance BEFORE attempting transfer
+            self.assert_sufficient_token_balance(caller, amount);
+            self.assert_sufficient_allowance(caller, amount);
+             //  Get the token dispatcher using the protocol_token from storage
+            let token_dispatcher = IERC20Dispatcher { contract_address: token_contract_address };
+
+            // Perform the transfer from the user (caller) to this contract
+            // The 'amount' here is the raw amount provided by the user,
+            // which should correspond to what the ERC20 token expects.
+            let success = token_dispatcher.transfer_from(
+                caller,
+                starknet::get_contract_address(), // Address of the PredictionHub contract
+                amount
+            );
+
+            // 3. Assert the success of the transfer
+            assert(success, 'Token transfer failed');
+
+
             let fixed_point_amount_format = amount * PRECISION;
             self.assert_market_open(market_id);
 
