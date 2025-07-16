@@ -11,7 +11,9 @@ import { Table } from "@/app/components/shared/table";
 import { TrendingUp, Clock, Award, Filter, Wallet } from "lucide-react";
 import { useIsConnected } from "@/app/hooks/useIsConnected";
 import Header from "@/app/components/layout/Header";
-
+import SkeletonLoader from "@/app/components/ui/loading/skeletonLoader";
+import { BackButton } from "@/app/components/ui/backButton";
+import ErrorPage from "./(components)/error";
 
 // interface Stake {
 //   amount: string;
@@ -26,7 +28,7 @@ import Header from "@/app/components/layout/Header";
 // }
 
 const UserPredictionsSection = () => {
-  const { predictions, loading, error} = useUserPredictions();
+  const { predictions, loading, error } = useUserPredictions();
   const [filter, setFilter] = useState<"active" | "resolved">("active");
   const [claiming, setClaiming] = useState<string | null>(null);
   const isConnected = useIsConnected();
@@ -121,8 +123,21 @@ const UserPredictionsSection = () => {
               }
 
               return (
-                <span key={idx} className={`flex px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}> 
-                  {text} <span className="ml-1 font-semibold">{formatAmount((bet.stake?.amount as unknown as string) || "0")}</span>{idx < p.userBets.length - 1 && <span className="mx-1 text-slate-400 dark:text-slate-500">,</span>}
+                <span
+                  key={idx}
+                  className={`flex px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}
+                >
+                  {text}{" "}
+                  <span className="ml-1 font-semibold">
+                    {formatAmount(
+                      (bet.stake?.amount as unknown as string) || "0"
+                    )}
+                  </span>
+                  {idx < p.userBets.length - 1 && (
+                    <span className="mx-1 text-slate-400 dark:text-slate-500">
+                      ,
+                    </span>
+                  )}
                 </span>
               );
             })}
@@ -214,35 +229,13 @@ const UserPredictionsSection = () => {
         ),
     },
   ];
+
   if (loading) {
-    return (
-      <section className="mt-12">
-        <div className="animate-pulse">
-          <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded-lg w-64 mb-6"></div>
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div
-                key={i}
-                className="h-16 bg-slate-100 dark:bg-slate-800 rounded-lg"
-              ></div>
-            ))}
-          </div>
-        </div>
-      </section>
-    );
+    return <SkeletonLoader />;
   }
 
   if (error) {
-    return (
-      <section className="mt-12">
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center">
-          <div className="text-red-600 dark:text-red-400 text-lg font-medium mb-2">
-            Error Loading Predictions
-          </div>
-          <p className="text-red-500 dark:text-red-300">{error}</p>
-        </div>
-      </section>
-    );
+    return <ErrorPage error={error} />;
   }
 
   if (!isConnected)
@@ -260,7 +253,8 @@ const UserPredictionsSection = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
+            <BackButton />
+            <h2 className="text-2xl p-5 font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
               My Predictions
             </h2>
             <p className="text-slate-600 dark:text-slate-400 mt-1">

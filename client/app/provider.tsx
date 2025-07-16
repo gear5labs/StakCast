@@ -13,7 +13,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     const reconnect = async () => {
       if (connectionMode === "wallet") {
         const LS_connector = localStorage.getItem("connector");
-
+        console.log("attempting to reconnect");
         if (LS_connector && status === "disconnected") {
           const connector = connectors.find((con) => con.id === LS_connector);
           console.log(connector);

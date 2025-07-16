@@ -1,9 +1,11 @@
 import React from "react";
+import { BackButton } from "../components/ui/backButton";
 
 const HowItWorks: React.FC = () => {
   return (
     <section className="bg-white dark:bg-black py-24 px-6">
       <div className="max-w-4xl mx-auto">
+        <BackButton />
         <div className="mb-20">
           <h2 className="text-4xl md:text-5xl font-light text-black dark:text-white mb-4">
             How Stakcast Works

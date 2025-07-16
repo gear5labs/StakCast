@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useMarketContext } from "@/app/context/marketContext";
 import { Market } from "@/app/types";
 import { useIsConnected } from "@/app/hooks/useIsConnected";
@@ -46,8 +46,15 @@ const AVAILABLE_TOKENS: {
 ];
 
 const PurchaseSection = ({ market }: PurchaseSectionProps) => {
-  const { selectedOption, units, pricePerUnit, setUnits, handleOptionSelect } =
-    useMarketContext();
+  const {
+    selectedOption,
+    units,
+    pricePerUnit,
+    handleOptionSelect,
+    unitsToStake,
+   setUnitsToStake,
+    optionPrice,
+  } = useMarketContext();
   const connected = useIsConnected();
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showTokenDropdown, setShowTokenDropdown] = useState(false);
@@ -66,13 +73,17 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
 
     const market_id = +market.market_id.toString(16);
     const choice_idx = selectedOption === "Yes" ? 0x1 : 0x0;
-    const amount = (units * 10 ** 18) as number;
+    const amount = (
+      selectedToken === "STRK"
+        ? parseInt((units * pricePerUnit).toFixed(2))
+        : parseInt((units * pricePerUnit * 10).toFixed(2))
+    ) as number;
+    // const amount = (units * 10 ** 18) as number;
     const market_type = 0;
 
     console.log(
       `Placing bet on "${selectedOption}" with market_id=${market_id}, choice_idx=${choice_idx}, amount=${amount}, market_type=${market_type}, token=${selectedToken}`
     );
-
     placeBet(market_id, choice_idx, amount, market_type);
   };
 
@@ -88,6 +99,15 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
     setSelectedToken(token);
     setShowTokenDropdown(false);
   };
+
+  const inputValue = useMemo(() => {
+    if (!optionPrice) return unitsToStake;
+
+    const isStrkToken = selectedToken === "STRK";
+    const multiplier = isStrkToken ? 1 : 10;
+
+    return (units * pricePerUnit * multiplier).toFixed(2);
+  }, [optionPrice, selectedToken, units, pricePerUnit, unitsToStake]);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-lg border border-gray-100 dark:border-slate-700 max-w-md mx-auto">
@@ -112,11 +132,17 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
               const label = key === 1 ? "Yes" : "No";
               const isActive = selectedOption === label;
               const odds = 1;
-
+              
               return (
                 <button
                   key={key}
-                  onClick={() => handleOptionSelect(label, odds)}
+                  onClick={() =>
+                    handleOptionSelect(
+                      label,
+                      odds,
+                      formatAmount(choice.staked_amount)
+                    )
+                  }
                   className={`group w-full p-3 rounded-lg border-2 transition-all duration-200 ${
                     isActive
                       ? label === "Yes"
@@ -248,6 +274,23 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
           </div>
         </div>
 
+        {/* number of Units*/}
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+            Number Of Units
+          </label>
+          <div className="relative">
+            <input
+              type="number"
+              value={unitsToStake || 0}
+              onChange={(e) =>setUnitsToStake(parseInt(e.target.value)|| 0)}
+              min={1}
+              placeholder="Enter amount"
+              className="w-full p-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white font-semibold"
+            />
+          </div>
+        </div>
+
         {/* Units Input */}
         <div className="space-y-2">
           <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
@@ -256,8 +299,8 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
           <div className="relative">
             <input
               type="number"
-              value={units}
-              onChange={(e) => setUnits(parseInt(e.target.value) || 0)}
+              value={inputValue || 0}
+              disabled
               min={1}
               placeholder="Enter amount"
               className="w-full p-3 pr-12 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white font-semibold"
@@ -275,7 +318,7 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
               Price per unit:
             </span>
             <span className="font-semibold text-sm text-gray-900 dark:text-white">
-              {pricePerUnit.toFixed(2)} {selectedToken}
+              {optionPrice ? optionPrice : unitsToStake} {selectedToken}
             </span>
           </div>
           <div className="flex justify-between items-center">
@@ -283,7 +326,7 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
               Total:
             </span>
             <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-              {(units * pricePerUnit).toFixed(2)} {selectedToken}
+             { `${inputValue}  ${selectedToken}`}
             </span>
           </div>
         </div>

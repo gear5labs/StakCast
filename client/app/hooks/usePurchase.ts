@@ -7,7 +7,7 @@ import {
   STRKTokenAddress,
 } from "../components/utils/constants";
 import erc20Abi from "../abis/token";
-import { cairo, Call, uint256 } from "starknet";
+import { cairo, Call } from "starknet";
 import { useAppContext } from "../context/appContext";
 import { toast } from "react-toastify";
 interface UsePurchaseReturn {
@@ -57,20 +57,12 @@ export const usePurchase = (): UsePurchaseReturn => {
         console.warn("Contract not initialized");
         return Promise.resolve();
       }
-      console.log(uint256.bnToUint256(11));
+     
       try {
         const tokenApproval = await ercContract.populate("approve", [
           STAKCAST_CONTRACT_ADDRESS,
           cairo.uint256(amount),
         ]);
-        console.log(
-          market_id,
-          choice_idx,
-          amount,
-          market_type,
-          selectedToken,
-          "hiey"
-        );
 
         await contract.populate("place_bet", [
           BigInt(market_id),

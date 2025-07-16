@@ -1,79 +1,63 @@
-/// Represents a general prediction market with binary (yes/no) outcomes
-/// Used for any type of prediction that doesn't fit crypto or sports categories
-#[derive(Drop, Serde, starknet::Store)]
+#[derive(Drop, Serde, starknet::Store, Clone)]
 pub struct PredictionMarket {
-    pub title: ByteArray, // Market title/question
-    pub market_id: u256, // Unique identifier for the market
-    pub description: ByteArray, // Detailed description of the prediction
-    pub choices: (Choice, Choice), // Binary choices (typically Yes/No)
-    pub category: felt252, // Category identifier for market classification
-    pub image_url: ByteArray, // URL to market image/icon
-    pub is_resolved: bool, // Whether the market has been resolved
-    pub is_open: bool, // Whether the market is accepting new bets
-    pub end_time: u64, // Timestamp when the market closes
-    pub winning_choice: Option<Choice>, // The winning choice after resolution
-    pub total_pool: u256 // Total amount staked in the market
-}
-
-
-/// Represents a cryptocurrency price prediction market
-/// Used for predictions about crypto asset prices (e.g., "Will BTC be above $X by date Y?")
-#[derive(Drop, Serde, starknet::Store)]
-pub struct CryptoPrediction {
     pub title: ByteArray,
     pub market_id: u256,
     pub description: ByteArray,
-    pub choices: (Choice, Choice),
-    pub category: felt252,
-    pub image_url: ByteArray,
+    pub choices: (Outcome, Outcome),
+    pub category: MarketCategory,
     pub is_resolved: bool,
     pub is_open: bool,
     pub end_time: u64,
-    pub winning_choice: Option<Choice>,
+    pub status: MarketStatus,
+    pub winning_choice: Option<Outcome>,
+    pub total_shares_option_one: u256,
+    pub total_shares_option_two: u256,
     pub total_pool: u256,
-    pub comparison_type: u8, // 0 -> less than amount, 1 -> greater than amount
-    pub asset_key: felt252, // Identifier for the crypto asset (e.g., BTC, ETH)
-    pub target_value: u128 // Target price value for the prediction
+    pub crypto_prediction: Option<
+        (felt252, u128),
+    > // the crypto asset (e.g., BTC, ETH) | target_value:  Target price value for the prediction
+}
+
+#[derive(Copy, Drop, Serde, starknet::Store, PartialEq)]
+pub enum MarketCategory {
+    #[default]
+    Normal, // 0
+    Politics, // 1
+    Sports, // 2
+    Crypto, // 3
+    Business, // 4
+    Entertainment, // 5
+    Science, // 6
+    Other // 7
+}
+
+pub fn num_to_market_category(category_input: u8) -> MarketCategory {
+    match category_input {
+        0 => MarketCategory::Normal,
+        1 => MarketCategory::Politics,
+        2 => MarketCategory::Sports,
+        3 => MarketCategory::Crypto,
+        4 => MarketCategory::Business,
+        5 => MarketCategory::Entertainment,
+        6 => MarketCategory::Science,
+        7 => MarketCategory::Other,
+        _ => MarketCategory::Normal // Default case
+    }
 }
 
 
-/// Represents a sports event prediction market
-/// Used for predictions about sports match outcomes
-#[derive(Drop, Serde, starknet::Store)]
-pub struct SportsPrediction {
-    pub title: ByteArray,
-    pub market_id: u256,
-    pub description: ByteArray,
-    pub choices: (Choice, Choice),
-    pub category: felt252,
-    pub image_url: ByteArray,
-    pub is_resolved: bool,
-    pub is_open: bool,
-    pub end_time: u64,
-    pub winning_choice: Option<Choice>,
-    pub total_pool: u256,
-    pub event_id: u64, // External API event ID for automatic resolution
-    pub team_flag: bool // Flag indicating if this is a team-based prediction
+#[derive(Copy, Drop, Serde, starknet::Store, PartialEq)]
+pub struct MarketStats {
+    pub total_traders: u256, // Total number of unique traders
+    pub traders_option_a: u256, // Number of traders on option A
+    pub traders_option_b: u256, // Number of traders on option B
+    pub amount_staked_option_a: u256, // Total amount staked on option A
+    pub amount_staked_option_b: u256, // Total amount staked on option B
+    pub total_trades: u256 // Total number of trades executed
 }
 
-/// Represents a business prediction market with binary (yes/no) outcomes
-/// Used for predictions about business (e.g., "Will over 50% of Fortune 500 companies adopt
-/// blockchain solutions by 2026?")
-#[derive(Drop, Serde, starknet::Store)]
-pub struct BusinessPrediction {
-    pub title: ByteArray, // Market title/question
-    pub market_id: u256, // Unique identifier for the market
-    pub description: ByteArray, // Detailed description of the prediction
-    pub choices: (Choice, Choice), // Binary choices (typically Yes/No)
-    pub category: felt252, // Category identifier for market classification
-    pub image_url: ByteArray, // URL to market image/icon
-    pub is_resolved: bool, // Whether the market has been resolved
-    pub is_open: bool, // Whether the market is accepting new bets
-    pub end_time: u64, // Timestamp when the market closes
-    pub winning_choice: Option<Choice>, // The winning choice after resolution
-    pub total_pool: u256, // Total amount staked in the market
-    pub event_id: u64 // External API event ID for automatic resolution
-}
+// Protocol stats
+// instead of having protocol details everywhere and unor
 
 // ================ Supporting Types ================
 
@@ -84,16 +68,24 @@ pub struct Choice {
     pub staked_amount: u256 // Total amount staked on this choice
 }
 
-/// Represents a user's stake in a prediction market
-#[derive(Drop, Serde, starknet::Store)]
-pub struct UserStake {
-    pub amount: u256, // Amount staked by the user
-    pub claimed: bool // Whether the user has claimed their winnings
+#[derive(Copy, Drop, Serde, PartialEq, starknet::Store, Debug)]
+pub enum MarketStatus {
+    #[default]
+    Active,
+    Locked,
+    Resolved: Outcome,
 }
 
-/// Represents a user's bet on a specific choice in a market
-#[derive(Drop, Serde, starknet::Store)]
-pub struct UserBet {
-    pub choice: Choice, // The choice the user bet on
-    pub stake: UserStake // The user's stake details
+#[derive(Drop, Serde, starknet::Store, Clone)]
+pub struct UserStake {
+    pub shares_a: u256, // Fixed-point shares
+    pub shares_b: u256, // Fixed-point shares
+    pub total_invested: u256 // Fixed-point amount
+}
+
+#[derive(Copy, Drop, Serde, PartialEq, starknet::Store, Debug)]
+pub enum Outcome {
+    #[default]
+    Option1: felt252,
+    Option2: felt252,
 }

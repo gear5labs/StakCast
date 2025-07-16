@@ -14,7 +14,7 @@ const Categories = () => {
   const { searchQuery, setSearchQuery } = useAppContext();
   const [searchFocused, setSearchFocused] = useState(false);
   const { counts } = useMarketData();
-  console.log(counts);
+
   const categories = [
     {
       name: "All Markets",

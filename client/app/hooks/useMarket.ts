@@ -104,7 +104,7 @@ export const useMarketData = (
           break;
       }
 
-      console.log(`${category} predictions:`, result);
+   
       setPredictions(result as unknown as Market[]);
 
       // Fetch and update counts
@@ -146,7 +146,7 @@ export const useMarketData = (
             break;
         }
 
-        console.log(`${category} predictions:`, result);
+       
 
         if (isMounted) {
           if (Array.isArray(result)) {

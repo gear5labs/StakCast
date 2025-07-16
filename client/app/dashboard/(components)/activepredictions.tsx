@@ -56,18 +56,42 @@ const ActivePredictions = () => {
             <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
               You have {count} active prediction{count > 1 && "s"}
             </h3>
-            <ul className="text-slate-600 dark:text-slate-300 text-sm mb-4 list-disc pl-5 max-h-[160px] overflow-y-auto w-full pr-2">
-              {predictions.map((p: { market: AugmentedMarket }, index) => (
-                <li key={index}>{p.market.title}</li>
-              ))}
-            </ul>
-            <button
-              onClick={() => router.push("/dashboard/predictions")}
-              className="flex items-center gap-2 px-4 py-2 border border-blue-500 text-blue-600 dark:text-blue-400 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded-lg transition-colors text-sm font-medium"
-            >
-              <Target className="w-4 h-4" />
-              View All Predictions
-            </button>
+
+            <div className="space-y-3 mb-2 max-h-[160px] w-full pr-1">
+              {predictions
+                .slice(-3)
+                .reverse()
+                .map((p: { market: AugmentedMarket }, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800/50 shadow-sm text-sm text-slate-700 dark:text-slate-300"
+                  >
+                    <Target className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                    <span className="truncate">{p.market.title}</span>
+                  </div>
+                ))}
+            </div>
+
+            {count > 3 && (
+              <>
+                <button
+                  onClick={() => router.push("/dashboard/predictions")}
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline mb-2"
+                >
+                  +{count - 3} more
+                </button>
+              </>
+            )}
+
+            {count <= 3 && (
+              <button
+                onClick={() => router.push("/dashboard/predictions")}
+                className="flex items-center gap-2 px-4 py-2 border border-blue-500 text-blue-600 dark:text-blue-400 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded-lg transition-colors text-sm font-medium"
+              >
+                <Target className="w-4 h-4" />
+                View All Predictions
+              </button>
+            )}
           </>
         )}
       </div>

@@ -1,6 +1,6 @@
 export function formatAmount(
   rawAmount: string | bigint,
-  decimals: number = 16,
+  decimals: number = 18,
   precision: number = 2
 ): string {
   const amount = typeof rawAmount === "bigint" ? rawAmount : BigInt(rawAmount);

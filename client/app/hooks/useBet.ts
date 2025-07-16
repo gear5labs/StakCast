@@ -72,7 +72,7 @@ export const useUserPredictions = () => {
           contract.get_user_claimable_amount(address),
         ]);
         setClaimableAmount(claimable?.toString() || "0");
-        console.log(regular);
+
         const all: AugmentedMarket[] = [
           ...(regular || []).map((m) => ({
             ...m,

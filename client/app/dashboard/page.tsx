@@ -3,8 +3,8 @@
 import type React from "react";
 import { useState } from "react";
 import { TrendingUp, ArrowLeft, DollarSign, Target, Award } from "lucide-react";
-import { useAccount } from "@starknet-react/core";
-import { useAppContext } from "../context/appContext";
+import { useAccount} from "@starknet-react/core";
+
 import { StatsCard } from "./(cards)/statsCard";
 import { Chart } from "./(components)/chart";
 import Disconnected from "./disconnected";
@@ -12,15 +12,16 @@ import { useUserPredictions } from "../hooks/useBet";
 import ActivePredictions from "./(components)/activepredictions";
 // import RecentActivity from "./(components)/recentActivity";
 import Claimable from "./(components)/claimable";
+import { useIsConnected } from "../hooks/useIsConnected";
 
 type TimeFrame = "7d" | "1m" | "all";
 
 const DashboardPage = () => {
   const { address } = useAccount();
-  const { status } = useAppContext();
+   const connected=useIsConnected();
   const [activeTimeFrame, setActiveTimeFrame] = useState<TimeFrame>("1m");
   const { predictions } = useUserPredictions();
-  console.log(predictions);
+
   const handleGoBack = () => {
     window.history.back();
   };
@@ -31,7 +32,7 @@ const DashboardPage = () => {
     all: { value: "$0", trend: "+156%", description: "all time" },
   };
 
-  if (status !== "connected") {
+  if (!connected) {
     return <Disconnected />;
   }
 
@@ -111,12 +112,12 @@ const DashboardPage = () => {
           </div>
 
           <StatsCard
-            title="Active Markets"
+            title="Your Total Bets"
             value={predictions.length.toString()}
             icon={<Target className="w-5 h-5" />}
             trend="+7"
             trendUp={true}
-            description=" User Total Active markets"
+            description=" User Total Active Bets"
           />
           <StatsCard
             title="Win Rate"

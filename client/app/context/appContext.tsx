@@ -117,7 +117,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
           const parsed = parseFloat(result.balance);
           const normalized = parsed / 1e18;
-          console.log(normalized, "SK Balance Parsed");
+       
           setSkPrice(isNaN(normalized) ? null : normalized);
         } catch (err) {
           console.error("Failed to fetch SK token balance:", err);

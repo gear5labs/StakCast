@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 import { useDisconnect } from "@starknet-react/core";
 import ThemeToggle from "../utils/ThemeToggle";
 import Categories from "../sections/Categories";
+
 import {
   ChevronDown,
   Menu,
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 import ConnectModal from "../ui/ConnectWalletModal";
 import { useAppContext } from "@/app/context/appContext";
+import MarqueeSection from "../sections/marquee";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -79,9 +81,9 @@ const Header = () => {
               <Image
                 src="/stakcast-logo-2.png"
                 alt="Stakcast"
-                width={230}
-                height={230}
-                className="h-[5.3rem] w-auto"
+                width={250}
+                height={250}
+                className="h-[5.5rem] w-auto"
               />{" "}
               {/* <span className="text-green-700 font-bold">Stakcast</span> */}
             </div>
@@ -229,7 +231,7 @@ const Header = () => {
               >
                 About Us
               </Link>
-              
+
               <div className="pt-2">
                 {!isConnected ? (
                   <button
@@ -269,6 +271,7 @@ const Header = () => {
         )}
 
         <Categories />
+        <MarqueeSection/>
       </header>
       {isConnectModal && (
         <ConnectModal
@@ -277,9 +280,11 @@ const Header = () => {
           }}
         />
       )}
+
       {/* This div creates space for the fixed header so content doesn't hide behind it */}
 
       <div className="h-[80px]"></div>
+    
     </>
   );
 };
