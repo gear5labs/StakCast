@@ -546,11 +546,21 @@ pub mod PredictionHub {
             self.bet_details.entry((market_id, get_caller_address())).write(user_stake);
 
             // update market analytics
-            let mut analytics = self
-                .market_analytics
-                .entry(market_id)
-                .append()
-                .write((get_caller_address(), fixed_point_amount_format));
+            let mut analytics_vec = self.market_analytics.entry(market_id);
+            let mut found = false;
+            let mut i = 0;
+            while i < analytics_vec.len() {
+                let (user, amt) = analytics_vec.at(i).read();
+                if user == get_caller_address() {
+                    analytics_vec.at(i).write((user, amt + fixed_point_amount_format));
+                    found = true;
+                    break;
+                }
+                i += 1;
+            }
+            if !found {
+                analytics_vec.append().write((get_caller_address(), fixed_point_amount_format));
+            }
             // Update market state
             self.all_predictions.entry(market_id).write(market);
             // End reentrancy guard
