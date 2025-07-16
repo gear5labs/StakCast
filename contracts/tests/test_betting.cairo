@@ -33,19 +33,19 @@ fn test_buy_share_success() {
     assert(ppua == HALF_PRECISION() && ppub == HALF_PRECISION(), 'Share prices should be 500000');
     println!("Share prices for market {}: {:?}", market_id, market_shares);
 
-    // user 1 buys 10 shares of option 1
+    // user 1 buys 10 tokens worth of shares of option 1
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.buy_shares(market_id, 0, 10);
+    contract.buy_shares(market_id, 0, turn_number_to_precision_point(10));
     stop_cheat_caller_address(contract.contract_address);
 
-    // user 2 buys 20 shares of option 2
+    // user 2 buys 20 tokens worth of shares of option 1
     start_cheat_caller_address(contract.contract_address, USER2_ADDR());
-    contract.buy_shares(market_id, 0, 20);
+    contract.buy_shares(market_id, 0, turn_number_to_precision_point(20));
     stop_cheat_caller_address(contract.contract_address);
 
-    // user 3 buys 40 shares of option 2
+    // user 3 buys 40 tokens worth of shares of option 2
     start_cheat_caller_address(contract.contract_address, USER3_ADDR());
-    contract.buy_shares(market_id, 1, 40);
+    contract.buy_shares(market_id, 1, turn_number_to_precision_point(40));
     stop_cheat_caller_address(contract.contract_address);
 
     let market_shares_after = contract.calculate_share_prices(market_id);
@@ -100,7 +100,7 @@ fn test_get_market_activity() {
 
     // place bet to trigger market activity
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.buy_shares(market_id, 0, 10);
+    contract.buy_shares(market_id, 0, turn_number_to_precision_point(10));
     stop_cheat_caller_address(contract.contract_address);
 
     market_activity = contract.get_market_activity(market_id);
