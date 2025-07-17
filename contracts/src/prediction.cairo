@@ -494,6 +494,7 @@ pub mod PredictionHub {
             assert(success, 'Token transfer failed');
 
             let fixed_point_amount_format = amount * PRECISION;
+            let analytics_amount = amount;
             self.assert_market_open(market_id);
 
             self.start_reentrancy_guard();
@@ -552,14 +553,14 @@ pub mod PredictionHub {
             while i < analytics_vec.len() {
                 let (user, amt) = analytics_vec.at(i).read();
                 if user == get_caller_address() {
-                    analytics_vec.at(i).write((user, amt + fixed_point_amount_format));
+                    analytics_vec.at(i).write((user, amt + analytics_amount));
                     found = true;
                     break;
                 }
                 i += 1;
             }
             if !found {
-                analytics_vec.append().write((get_caller_address(), fixed_point_amount_format));
+                analytics_vec.append().write((get_caller_address(), analytics_amount));
             }
             // Update market state
             self.all_predictions.entry(market_id).write(market);
