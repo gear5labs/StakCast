@@ -2,7 +2,7 @@ name: Stakcast
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "buyshares"]
   pull_request:
     branches: ["main"]
 
