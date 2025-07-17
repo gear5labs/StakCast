@@ -97,25 +97,25 @@ pub trait IPredictionHub<TContractState> {
     // ================ Market Resolution ================
 
     /// Resolves a general prediction market by setting the winning option
-    // fn resolve_prediction(ref self: TContractState, market_id: u256, winning_choice: u8);
+    fn resolve_prediction(ref self: TContractState, market_id: u256, winning_choice: u8);
 
     /// Manually resolves a crypto prediction market
     /// Override for the automatic resolution
-    fn resolve_crypto_prediction_manually(
-        ref self: TContractState, market_id: u256, winning_choice: u8,
-    );
+    // fn resolve_crypto_prediction_manually(
+    //     ref self: TContractState, market_id: u256, winning_choice: u8,
+    // );
 
     /// Manually resolves a sports prediction market
     /// Override for the automatic resolution
-    fn resolve_sports_prediction_manually(
-        ref self: TContractState, market_id: u256, winning_choice: u8,
-    );
+    // fn resolve_sports_prediction_manually(
+    //     ref self: TContractState, market_id: u256, winning_choice: u8,
+    // );
 
     /// Automatically resolves a crypto prediction using oracle price data
-    fn resolve_crypto_prediction(ref self: TContractState, market_id: u256);
+    //fn resolve_crypto_prediction(ref self: TContractState, market_id: u256);
 
     /// Resolves a sports prediction automatically based on event outcome
-    fn resolve_sports_prediction(ref self: TContractState, market_id: u256, winning_choice: u8);
+    //fn resolve_sports_prediction(ref self: TContractState, market_id: u256, winning_choice: u8);
 
     // ================ Winnings Management ================
 

@@ -201,11 +201,11 @@ fn test_create_market_create_multiple_market_types() {
     let (contract, _admin_contract, _token) = setup_test_environment();
     let mut spy = spy_events();
 
-    let all_general = contract.get_all_predictions();
+    let all_prediction = contract.get_all_predictions();
     let all_crypto = contract.get_all_predictions_by_market_category(3);
     let all_sports = contract.get_all_predictions_by_market_category(2);
 
-    assert(all_general.len() == 0, 'Empty general array');
+    assert(all_prediction.len() == 0, 'Empty general array');
     assert(all_crypto.len() == 0, 'Empty crypto array');
     assert(all_sports.len() == 0, 'Empty sports array');
 
@@ -280,9 +280,12 @@ fn test_create_market_create_multiple_market_types() {
     let all_general = contract.get_all_general_predictions();
     let all_crypto = contract.get_all_predictions_by_market_category(3);
     let all_sports = contract.get_all_predictions_by_market_category(2);
+    let all_prediction = contract.get_all_predictions();
+
     assert(all_general.len() == 1, 'general market should be 1');
     assert(all_crypto.len() == 1, 'crypto market should be 1');
     assert(all_sports.len() == 1, 'sport market should be 1');
+    assert(all_prediction.len() == 3, 'Empty market array');
     stop_cheat_caller_address(contract.contract_address);
 }
 
@@ -339,7 +342,9 @@ fn test_creat_market_multiple_moderators_can_create_markets() {
 
     let market1 = contract.get_prediction(market1_id);
     let market2 = contract.get_prediction(market2_id);
+    let all_general = contract.get_all_general_predictions();
 
+    assert(all_general.len() == 2, 'Empty market array');
     assert(market1.title == "Moderator 1 Market", 'Market 1 title');
     assert(market2.title == "Moderator 2 Market", 'Market 2 title');
 }
@@ -363,19 +368,3 @@ fn test_get_market_should_panic_if_non_existent_market() {
     let (contract, _admin_contract, _token) = setup_test_environment();
     contract.get_prediction(999);
 }
-
-
-#[test]
-#[should_panic(expected: ('Market does not exist',))]
-fn test_get_market_should_panic_if_non_existent_crypto_market() {
-    let (contract, _admin_contract, _token) = setup_test_environment();
-    contract.get_prediction(999);
-}
-
-#[test]
-#[should_panic(expected: ('Market does not exist',))]
-fn test_get_market_should_panic_if_non_existent_sports_market() {
-    let (contract, _admin_contract, _token) = setup_test_environment();
-    contract.get_prediction(999);
-}
-
