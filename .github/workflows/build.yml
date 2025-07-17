@@ -2,9 +2,9 @@ name: Stakcast
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "shares"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "shares"]
 
 jobs:
   build-contracts:
