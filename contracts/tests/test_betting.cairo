@@ -33,20 +33,38 @@ fn test_buy_share_success() {
     assert(ppua == HALF_PRECISION() && ppub == HALF_PRECISION(), 'Share prices should be 500000');
     println!("Share prices for market {}: {:?}", market_id, market_shares);
 
-    // user 1 buys 10 shares of option 1
+    // user 1 buys 10 tokens worth of shares of option 1
+    let user1_balance_before = _token.balance_of(USER1_ADDR());
+    let contract_balance_before = _token.balance_of(contract.contract_address);
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.buy_shares(market_id, 0, 10, contract_address_const::<'hi'>());
+    contract.buy_shares(market_id, 0, turn_number_to_precision_point(10));
     stop_cheat_caller_address(contract.contract_address);
+    let user1_balance_after = _token.balance_of(USER1_ADDR());
+    let contract_balance_after = _token.balance_of(contract.contract_address);
+    assert(user1_balance_after == user1_balance_before - turn_number_to_precision_point(10), 'u1 debit');
+    assert(contract_balance_after == contract_balance_before + turn_number_to_precision_point(10), 'u1 credict');
 
-    // user 2 buys 20 shares of option 2
+    // user 2 buys 20 tokens worth of shares of option 1
+    let user2_balance_before = _token.balance_of(USER2_ADDR());
+    let contract_balance_before2 = _token.balance_of(contract.contract_address);
     start_cheat_caller_address(contract.contract_address, USER2_ADDR());
-    contract.buy_shares(market_id, 0, 20, contract_address_const::<'hi'>());
+    contract.buy_shares(market_id, 0, turn_number_to_precision_point(20));
     stop_cheat_caller_address(contract.contract_address);
+    let user2_balance_after = _token.balance_of(USER2_ADDR());
+    let contract_balance_after2 = _token.balance_of(contract.contract_address);
+    assert(user2_balance_after == user2_balance_before - turn_number_to_precision_point(20), 'u2 debit');
+    assert(contract_balance_after2 == contract_balance_before2 + turn_number_to_precision_point(20), 'u2 credit');
 
-    // user 3 buys 40 shares of option 2
+    // user 3 buys 40 tokens worth of shares of option 2
+    let user3_balance_before = _token.balance_of(USER3_ADDR());
+    let contract_balance_before3 = _token.balance_of(contract.contract_address);
     start_cheat_caller_address(contract.contract_address, USER3_ADDR());
-    contract.buy_shares(market_id, 1, 40, contract_address_const::<'hi'>());
+    contract.buy_shares(market_id, 1, turn_number_to_precision_point(40));
     stop_cheat_caller_address(contract.contract_address);
+    let user3_balance_after = _token.balance_of(USER3_ADDR());
+    let contract_balance_after3 = _token.balance_of(contract.contract_address);
+    assert(user3_balance_after == user3_balance_before - turn_number_to_precision_point(40), 'u3 debit');
+    assert(contract_balance_after3 == contract_balance_before3 + turn_number_to_precision_point(40), 'u3 credict');
 
     let market_shares_after = contract.calculate_share_prices(market_id);
     let bet_details_user_1: UserStake = contract.get_user_stake_details(market_id, USER1_ADDR());
@@ -96,18 +114,20 @@ fn test_get_market_activity() {
     // assert that the initial market activity is 0
     let mut market_activity: Array<(ContractAddress, u256)> = contract
         .get_market_activity(market_id);
-    assert(market_activity.len() == 0, 'should not have anything');
+    assert(market_activity.len() == 0, 'empty');
 
     // place bet to trigger market activity
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.buy_shares(market_id, 0, 10, contract_address_const::<'hi'>());
+    contract.buy_shares(market_id, 0, turn_number_to_precision_point(10));
+    stop_cheat_caller_address(contract.contract_address);
+
+    // user1 buys again to test analytics update
+    start_cheat_caller_address(contract.contract_address, USER1_ADDR());
+    contract.buy_shares(market_id, 0, turn_number_to_precision_point(5));
     stop_cheat_caller_address(contract.contract_address);
 
     market_activity = contract.get_market_activity(market_id);
 
-    assert(market_activity.len() == 1, 'should not have 1 activity');
-    assert(
-        *market_activity.at(0) == (USER1_ADDR(), turn_number_to_precision_point(10)),
-        'didnt update as expected',
-    );
+    assert(market_activity.len().into() == 1, 'act1');
+    assert(*market_activity.at(0) == (USER1_ADDR(), turn_number_to_precision_point(15)), 'act_sum');
 }
