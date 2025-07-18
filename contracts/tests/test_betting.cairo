@@ -120,7 +120,7 @@ fn test_buy_when_contract_is_pause_should_panic() {
 
     // user 1 try to buys 10 shares of option 1 should panic
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.buy_shares(market_id, 0, 10);
+    contract.buy_shares(market_id, 0, turn_number_to_precision_point(10));
     stop_cheat_caller_address(contract.contract_address);
 }
 
@@ -139,7 +139,7 @@ fn test_buy_when_market_is_pause_should_panic() {
 
     // user 1 try to buys 10 shares of option 1 should panic
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.buy_shares(market_id, 1, 10);
+    contract.buy_shares(market_id, 1, turn_number_to_precision_point(10));
     stop_cheat_caller_address(contract.contract_address);
 }
 
@@ -158,7 +158,7 @@ fn test_buy_when_resolution_is_pause_should_panic() {
 
     // user 1 try to buys 10 shares of option 1 should panic
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.buy_shares(market_id, 1, 10);
+    contract.buy_shares(market_id, 1, turn_number_to_precision_point(10));
     stop_cheat_caller_address(contract.contract_address);
 }
 
@@ -182,7 +182,7 @@ fn test_buy_when_market_is_not_open_should_panic() {
     stop_cheat_caller_address(contract.contract_address);
     // user 1 try to buys 10 shares of option 1 should panic
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.buy_shares(market_id, 0, 10);
+    contract.buy_shares(market_id, 0, turn_number_to_precision_point(10));
     stop_cheat_caller_address(contract.contract_address);
 }
 
@@ -228,7 +228,7 @@ fn test_get_market_activity_multiple_bets() {
     stop_cheat_caller_address(contract.contract_address);
 
     start_cheat_caller_address(contract.contract_address, USER2_ADDR());
-    contract.buy_shares(market_id, 1, 25);
+    contract.buy_shares(market_id, 1, turn_number_to_precision_point(25));
     stop_cheat_caller_address(contract.contract_address);
 
     let market_activity = contract.get_market_activity(market_id);
@@ -240,7 +240,7 @@ fn test_get_market_activity_multiple_bets() {
     assert(bet1.choice == 0, 'choice should be 0');
     assert(bet1.amount == turn_number_to_precision_point(10), 'amount should be 10');
     assert(bet2.choice == 1, 'choice should be 1');
-    assert(bet2.amount == 25, 'amount should be 25');
+    assert(bet2.amount == turn_number_to_precision_point(25), 'amount should be 25');
 }
 
 #[test]
@@ -254,7 +254,7 @@ fn test_claim_transfers_erc20() {
 
     // user 1 buys shares
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.buy_shares(market_id, 0, 10);
+    contract.buy_shares(market_id, 0, turn_number_to_precision_point(10));
     stop_cheat_caller_address(contract.contract_address);
 
     // resolve the market

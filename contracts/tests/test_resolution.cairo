@@ -33,17 +33,17 @@ fn create_and_stake_on_general_prediction_util() -> (
 
     // user 1 buys 10 shares of option 1
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.buy_shares(market_id, 1, 10);
+    contract.buy_shares(market_id, 1, turn_number_to_precision_point(10));
     stop_cheat_caller_address(contract.contract_address);
 
     // user 2 buys 20 shares of option 2
     start_cheat_caller_address(contract.contract_address, USER2_ADDR());
-    contract.buy_shares(market_id, 1, 20);
+    contract.buy_shares(market_id, 1, turn_number_to_precision_point(20));
     stop_cheat_caller_address(contract.contract_address);
 
     // user 3 buys 40 shares of option 2
     start_cheat_caller_address(contract.contract_address, USER3_ADDR());
-    contract.buy_shares(market_id, 1, 40);
+    contract.buy_shares(market_id, 1, turn_number_to_precision_point(40));
     stop_cheat_caller_address(contract.contract_address);
 
     // let market_shares_after = contract.calculate_share_prices(market_id);
