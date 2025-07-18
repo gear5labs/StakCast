@@ -477,13 +477,24 @@ pub mod PredictionHub {
             market_id: u256,
             choice: u8,
             amount: u256,
-            token: ContractAddress,
         ) {
+            let caller = get_caller_address();
+            let token_contract_address = self.protocol_token.read();
             self.assert_not_paused();
             self.assert_betting_not_paused();
             self.assert_resolution_not_paused();
             self.assert_valid_choice(choice);
-            // self.assert_valid_amount(amount);
+            self.assert_valid_amount(amount);
+            self.assert_sufficient_token_balance_for_token(caller, amount, token_contract_address);
+            self.assert_sufficient_allowance_for_token(caller, amount, token_contract_address);
+            let token_dispatcher = IERC20Dispatcher { contract_address: token_contract_address };
+            let success = token_dispatcher.transfer_from(
+                caller,
+                starknet::get_contract_address(),
+                amount,
+            );
+            assert(success, 'Token transfer failed');
+
             let fixed_point_amount_format = amount * PRECISION;
             self.assert_market_open(market_id);
 
@@ -493,26 +504,24 @@ pub mod PredictionHub {
             let user_choice = self.choice_num_to_outcome(market_id, choice);
 
             let mut market = self.all_predictions.entry(market_id).read();
-            let mut choice_details: (u256, u256) = (0, 0);
             let mut user_stake: UserStake = self
                 .bet_details
-                .entry((market_id, get_caller_address()))
+                .entry((market_id, caller))
                 .read();
 
             // Check if user has traded on this market before
             let user_traded = self
                 .user_traded_status
-                .entry((market_id, get_caller_address()))
+                .entry((market_id, caller))
                 .read();
             let mut market_stats = self.market_stats.entry(market_id).read();
 
             if !user_traded {
                 market_stats.total_trades += 1;
-                self.user_traded_status.entry((market_id, get_caller_address())).write(true);
+                self.user_traded_status.entry((market_id, caller)).write(true);
             }
 
             // Update market stats
-
             match user_choice {
                 Outcome::Option1 => {
                     let shares = self.divide(fixed_point_amount_format, price_a);
@@ -534,19 +543,12 @@ pub mod PredictionHub {
             user_stake.total_invested = user_stake.total_invested + fixed_point_amount_format;
             market.total_pool = market.total_pool + fixed_point_amount_format;
             market_stats.total_trades += 1;
-            self.bet_details.entry((market_id, get_caller_address())).write(user_stake);
+            self.bet_details.entry((market_id, caller)).write(user_stake);
 
             // update market analytics
-            let mut analytics = self
-                .market_analytics
-                .entry(market_id)
-                .append()
-                .write(BetActivity { choice, amount });
+            self.market_analytics.entry(market_id).append().write(BetActivity { choice, amount });
             // Update market state
             self.all_predictions.entry(market_id).write(market);
-
-            // update user predictions
-            self.user_predictions.entry(get_caller_address()).push(market_id);
             // End reentrancy guard
             self.end_reentrancy_guard();
         }
@@ -574,8 +576,11 @@ pub mod PredictionHub {
             assert(user_amount_on_option_winning > 0, 'No winning stake for user');
 
             let user_reward: u256 = self.calculate_user_winnings(market_id, user_addr);
-            // impl the erc20 logic to tranfser form the pool to the user, here w
-
+            // Transfer ERC20 reward to the user
+            let token_contract_address = self.protocol_token.read();
+            let token_dispatcher = IERC20Dispatcher { contract_address: token_contract_address };
+            let success = token_dispatcher.transfer(user_addr, user_reward);
+            assert(success, 'ERC20 transfer failed');
         }
 
         fn get_market_activity(ref self: ContractState, market_id: u256) -> Array<BetActivity> {

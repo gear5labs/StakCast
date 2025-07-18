@@ -109,7 +109,7 @@ pub trait IPredictionHub<TContractState> {
     fn calculate_share_prices(ref self: TContractState, market_id: u256) -> (u256, u256);
 
     fn buy_shares(
-        ref self: TContractState, market_id: u256, choice: u8, amount: u256, token: ContractAddress,
+        ref self: TContractState, market_id: u256, choice: u8, amount: u256,
     );
 
     fn get_user_stake_details(
