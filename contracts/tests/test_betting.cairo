@@ -116,7 +116,7 @@ fn test_buy_when_contract_is_pause_should_panic() {
 
     // user 1 try to buys 10 shares of option 1 should panic
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.buy_shares(market_id, 0, 10, contract_address_const::<'hi'>());
+    contract.buy_shares(market_id, 0, 10);
     stop_cheat_caller_address(contract.contract_address);
 }
 
@@ -135,7 +135,7 @@ fn test_buy_when_market_is_pause_should_panic() {
 
     // user 1 try to buys 10 shares of option 1 should panic
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.buy_shares(market_id, 1, 10, contract_address_const::<'hi'>());
+    contract.buy_shares(market_id, 1, 10);
     stop_cheat_caller_address(contract.contract_address);
 }
 
@@ -154,7 +154,7 @@ fn test_buy_when_resolution_is_pause_should_panic() {
 
     // user 1 try to buys 10 shares of option 1 should panic
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.buy_shares(market_id, 1, 10, contract_address_const::<'hi'>());
+    contract.buy_shares(market_id, 1, 10);
     stop_cheat_caller_address(contract.contract_address);
 }
 
@@ -178,7 +178,7 @@ fn test_buy_when_market_is_not_open_should_panic() {
     stop_cheat_caller_address(contract.contract_address);
     // user 1 try to buys 10 shares of option 1 should panic
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.buy_shares(market_id, 0, 10, contract_address_const::<'hi'>());
+    contract.buy_shares(market_id, 0, 10);
     stop_cheat_caller_address(contract.contract_address);
 }
 
