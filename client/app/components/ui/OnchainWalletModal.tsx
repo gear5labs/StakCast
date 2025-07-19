@@ -30,7 +30,7 @@ const WalletModal = () => {
           }
           await connectAsync({ connector })
             .then(() => {
-              console.log("success");
+        
               toast.success("Wallet conectada");
               // Guardar el ID del conector en localStorage
               localStorage.setItem("connector", connector.id);

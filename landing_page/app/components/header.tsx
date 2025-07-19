@@ -34,10 +34,10 @@ export function Header() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Image
-              src="/logo.svg"
+              src="/stakcast-logo-2.png"
               alt="stakcast logo"
-              height={180}
-              width={180}
+              height={150}
+              width={150}
             />
           </div>
 
@@ -55,7 +55,7 @@ export function Header() {
               Features
             </Link>
             <Link
-              href="#how-it-works"
+              href="https://www.stakcast.com/howitworks"
               className="text-sm font-medium text-slate-600 dark:text-slate-300 transition-colors duration-300 hover:text-slate-900 dark:hover:text-white"
             >
               How It Works
@@ -74,7 +74,7 @@ export function Header() {
               variant="ghost"
               className="transition-all duration-300 hover:-translate-y-0.5"
             >
-              <Link href="https://www.stakcast.com/">Visit App</Link>
+              {/* <Link href="https://www.stakcast.com/">Visit App</Link> */}
             </Button>
             <Button className="bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white border-0 dark:text-white transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
               <Link href="https://www.stakcast.com/">Get Started</Link>
@@ -116,7 +116,7 @@ export function Header() {
                 Features
               </Link>
               <Link
-                href="#how-it-works"
+                href="https://www.stakcast.com/howitworks"
                 className="text-sm font-medium text-slate-600 dark:text-slate-300 transition-colors duration-300 hover:text-slate-900 dark:hover:text-white p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
                 onClick={() => setMobileMenuOpen(false)}
               >

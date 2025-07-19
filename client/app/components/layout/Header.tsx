@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 import { useDisconnect } from "@starknet-react/core";
 import ThemeToggle from "../utils/ThemeToggle";
 import Categories from "../sections/Categories";
+
 import {
   ChevronDown,
   Menu,
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 import ConnectModal from "../ui/ConnectWalletModal";
 import { useAppContext } from "@/app/context/appContext";
+import MarqueeSection from "../sections/marquee";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -77,13 +79,13 @@ const Header = () => {
               onClick={() => router.push("/")}
             >
               <Image
-                src="/stakcast-logo.png"
+                src="/stakcast-logo-2.png"
                 alt="Stakcast"
-                width={230}
-                height={230}
-                className="h-10 w-auto"
+                width={250}
+                height={250}
+                className="h-[5.5rem] w-auto"
               />{" "}
-              <span className="text-green-700 font-bold">Stakcast</span>
+              {/* <span className="text-green-700 font-bold">Stakcast</span> */}
             </div>
 
             {/* Desktop Navigation */}
@@ -101,12 +103,12 @@ const Header = () => {
                 >
                   How It Works
                 </Link>
-                <Link
+                {/* <Link
                   href="#about"
                   className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 font-medium text-sm transition-colors"
                 >
                   About Us
-                </Link>
+                </Link> */}
               </nav>
 
               <div className="flex items-center space-x-4">
@@ -178,7 +180,7 @@ const Header = () => {
                   </div>
                 ) : (
                   <button
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow"
+                    className="bg-gradient-to-r from-green-500 to-green-700 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow"
                     onClick={connectWalletModal}
                   >
                     Connect Wallet
@@ -229,6 +231,7 @@ const Header = () => {
               >
                 About Us
               </Link>
+
               <div className="pt-2">
                 {!isConnected ? (
                   <button
@@ -268,6 +271,7 @@ const Header = () => {
         )}
 
         <Categories />
+        <MarqueeSection/>
       </header>
       {isConnectModal && (
         <ConnectModal
@@ -276,9 +280,11 @@ const Header = () => {
           }}
         />
       )}
+
       {/* This div creates space for the fixed header so content doesn't hide behind it */}
 
       <div className="h-[80px]"></div>
+    
     </>
   );
 };

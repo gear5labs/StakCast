@@ -1,37 +1,37 @@
 import { Request, Response, NextFunction } from "express";
 import { container } from "tsyringe";
-import AuthService from "../api/v1/Auth/AuthService";
+import AuthService from "../api/v1/Auth/auth.service";
 import HttpStatusCodes from "../constants/HttpStatusCodes";
 import { ApplicationError } from "../utils/errorHandler";
 
+declare global {
+	namespace Express {
+		interface Request {
+			user?: {
+				id: string;
+			};
+		}
+	}
+}
+
 export const silentAuthMiddleware = async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		const accessToken = req.headers.authorization?.split(" ")[1];
-		const refreshToken = req.headers["refresh-token"] as string;
-		const fingerprint = req.headers["x-device-fingerprint"] as string;
+		const authHeader = req.headers.authorization;
+		const token = authHeader?.split(" ")[1];
 
-		if (!accessToken) {
-			throw new ApplicationError("No access token provided", HttpStatusCodes.UNAUTHORIZED);
+		if (!token) {
+			return next();
 		}
-
-		const authService = container.resolve(AuthService);
 
 		try {
-			await authService.verifyAccessToken(accessToken);
-			next();
-		} catch (error: any) {
-			if (error.name === "TokenExpiredError") {
-				if (!refreshToken || !fingerprint) {
-					throw new ApplicationError("Token expired and missing refresh credentials", HttpStatusCodes.UNAUTHORIZED);
-				}
-
-				await authService.validateTokenDevice(refreshToken, fingerprint);
-				next();
-			} else {
-				throw new ApplicationError("Invalid token", HttpStatusCodes.UNAUTHORIZED);
-			}
+			const authService = container.resolve(AuthService);
+			const user = await authService.validateToken(token);
+			req.user = { id: user.id };
+		} catch (error) {
+			// Silently fail - don't set user but continue
 		}
+		next();
 	} catch (error) {
-		next(error);
+		next();
 	}
 };

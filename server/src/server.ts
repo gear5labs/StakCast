@@ -17,7 +17,7 @@ class Server {
 	public async start(): Promise<void> {
 		try {
 			await AppDataSource.initialize();
-			logger.info(`🚀 Postgres database connected`);
+			logger.info(`Postgres database connected`);
 
 			const shutdown = () => {
 				console.log("Shutting down gracefully...");
@@ -43,7 +43,7 @@ class Server {
 			});
 
 			this.server.listen(this.port, () => {
-				logger.info(`🚀  ${config.NODE_ENV} Server is running on port ${this.port}`);
+				logger.info(`${config.NODE_ENV} Server is running on port ${this.port}`);
 			});
 		} catch (error) {
 			console.error("Error during server startup:", error);

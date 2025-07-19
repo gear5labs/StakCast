@@ -6,7 +6,7 @@ export function Features() {
       icon: <BarChart2 className="h-6 w-6" />,
       title: "Predict & Earn",
       description:
-        "Stake STRK tokens on your predictions and earn rewards when you're right. Our platform rewards accuracy and insight.",
+        "Stake tokens on your predictions and earn rewards when you're right. Our platform rewards accuracy and insight.",
     },
     {
       icon: <Globe2 className="h-6 w-6" />,

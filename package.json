@@ -6,13 +6,18 @@
   "private": true,
   "workspaces": [
     "client",
-    "landing_page"
+    "landing_page",
+    "server"
   ],
   "scripts": {
     "prepare": "husky install",
     "build": "pnpm --filter client... build && pnpm --filter landing_page... build",
     "dev:client": "pnpm --filter client dev",
-    "dev:landing": "pnpm --filter stakcast_landing_page dev"
+    "dev:landing": "pnpm --filter stakcast_landing_page dev",
+    "dev:server": "pnpm --filter server dev",
+    "frontend": "cd client && npm run dev",
+    "server": "cd server && npm run dev",
+    "all": "concurrently \"npm run frontend\" \"npm run server\"  "
   },
   "keywords": [],
   "author": "",
@@ -24,5 +29,8 @@
   },
   "lint-staged": {
     "**/*.{js,ts,tsx}": "pnpm exec eslint --fix"
+  },
+  "dependencies": {
+    "concurrently": "^9.2.0"
   }
 }

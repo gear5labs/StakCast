@@ -9,7 +9,7 @@ Thank you for your support! 🚀
 # StakCast
 
 **Predict & Earn with StakCast**  
-Stake STRK tokens, predict near-future events, and earn rewards. Join the decentralized prediction marketplace trusted by thousands.
+Stake tokens, predict near-future events, and earn rewards. Join the decentralized prediction marketplace trusted by thousands.
 
 ## 🚀 Get Started
 - **Start Predicting** – Make informed predictions and earn rewards.
@@ -25,7 +25,7 @@ Stake STRK tokens, predict near-future events, and earn rewards. Join the decent
 ## 🔥 Why Choose StakCast
 
 ### 🔮 Predict & Earn
-Stake STRK tokens on your predictions and earn rewards when you're right.
+Stake  tokens on your predictions and earn rewards when you're right.
 
 ### 🔗 Decentralized
 Fully transparent and decentralized prediction markets powered by blockchain.

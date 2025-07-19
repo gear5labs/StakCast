@@ -2,14 +2,24 @@
 name = "stakcast"
 version = "0.1.0"
 edition = "2024_07"
+authors = ["StakCast Team <fishon.amos@stakcast.com>"]
+description = "Decentralized Prediction Market on Starknet"
+repository = "https://github.com/gear5labs/StakCast"
+keywords = ["Prediction Markets", "Bet", "Wager", "cairo", "contracts", "starknet"]
+
 
 [dependencies]
-starknet = "2.9.2"
-openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", branch = "main" }
+starknet = "2.11.4"
+openzeppelin = "1.0.0"
+pragma_lib = { git = "https://github.com/astraly-labs/pragma-lib", branch = "main" }
+
+[profile.dev.cairo]
+unstable-add-statements-code-locations-debug-info = true
+unstable-add-statements-functions-debug-info = true
 
 [dev-dependencies]
-snforge_std = "0.37.0"
-assert_macros = "2.9.2"
+snforge_std = "0.44.0"
+assert_macros = "2.11.2"
 
 [[target.starknet-contract]]
 sierra = true
@@ -21,7 +31,7 @@ sierra-replace-ids = true
 test = "snforge test"
 
 [lib]
-path = "contracts/src/lib.cairo"
+path = "src/lib.cairo"
 
 [tool.scarb]
 allow-prebuilt-plugins = ["snforge_std"]

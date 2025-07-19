@@ -50,7 +50,7 @@ export function Hero() {
 
       <div className="flex flex-col items-center text-center relative z-10 animate-fade-in">
         <Badge className="mb-4 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors duration-300">
-          Coming Soon
+          Now on Testnet
         </Badge>
         <h1 className="mb-6 max-w-4xl text-4xl font-bold tracking-tight md:text-6xl lg:text-7xl">
           The Future of{" "}
@@ -59,7 +59,7 @@ export function Hero() {
           </span>
         </h1>
         <p className="mb-8 max-w-2xl text-lg text-slate-600 dark:text-slate-300 md:text-xl">
-          Stake STRK tokens, predict future events, and earn rewards in a
+          Stake tokens, predict future events, and earn rewards in a
           decentralized marketplace. Join our community today.
         </p>
         <div className="flex flex-col gap-4 sm:flex-row">
@@ -72,13 +72,12 @@ export function Hero() {
               <ArrowRight className="ml-2 h-4 w-4 animate-bounce-subtle" />
             </Link>
           </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
+          <Link
+            href="https://stakcast.com/howitworks"
+            className="flex justify-center items-center text-center px-4 py-2 rounded border border-slate-300 dark:border-slate-700 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-black dark:hover:text-white"
           >
             Learn More
-          </Button>
+          </Link>
         </div>
 
         {/* Floating elements */}

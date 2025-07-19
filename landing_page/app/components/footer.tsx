@@ -36,7 +36,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="#how-it-works"
+                  href="https://stakcast.com/howitworks"
                   className="text-muted-foreground hover:text-foreground"
                 >
                   How It Works

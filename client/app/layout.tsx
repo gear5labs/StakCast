@@ -9,17 +9,25 @@ import "primereact/resources/themes/lara-light-cyan/theme.css";
 // import { AppProvider } from "./context/appContext";
 import { Suspense } from "react";
 
-import { StarknetConfig, publicProvider } from "@starknet-react/core";
+import { StarknetConfig } from "@starknet-react/core";
 import { mainnet, sepolia } from "@starknet-react/chains";
+
 // import { connectors } from "@/components/utils/connectors";
 import "./globals.css";
 import { connectors } from "./components/utils/connectors";
 import { Bounce, ToastContainer } from "react-toastify";
 import Providers from "./Providers";
-
+import { Providers as ReconnectProvider } from "./provider";
 const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
+});
+import { jsonRpcProvider } from "@starknet-react/core";
+
+export const providers = jsonRpcProvider({
+  rpc: () => ({
+    nodeUrl: "https://starknet-sepolia.public.blastapi.io",
+  }),
 });
 
 export default function RootLayout({
@@ -27,8 +35,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const chains = [mainnet, sepolia];
-  const providers = publicProvider();
+  const chains = [sepolia, mainnet];
+  // const providers = publicProvider();
 
   return (
     <html lang="en">
@@ -54,7 +62,10 @@ export default function RootLayout({
             provider={providers}
             connectors={connectors}
           >
-            <Providers> {children}</Providers>
+            <Providers>
+              {" "}
+              <ReconnectProvider>{children}</ReconnectProvider>
+            </Providers>
           </StarknetConfig>
         </Suspense>
       </body>

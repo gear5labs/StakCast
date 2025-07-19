@@ -2,3 +2,5 @@ packages:
   - 'indexer'
   - 'client'
   - 'landing_page'
+  - 'server'
+  
