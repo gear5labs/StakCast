@@ -340,21 +340,10 @@ export default [
             type: "core::array::Array::<stakcast::types::BetActivity>",
           },
         ],
-        state_mutability: "external",
-      },
-      {
-        name: "get_all_predictions",
-        type: "function",
-        inputs: [],
-        outputs: [
-          {
-            type: "core::array::Array::<stakcast::types::PredictionMarket>",
-          },
-        ],
         state_mutability: "view",
       },
       {
-        name: "get_all_general_predictions",
+        name: "get_all_predictions",
         type: "function",
         inputs: [],
         outputs: [
@@ -371,10 +360,6 @@ export default [
           {
             name: "market_id",
             type: "core::integer::u256",
-          },
-          {
-            name: "market_type",
-            type: "core::integer::u8",
           },
         ],
         outputs: [
@@ -482,6 +467,22 @@ export default [
         state_mutability: "view",
       },
       {
+        name: "get_user_market_ids",
+        type: "function",
+        inputs: [
+          {
+            name: "user",
+            type: "core::starknet::contract_address::ContractAddress",
+          },
+        ],
+        outputs: [
+          {
+            type: "core::array::Array::<core::integer::u256>",
+          },
+        ],
+        state_mutability: "view",
+      },
+      {
         name: "get_protocol_token",
         type: "function",
         inputs: [],
@@ -532,39 +533,6 @@ export default [
       },
       {
         name: "get_active_prediction_markets",
-        type: "function",
-        inputs: [],
-        outputs: [
-          {
-            type: "core::array::Array::<stakcast::types::PredictionMarket>",
-          },
-        ],
-        state_mutability: "view",
-      },
-      {
-        name: "get_active_general_prediction_markets",
-        type: "function",
-        inputs: [],
-        outputs: [
-          {
-            type: "core::array::Array::<stakcast::types::PredictionMarket>",
-          },
-        ],
-        state_mutability: "view",
-      },
-      {
-        name: "get_active_sport_markets",
-        type: "function",
-        inputs: [],
-        outputs: [
-          {
-            type: "core::array::Array::<stakcast::types::PredictionMarket>",
-          },
-        ],
-        state_mutability: "view",
-      },
-      {
-        name: "get_active_crypto_markets",
         type: "function",
         inputs: [],
         outputs: [

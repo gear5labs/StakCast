@@ -51,3 +51,9 @@ export interface Market {
 
   winning_choice: CairoOption<number>;
 }
+
+// Used for chart data in ChartSection and useChartData
+export interface ChartDataPoint {
+  choice: bigint;
+  amount: bigint;
+}
