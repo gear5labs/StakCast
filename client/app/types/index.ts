@@ -46,5 +46,8 @@ export interface Market {
   is_resolved: boolean;
   choices: MarketChoices;
   total_pool: bigint;
+  total_shares_option_one: bigint;
+  total_shares_option_two: bigint;
+
   winning_choice: CairoOption<number>;
 }

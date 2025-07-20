@@ -48,8 +48,8 @@ export const useMarketData = (
       const [allPredictions, cryptoPredictions, sportsPredictions] =
         await Promise.all([
           contract.get_all_predictions(),
-          contract.get_all_crypto_predictions(),
-          contract.get_all_sports_predictions(),
+          contract.get_all_predictions_by_market_category(1),
+          contract.get_all_predictions_by_market_category(2),
         ]);
 
       const allCount = Array.isArray(allPredictions)
@@ -93,10 +93,10 @@ export const useMarketData = (
 
       switch (category) {
         case "crypto":
-          result = await contract.get_all_crypto_predictions();
+          result = await contract.get_all_predictions_by_market_category(1);
           break;
         case "sports":
-          result = await contract.get_all_sports_predictions();
+          result = await contract.get_all_predictions_by_market_category(2);
           break;
         case "all":
         default:
@@ -104,7 +104,6 @@ export const useMarketData = (
           break;
       }
 
-   
       setPredictions(result as unknown as Market[]);
 
       // Fetch and update counts
@@ -135,18 +134,16 @@ export const useMarketData = (
         let result;
         switch (category) {
           case "crypto":
-            result = await contract.get_all_crypto_predictions();
+            result = await contract.get_all_predictions_by_market_category(1);
             break;
           case "sports":
-            result = await contract.get_all_sports_predictions();
+            result = await contract.get_all_predictions_by_market_category(2);
             break;
           case "all":
           default:
             result = await contract.get_all_predictions();
             break;
         }
-
-       
 
         if (isMounted) {
           if (Array.isArray(result)) {

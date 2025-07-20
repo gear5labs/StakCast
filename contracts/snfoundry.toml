@@ -1,4 +1,4 @@
 [sncast.default]
 account = "stakcast"
 accounts-file = "/Users/macbookprom1/.starknet_accounts/starknet_open_zeppelin_accounts.json"
-url = "https://starknet-sepolia.public.blastapi.io/rpc/v0_8"
+url = "https://api.cartridge.gg/x/starknet/sepolia"

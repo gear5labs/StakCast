@@ -103,6 +103,8 @@ fn test_buy_share_success() {
     );
 
     println!("Share prices for market after is {}: {:?}", market_id, market_shares_after);
+    let user = contract.get_all_bets_for_user(USER2_ADDR());
+    assert!(user.len() == 1, "user stake  len should be 1")
 }
 
 #[test]
@@ -242,3 +244,141 @@ fn test_get_market_activity_multiple_bets() {
     assert(bet2.choice == 1, 'choice should be 1');
     assert(bet2.amount == turn_number_to_precision_point(25), 'amount should be 25');
 }
+
+#[test]
+fn test_get_user_market_ids() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
+
+    // Create multiple markets
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let market_id_1 = create_test_market(contract);
+    let market_id_2 = create_test_market(contract);
+    let market_id_3 = create_test_market(contract);
+    stop_cheat_caller_address(contract.contract_address);
+
+    println!("Created markets: {}, {}, {}", market_id_1, market_id_2, market_id_3);
+
+    let user1 = USER1_ADDR();
+    let user2 = USER2_ADDR();
+
+    // User 1 bets on markets 1 and 2
+    start_cheat_caller_address(contract.contract_address, user1);
+    contract.buy_shares(market_id_1, 0, turn_number_to_precision_point(10));
+    contract.buy_shares(market_id_2, 1, turn_number_to_precision_point(15));
+    stop_cheat_caller_address(contract.contract_address);
+
+    // User 2 bets on markets 2 and 3
+    start_cheat_caller_address(contract.contract_address, user2);
+    contract.buy_shares(market_id_2, 0, turn_number_to_precision_point(20));
+    contract.buy_shares(market_id_3, 1, turn_number_to_precision_point(25));
+    stop_cheat_caller_address(contract.contract_address);
+
+    // Test get_user_market_ids
+    let user1_market_ids = contract.get_user_market_ids(user1);
+    let user2_market_ids = contract.get_user_market_ids(user2);
+
+    println!("\nUser 1 market IDs (should be 2): {}", user1_market_ids.len());
+    println!("User 2 market IDs (should be 2): {}", user2_market_ids.len());
+
+    // Verify the results
+    assert(user1_market_ids.len() == 2, 'User 1 should have 2 market IDs');
+    assert(user2_market_ids.len() == 2, 'User 2 should have 2 market IDs');
+
+    // Test that the market IDs are correct
+    let user1_all_bets = contract.get_all_bets_for_user(user1);
+    let user2_all_bets = contract.get_all_bets_for_user(user2);
+
+    println!("User 1 all bets count: {}", user1_all_bets.len());
+    println!("User 2 all bets count: {}", user2_all_bets.len());
+
+    assert(user1_all_bets.len() == 2, 'User 1 should have 2 bets');
+    assert(user2_all_bets.len() == 2, 'User 2 should have 2 bets');
+
+    println!("get_user_market_ids function works correctly!");
+    println!("It returns the same count as get_all_bets_for_user!");
+}
+// #[test]
+// fn test_user_bet_functions_with_arrays() {
+//     let (contract, _admin_interface, _token) = setup_test_environment();
+
+//     // Create a prediction market
+//     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+//     let market_id = create_test_market(contract);
+//     stop_cheat_caller_address(contract.contract_address);
+
+//     println!("Testing User Bet Functions");
+//     println!("==============================");
+//     println!("Created market with ID: {}", market_id);
+
+//     // Test user addresses
+//     let user1 = USER1_ADDR();
+//     let user2 = USER2_ADDR();
+//     let user3 = USER3_ADDR();
+
+//     println!("\nBefore any bets are placed:");
+//     println!("User 1 closed bets: {}", contract.get_all_closed_bets_for_user(user1).len());
+//     println!("User 1 open bets: {}", contract.get_all_open_bets_for_user(user1).len());
+//     println!("User 1 locked bets: {}", contract.get_all_locked_bets_for_user(user1).len());
+//     println!("User 1 all bets: {}", contract.get_all_bets_for_user(user1).len());
+//     println!("User 1 market IDs: {}", contract.get_user_market_ids(user1).len());
+
+//     // User 1 places a bet
+//     let user1_amount = turn_number_to_precision_point(10);
+//     start_cheat_caller_address(contract.contract_address, user1);
+//     contract.buy_shares(market_id, 0, user1_amount);
+//     stop_cheat_caller_address(contract.contract_address);
+
+//     println!("\nAfter User 1 places a bet:");
+//     println!("User 1 closed bets: {}", contract.get_all_closed_bets_for_user(user1).len());
+//     println!("User 1 open bets: {}", contract.get_all_open_bets_for_user(user1).len());
+//     println!("User 1 locked bets: {}", contract.get_all_locked_bets_for_user(user1).len());
+//     println!("User 1 all bets: {}", contract.get_all_bets_for_user(user1).len());
+//     println!("User 1 market IDs: {}", contract.get_user_market_ids(user1).len());
+
+//     // User 2 places a bet
+//     let user2_amount = turn_number_to_precision_point(20);
+//     start_cheat_caller_address(contract.contract_address, user2);
+//     contract.buy_shares(market_id, 1, user2_amount);
+//     stop_cheat_caller_address(contract.contract_address);
+
+//     println!("\nAfter User 2 places a bet:");
+//     println!("User 2 closed bets: {}", contract.get_all_closed_bets_for_user(user2).len());
+//     println!("User 2 open bets: {}", contract.get_all_open_bets_for_user(user2).len());
+//     println!("User 2 locked bets: {}", contract.get_all_locked_bets_for_user(user2).len());
+//     println!("User 2 all bets: {}", contract.get_all_bets_for_user(user2).len());
+//     println!("User 2 market IDs: {}", contract.get_user_market_ids(user2).len());
+
+//     // User 3 places a bet
+//     let user3_amount = turn_number_to_precision_point(15);
+//     start_cheat_caller_address(contract.contract_address, user3);
+//     contract.buy_shares(market_id, 0, user3_amount);
+//     stop_cheat_caller_address(contract.contract_address);
+
+//     println!("\nAfter User 3 places a bet:");
+//     println!("User 3 closed bets: {}", contract.get_all_closed_bets_for_user(user3).len());
+//     println!("User 3 open bets: {}", contract.get_all_open_bets_for_user(user3).len());
+//     println!("User 3 locked bets: {}", contract.get_all_locked_bets_for_user(user3).len());
+//     println!("User 3 all bets: {}", contract.get_all_bets_for_user(user3).len());
+//     println!("User 3 market IDs: {}", contract.get_user_market_ids(user3).len());
+
+//     // Test market status functions
+//     println!("\nMarket Status Functions:");
+//     println!("All markets: {}", contract.get_all_predictions().len());
+//     println!("Open markets: {}", contract.get_all_open_markets().len());
+//     println!("Resolved markets: {}", contract.get_all_resolved_markets().len());
+
+//     // Verify the functions work correctly
+//     assert(contract.get_all_open_bets_for_user(user1).len() == 1, 'User 1 should have 1 open
+//     bet');
+//     assert(contract.get_all_open_bets_for_user(user2).len() == 1, 'User 2 should have 1 open
+//     bet');
+//     assert(contract.get_all_open_bets_for_user(user3).len() == 1, 'User 3 should have 1 open
+//     bet');
+//     assert(contract.get_all_bets_for_user(user1).len() == 1, 'User 1 should have 1 total bet');
+//     assert(contract.get_user_market_ids(user1).len() == 1, 'User 1 should have 1 market ID');
+
+//     println!("\nAll user bet functions are working correctly!");
+//     println!("Arrays are being returned and populated properly!");
+// }
+
+

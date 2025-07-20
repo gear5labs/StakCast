@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
-import { ArrowLeft, TrendingUp, MessageSquare, Activity } from "lucide-react";
+import { ArrowLeft, TrendingUp, MessageSquare } from "lucide-react";
+// import { Activity } from "lucide-react";
 import CommentSection from "@/app/components/sections/CommentSection";
 import RecentActivity from "@/app/components/sections/RecentActivity";
 import ChartSection from "@/app/components/sections/ChartSection";
@@ -13,7 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Market } from "@/app/types";
 import { useMarketData } from "@/app/hooks/useMarket";
 import Spinner from "@/app/components/ui/loading/Spinner";
-import StakcastBanner from "@/app/components/ui/banners/banner";
+import Image from "next/image";
+// import StakcastBanner from "@/app/components/ui/banners/banner";
 
 const Page = () => {
   const params = useParams();
@@ -33,6 +35,7 @@ const Page = () => {
     }
   }, [params.id, allMarkets, loading]);
 
+  console.log(market);
   if (loading || !market) {
     return <Spinner />;
   }
@@ -47,7 +50,7 @@ const Page = () => {
 
   const tabs = [
     { id: "chart", label: "Chart", icon: TrendingUp },
-    { id: "activity", label: "Activity", icon: Activity },
+    // { id: "activity", label: "Activity", icon: Activity },
     { id: "comments", label: "Comments", icon: MessageSquare },
   ];
 
@@ -60,24 +63,34 @@ const Page = () => {
             onClick={() => router.push("/")}
             className="p-2 bg-inherit hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
           >
-            <ArrowLeft className="w-6 h-6 text-gray-600  dark:text-white" />
+            <ArrowLeft className="w-6 h-6 text-gray-600 dark:text-white" />
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              {market.title}
-            </h1>
-            <p className="text-gray-500 dark:text-white text-sm">
-              Market ID: {market.market_id.toString()}
-            </p>
+
+          <div className="flex items-center space-x-4">
+            <Image
+              src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcToDTzW1oRjiKNrGKqeI9Q7aMxTXVwbUcHa6Q&s"
+              height={60}
+              width={60}
+              alt={market.title}
+              className="rounded-lg object-cover"
+            />
+
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                {market.title}
+              </h1>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
+                {market.description}
+              </p>
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            {/* Replace the Image section with StakcastBanner */}
-            <div className="bg-white dark:bg-slate-950 rounded-2xl shadow-sm overflow-hidden">
+            {/* <div className="bg-white dark:bg-slate-950 rounded-2xl shadow-sm overflow-hidden">
               <StakcastBanner />
-            </div>
+            </div> */}
 
             {/* Tabs Navigation */}
             <div className="bg-white dark:bg-slate-950 rounded-2xl shadow-sm p-4">
@@ -104,16 +117,17 @@ const Page = () => {
               {/* Tab Content */}
               <div className="mt-6">
                 {activeTab === "chart" && <ChartSection />}
-                {activeTab === "activity" && <RecentActivity />}
+                {/* {activeTab === "activity" && <RecentActivity />} */}
                 {activeTab === "comments" && <CommentSection />}
               </div>
+              <RecentActivity />
             </div>
           </div>
 
           {/* Right Column */}
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 sticky top-8">
-              <PurchaseSection market={market} />
+              <PurchaseSection market={market}  />
             </div>
           </div>
         </div>

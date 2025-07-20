@@ -277,7 +277,7 @@ fn test_create_market_create_multiple_market_types() {
     assert(crypto_market.title == "Crypto Market", 'Crypto market title mismatch');
     assert(sports_market.title == "Sports Market", 'Sports market title mismatch');
 
-    let all_general = contract.get_all_general_predictions();
+    let all_general = contract.get_all_predictions_by_market_category(0);
     let all_crypto = contract.get_all_predictions_by_market_category(3);
     let all_sports = contract.get_all_predictions_by_market_category(2);
     let all_prediction = contract.get_all_predictions();
@@ -285,6 +285,7 @@ fn test_create_market_create_multiple_market_types() {
     assert(all_general.len() == 1, 'general market should be 1');
     assert(all_crypto.len() == 1, 'crypto market should be 1');
     assert(all_sports.len() == 1, 'sport market should be 1');
+    println!("len is : {:?}", all_prediction.len());
     assert(all_prediction.len() == 3, 'Empty market array');
     stop_cheat_caller_address(contract.contract_address);
 }
@@ -342,9 +343,12 @@ fn test_creat_market_multiple_moderators_can_create_markets() {
 
     let market1 = contract.get_prediction(market1_id);
     let market2 = contract.get_prediction(market2_id);
-    let all_general = contract.get_all_general_predictions();
+    let all_crypto = contract.get_all_predictions_by_market_category(3);
+    let all_business = contract.get_all_predictions_by_market_category(4);
+    println!("len is : {:?}", all_crypto.len());
 
-    assert(all_general.len() == 2, 'Empty market array');
+    assert(all_crypto.len() == 1, 'Should have 1 crypto market');
+    assert(all_business.len() == 1, 'Should have 1 business market');
     assert(market1.title == "Moderator 1 Market", 'Market 1 title');
     assert(market2.title == "Moderator 2 Market", 'Market 2 title');
 }
@@ -357,7 +361,7 @@ fn test_get_market_status() {
     let market_id = create_test_market(contract);
     stop_cheat_caller_address(contract.contract_address);
 
-    let (is_open, is_resolved) = contract.get_market_status(market_id, 0);
+    let (is_open, is_resolved) = contract.get_market_status(market_id);
     assert(is_open, 'Market should be open');
     assert(!is_resolved, 'Should not be resolved');
 }

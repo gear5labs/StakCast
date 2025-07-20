@@ -15,7 +15,7 @@ interface UsePurchaseReturn {
     market_id: number | bigint,
     choice_idx: number,
     amount: bigint | number,
-    market_type: number
+  
   ) => Promise<void>;
   send: ReturnType<typeof useSendTransaction>["send"];
   loading: boolean;
@@ -46,8 +46,7 @@ export const usePurchase = (): UsePurchaseReturn => {
     async (
       market_id: number | bigint,
       choice_idx: number,
-      amount: bigint | number,
-      market_type: number
+      amount: bigint | number
     ): Promise<void> => {
       if (!contract) {
         console.warn("Contract not initialized");
@@ -57,33 +56,28 @@ export const usePurchase = (): UsePurchaseReturn => {
         console.warn("Contract not initialized");
         return Promise.resolve();
       }
-     
       try {
         const tokenApproval = await ercContract.populate("approve", [
           STAKCAST_CONTRACT_ADDRESS,
           cairo.uint256(amount),
         ]);
 
-        await contract.populate("place_bet", [
+        await contract.populate("buy_shares", [
           BigInt(market_id),
           BigInt(choice_idx),
           amount,
-          BigInt(market_type),
         ]);
         const populated =
           selectedToken == "SK"
-            ? await contract.populate("place_bet", [
+            ? await contract.populate("buy_shares", [
                 BigInt(market_id),
                 BigInt(choice_idx),
                 amount,
-                BigInt(market_type),
               ])
-            : await contract.populate("place_bet_with_token", [
+            : await contract.populate("buy_shares", [
                 BigInt(market_id),
                 BigInt(choice_idx),
                 amount,
-                BigInt(market_type),
-                selectedToken,
               ]);
 
         setCalls([tokenApproval, populated]);

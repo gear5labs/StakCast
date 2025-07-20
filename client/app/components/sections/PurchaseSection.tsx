@@ -4,87 +4,95 @@ import { useMarketContext } from "@/app/context/marketContext";
 import { Market } from "@/app/types";
 import { useIsConnected } from "@/app/hooks/useIsConnected";
 import WalletModal from "../ui/ConnectWalletModal";
-import { formatAmount } from "@/app/utils/utils";
+import { normalizeWEI } from "@/app/utils/utils";
 import { usePurchase } from "@/app/hooks/usePurchase";
 import { useAppContext } from "@/app/context/appContext";
 import { toast } from "react-toastify";
 import {
-  ChevronDown,
+  // ChevronDown,
   TrendingUp,
-  TrendingDown,
+  // TrendingDown,
   Wallet,
   CheckCircle,
+  AlertTriangle,
 } from "lucide-react";
 
 interface PurchaseSectionProps {
   market?: Market;
+  preselectedOption?: string | null| undefined;
 }
 
 export type Token = "STRK" | "SK";
 
-const AVAILABLE_TOKENS: {
-  value: Token;
-  label: string;
-  symbol: string;
-  logo: string;
-  color: string;
-}[] = [
-  {
-    value: "STRK",
-    label: "Starknet Token",
-    symbol: "STRK",
-    logo: "/logos/starknet-logo.svg", // Add your actual logo path
-    color: "from-purple-500 to-blue-500",
-  },
-  {
-    value: "SK",
-    label: "Stakcast Token",
-    symbol: "SK",
-    logo: "/stakcast-logo-1.pnleg", // Add your actual logo path
-    color: "from-green-500 to-emerald-500",
-  },
-];
+// const AVAILABLE_TOKENS: {
+//   value: Token;
+//   label: string;
+//   symbol: string;
+//   logo: string;
+//   color: string;
+//   disabled?: boolean;
+// }[] = [
+//   {
+//     value: "STRK",
+//     label: "Starknet Token",
+//     symbol: "STRK",
+//     logo: "/logos/starknet-logo.svg",
+//     color: "from-purple-500 to-blue-500",
+//   },
+//   {
+//     value: "SK",
+//     label: "Stakcast Token",
+//     symbol: "SK",
+//     logo: "/stakcast-logo-1.png",
+//     color: "from-green-500 to-emerald-500",
+//     disabled: true,
+//   },
+// ];
 
-const PurchaseSection = ({ market }: PurchaseSectionProps) => {
-  const {
-    selectedOption,
-    units,
-    pricePerUnit,
-    handleOptionSelect,
-    unitsToStake,
-   setUnitsToStake,
-    optionPrice,
-  } = useMarketContext();
+const PurchaseSection = ({ market, preselectedOption }: PurchaseSectionProps) => {
+  const { selectedOption, handleOptionSelect, unitsToStake, setUnitsToStake } =
+    useMarketContext();
   const connected = useIsConnected();
   const [showWalletModal, setShowWalletModal] = useState(false);
-  const [showTokenDropdown, setShowTokenDropdown] = useState(false);
+  //  const [showTokenDropdown, setShowTokenDropdown] = useState(false);
   const { selectedToken, setSelectedToken } = useAppContext();
   const { placeBet, loading } = usePurchase();
+  React.useEffect(() => {
+    setSelectedToken("STRK");
+  }, [setSelectedToken]);
 
-  const selectedTokenData = AVAILABLE_TOKENS.find(
-    (token) => token.value === selectedToken
-  );
+  React.useEffect(() => {
+    if (preselectedOption && preselectedOption !== selectedOption) {
+      // Set odds and unitPrice to 1 for now, or you can compute real odds if needed
+      handleOptionSelect(preselectedOption, 1, "1");
+    }
+  }, [preselectedOption, selectedOption, handleOptionSelect]);
+
+  // const selectedTokenData = AVAILABLE_TOKENS.find(
+  //   (token) => token.value === selectedToken
+  // );
 
   const handlePurchase = () => {
-    if (!selectedOption || units <= 0 || !market) {
+    console.log(selectedOption, unitsToStake, market);
+    if (!selectedOption || +unitsToStake <= 0 || !market) {
       toast.error("Please select a choice and enter a valid number of units.");
       return;
     }
 
-    const market_id = +market.market_id.toString(16);
-    const choice_idx = selectedOption === "Yes" ? 0x1 : 0x0;
-    const amount = (
-      selectedToken === "STRK"
-        ? parseInt((units * pricePerUnit).toFixed(2))
-        : parseInt((units * pricePerUnit * 10).toFixed(2))
-    ) as number;
-    // const amount = (units * 10 ** 18) as number;
-    const market_type = 0;
+    if (unitsToStake < 1) {
+      toast.error("Minimum stake required: 1 STRK");
+      return;
+    }
+
+    const market_id: number = market.market_id as number;
+    const choice_idx = selectedOption === "Yes" ? 1 : 0;
+
+    const amount = unitsToStake;
 
     console.log(
-      `Placing bet on "${selectedOption}" with market_id=${market_id}, choice_idx=${choice_idx}, amount=${amount}, market_type=${market_type}, token=${selectedToken}`
+      `Placing bet on "${selectedOption}" with market_id=${market_id}, choice_idx=${choice_idx}, amount=${amount}, token=${selectedToken}`
     );
-    placeBet(market_id, choice_idx, amount, market_type);
+    placeBet(market_id, choice_idx, amount * 10 ** 18);
   };
 
   const handleClick = () => {
@@ -95,19 +103,17 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
     }
   };
 
-  const handleTokenSelect = (token: Token) => {
-    setSelectedToken(token);
-    setShowTokenDropdown(false);
-  };
+  // const handleTokenSelect = (token: Token) => {
+
+  //   if (token === "STRK") {
+  //     setSelectedToken(token);
+  //   }
+  //   setShowTokenDropdown(false);
+  // };
 
   const inputValue = useMemo(() => {
-    if (!optionPrice) return unitsToStake;
-
-    const isStrkToken = selectedToken === "STRK";
-    const multiplier = isStrkToken ? 1 : 10;
-
-    return (units * pricePerUnit * multiplier).toFixed(2);
-  }, [optionPrice, selectedToken, units, pricePerUnit, unitsToStake]);
+    return unitsToStake.toString();
+  }, [unitsToStake]);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-lg border border-gray-100 dark:border-slate-700 max-w-md mx-auto">
@@ -120,89 +126,68 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
         </h2>
       </div>
 
+      {/* Minimum Stake Warning */}
+      <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+          <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+            Minimum stake required: 1 STRK
+          </span>
+        </div>
+      </div>
+
       <div className="space-y-4">
         {/* Prediction Options */}
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-            Choose Your Prediction
-          </label>
-          {market?.choices &&
+        <div className="grid grid-cols-2 gap-4">
+          <label className="sr-only">Choose Your Prediction</label>
+          {market &&
             [0, 1].map((key) => {
-              const choice = market.choices[key as 0 | 1];
               const label = key === 1 ? "Yes" : "No";
               const isActive = selectedOption === label;
               const odds = 1;
-              
+
+              const poolAmount =
+                key === 1
+                  ? market.total_shares_option_one
+                  : market.total_shares_option_two;
+
               return (
                 <button
                   key={key}
                   onClick={() =>
-                    handleOptionSelect(
-                      label,
-                      odds,
-                      formatAmount(choice.staked_amount)
-                    )
+                    handleOptionSelect(label, odds, odds.toString())
                   }
-                  className={`group w-full p-3 rounded-lg border-2 transition-all duration-200 ${
+                  className={`w-full h-full p-4 rounded-lg border-2 text-left transition-all duration-200 flex flex-col justify-between ${
                     isActive
                       ? label === "Yes"
-                        ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 dark:from-green-900/20 dark:to-emerald-900/20 dark:border-green-600"
-                        : "bg-gradient-to-r from-red-50 to-pink-50 border-red-300 dark:from-red-900/20 dark:to-pink-900/20 dark:border-red-600"
-                      : "bg-gray-50 border-gray-200 hover:border-gray-300 hover:shadow-md dark:bg-slate-700 dark:border-slate-600 dark:hover:border-slate-500"
+                        ? "bg-green-50 border-green-300 dark:bg-green-900/10 dark:border-green-600"
+                        : "bg-red-50 border-red-300 dark:bg-red-900/10 dark:border-red-600"
+                      : "bg-gray-50 border-gray-200 hover:border-gray-300 dark:bg-slate-700 dark:border-slate-600 dark:hover:border-slate-500"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`p-1.5 rounded-lg ${
-                          label === "Yes"
-                            ? "bg-green-100 dark:bg-green-900/50"
-                            : "bg-red-100 dark:bg-red-900/50"
-                        }`}
-                      >
-                        {label === "Yes" ? (
-                          <TrendingUp
-                            className={`w-3 h-3 ${
-                              isActive
-                                ? "text-green-600 dark:text-green-400"
-                                : "text-green-500"
-                            }`}
-                          />
-                        ) : (
-                          <TrendingDown
-                            className={`w-3 h-3 ${
-                              isActive
-                                ? "text-red-600 dark:text-red-400"
-                                : "text-red-500"
-                            }`}
-                          />
-                        )}
-                      </div>
-                      <div className="text-left">
-                        <div
-                          className={`font-bold text-base ${
-                            isActive
-                              ? label === "Yes"
-                                ? "text-green-700 dark:text-green-300"
-                                : "text-red-700 dark:text-red-300"
-                              : "text-gray-700 dark:text-gray-300"
-                          }`}
-                        >
-                          {label}
-                        </div>
-                      </div>
+                  <div className="flex flex-col gap-2 min-w-0">
+                    <div
+                      className={`font-bold text-lg truncate ${
+                        isActive
+                          ? label === "Yes"
+                            ? "text-green-700 dark:text-green-300"
+                            : "text-red-700 dark:text-red-300"
+                          : "text-gray-700 dark:text-gray-300"
+                      }`}
+                    >
+                      {label}
                     </div>
-                    <div className="text-right">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">
-                        Pool
-                      </div>
-                      <div className="font-semibold text-sm text-gray-700 dark:text-gray-300">
-                        {String(formatAmount(choice.staked_amount))}
-                      </div>
+
+                    <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                      {/* <span className="text-xs">Pool: </span> */}
+                      <span className="font-semibold truncate inline-block max-w-full">
+                        {String(normalizeWEI(poolAmount)) + "%"}
+                      </span>
                     </div>
                   </div>
+
                   {isActive && (
-                    <div className="mt-1 flex justify-center">
+                    <div className="mt-2 flex justify-center">
                       <CheckCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     </div>
                   )}
@@ -211,114 +196,76 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
             })}
         </div>
 
-        {/* Token Selection */}
-        <div className="space-y-2">
+        {/* Token Selection - Disabled for now */}
+        {/* <div className="space-y-2">
           <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
             Payment Token
           </label>
           <div className="relative">
             <button
-              onClick={() => setShowTokenDropdown(!showTokenDropdown)}
-              className="w-full p-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg hover:border-gray-300 dark:hover:border-slate-500 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled
+              className="w-full p-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg opacity-50 cursor-not-allowed"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div
-                    className={`w-6 h-6 rounded-full bg-gradient-to-r ${selectedTokenData?.color} flex items-center justify-center`}
-                  >
-                    <span className="text-white font-bold text-xs">
-                      {selectedTokenData?.symbol.charAt(0)}
-                    </span>
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
+                    <span className="text-white font-bold text-xs">S</span>
                   </div>
                   <div className="text-left">
                     <div className="font-semibold text-sm text-gray-900 dark:text-white">
-                      {selectedTokenData?.symbol}
+                      STRK
                     </div>
                   </div>
                 </div>
-                <ChevronDown
-                  className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
-                    showTokenDropdown ? "rotate-180" : ""
-                  }`}
-                />
+                <ChevronDown className="w-4 h-4 text-gray-400" />
               </div>
             </button>
-
-            {showTokenDropdown && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg shadow-lg z-10 overflow-hidden">
-                {AVAILABLE_TOKENS.map((token) => (
-                  <button
-                    key={token.value}
-                    onClick={() => handleTokenSelect(token.value)}
-                    className="w-full p-3 hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors duration-150 flex items-center gap-2"
-                  >
-                    <div
-                      className={`w-6 h-6 rounded-full bg-gradient-to-r ${token.color} flex items-center justify-center`}
-                    >
-                      <span className="text-white font-bold text-xs">
-                        {token.symbol.charAt(0)}
-                      </span>
-                    </div>
-                    <div className="text-left">
-                      <div className="font-semibold text-sm text-gray-900 dark:text-white">
-                        {token.symbol}
-                      </div>
-                    </div>
-                    {selectedToken === token.value && (
-                      <CheckCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 ml-auto" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
-        </div>
-
-        {/* number of Units*/}
+        </div> */}
+        {/* Number of Units */}
         <div className="space-y-2">
           <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-            Number Of Units
+            Amount in (STRK)
           </label>
           <div className="relative">
             <input
               type="number"
               value={unitsToStake || 0}
-              onChange={(e) =>setUnitsToStake(parseInt(e.target.value)|| 0)}
-              min={1}
-              placeholder="Enter amount"
+              onChange={(e) => setUnitsToStake(parseInt(e.target.value) || 0)}
+              min={30}
+              placeholder="Enter amount (min 30)"
               className="w-full p-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white font-semibold"
             />
           </div>
         </div>
-
-        {/* Units Input */}
+        {/* Amount Display
         <div className="space-y-2">
           <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-            Amount
+            Total Amount
           </label>
           <div className="relative">
             <input
               type="number"
               value={inputValue || 0}
               disabled
-              min={1}
-              placeholder="Enter amount"
+              min={30}
+              placeholder="Total amount"
               className="w-full p-3 pr-12 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white font-semibold"
             />
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm font-medium">
-              {selectedToken}
+              STRK
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Price Summary */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
           <div className="flex justify-between items-center mb-1">
             <span className="text-xs text-gray-600 dark:text-gray-400">
-              Price per unit:
+              Units to stake:
             </span>
             <span className="font-semibold text-sm text-gray-900 dark:text-white">
-              {optionPrice ? optionPrice : unitsToStake} {selectedToken}
+              {unitsToStake} STRK
             </span>
           </div>
           <div className="flex justify-between items-center">
@@ -326,20 +273,19 @@ const PurchaseSection = ({ market }: PurchaseSectionProps) => {
               Total:
             </span>
             <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-             { `${inputValue}  ${selectedToken}`}
+              {`${inputValue} STRK`}
             </span>
           </div>
         </div>
-
         {/* Purchase Button */}
         <button
           onClick={handleClick}
-          disabled={loading}
+          disabled={loading || unitsToStake < 1}
           className={`w-full py-3 px-4 rounded-lg font-bold transition-all duration-200 flex items-center justify-center gap-2 ${
-            loading
+            loading || unitsToStake < 1
               ? "bg-gray-400 cursor-not-allowed"
               : connected
-              ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              ? "bg-gradient-to-r from-green-600 to-green-800 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           }`}
         >

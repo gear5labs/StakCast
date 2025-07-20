@@ -23,6 +23,7 @@ assert_macros = "2.11.2"
 
 [[target.starknet-contract]]
 sierra = true
+allowed-libfuncs-list.name = "experimental"
 
 [cairo]
 sierra-replace-ids = true

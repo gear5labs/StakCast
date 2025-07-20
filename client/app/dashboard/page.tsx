@@ -21,7 +21,7 @@ const DashboardPage = () => {
    const connected=useIsConnected();
   const [activeTimeFrame, setActiveTimeFrame] = useState<TimeFrame>("1m");
   const { predictions } = useUserPredictions();
-
+  console.log(predictions)
   const handleGoBack = () => {
     window.history.back();
   };
