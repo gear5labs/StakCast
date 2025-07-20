@@ -35,7 +35,7 @@ pub trait IPredictionHub<TContractState> {
         self: @TContractState, category: u8,
     ) -> Array<PredictionMarket>;
 
-    fn get_market_activity(ref self: TContractState, market_id: u256) -> Array<BetActivity>;
+    fn get_market_activity(self: @TContractState, market_id: u256) -> Array<BetActivity>;
 
     /// Returns an array of all active prediction markets
     fn get_all_predictions(self: @TContractState) -> Array<PredictionMarket>;

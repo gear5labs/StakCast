@@ -641,7 +641,7 @@ pub mod PredictionHub {
         }
 
 
-        fn get_market_activity(ref self: ContractState, market_id: u256) -> Array<BetActivity> {
+        fn get_market_activity(self: @ContractState, market_id: u256) -> Array<BetActivity> {
             let mut market_activity_array = ArrayTrait::new();
 
             let market_activity = self.market_analytics.entry(market_id);
