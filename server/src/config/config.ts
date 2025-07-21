@@ -25,7 +25,7 @@ export const config = {
 
 		},
 		postgres:{
-			port:process.env.POSTRES_PORT || 5432,
+			port:process.env.POSTGRES_PORT || 5432,
 			host:process.env.POSTGRES_HOST || 'localhost',
 			username:process.env.POSTGRES_USERNAME || 'root',
 			password:process.env.POSTGRES_PASSWORD || '',

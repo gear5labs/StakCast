@@ -37,4 +37,8 @@ export default class AuthRepository {
 			{ refreshToken: undefined, refreshTokenExpires: undefined }
 		);
 	}
+
+	async save(auth: Auth): Promise<Auth> {
+		return this.authRepository.save(auth);
+	}
 }
