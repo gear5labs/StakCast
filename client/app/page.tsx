@@ -88,11 +88,11 @@ const Home = () => {
 
   if (error) {
     return (
-      <main className="bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-screen">
+      <main className=" dark:from-gray-950 dark:to-gray-900 min-h-screen">
         <Header />
         <div className="max-w-6xl mx-auto px-6 py-24">
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="bg-white dark:bg-gray-900 p-8 rounded-xl shadow-md mb-6">
+            <div className="bg-white dark:bg-gray-900 p-8 mb-6">
               <SearchX className="w-12 h-12 text-red-300 dark:text-red-600 mx-auto mb-4" />
               <h3 className="text-xl font-light text-gray-700 dark:text-gray-200 mb-2">
                 Error Loading Markets
@@ -100,7 +100,7 @@ const Home = () => {
               <p className="text-gray-500 max-w-md mb-4">{error}</p>
               <Button
                 onClick={refetch}
-                className="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+                className="mt-4 bg-green-600 hover:bg-blue-600 text-white px-4 py-2 rounded"
               >
                 Try Again
               </Button>
@@ -181,7 +181,6 @@ const Home = () => {
               const day = date.getUTCDate();
               const month = date.getUTCMonth() + 1;
               const year = date.getUTCFullYear() % 100;
-
               const formatted = `${day}/${month}/${year}`;
 
               return (
@@ -220,7 +219,6 @@ const Home = () => {
                       isClosed={isClosed}
                       timeLeft={formatted}
                       onOptionSelect={(optionLabel) => handleOptionSelect(market, optionLabel)}
-                      onOption
                     />
                   </div>
                 </div>
