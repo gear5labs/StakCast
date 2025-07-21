@@ -29,8 +29,11 @@ fn test_buy_share_success() {
     println!("Market created with ID: {}", market_id);
     // get share prices
     let mut market_shares = contract.calculate_share_prices(market_id);
-    let (ppua, ppub) = market_shares;
-    assert(ppua == HALF_PRECISION() && ppub == HALF_PRECISION(), 'Share prices should be 500000');
+    let (price_per_unit_a, price_per_unit_b) = market_shares;
+    assert(
+        price_per_unit_a == HALF_PRECISION() && price_per_unit_b == HALF_PRECISION(),
+        'Share prices should be 500000',
+    );
     println!("Share prices for market {}: {:?}", market_id, market_shares);
 
     // user 1 buys 10 shares of option 1
@@ -124,8 +127,11 @@ fn test_get_all_bets_for_user() {
     println!("Market created with ID: {}", market_id);
     // get share prices
     let mut market_shares = contract.calculate_share_prices(market_id);
-    let (ppua, ppub) = market_shares;
-    assert(ppua == HALF_PRECISION() && ppub == HALF_PRECISION(), 'Share prices should be 500000');
+    let (ppua, price_per_unit_b) = market_shares;
+    assert(
+        ppua == HALF_PRECISION() && price_per_unit_b == HALF_PRECISION(),
+        'Share prices should be 500000',
+    );
     println!("Share prices for market {}: {:?}", market_id, market_shares);
 
     // user 1 buys 10 shares of option 1
