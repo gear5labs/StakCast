@@ -1289,8 +1289,25 @@ pub mod PredictionHub {
         }
 
 
-        fn emergency_close_market(ref self: ContractState, market_id: u256, market_type: u8) {}
+        fn emergency_close_market(ref self: ContractState, market_id: u256, market_type: u8) {
+            self.assert_only_admin();
+            self.assert_market_exists(market_id);
 
+            let mut market = self.all_predictions.entry(market_id).read();
+            
+            assert(market.status == MarketStatus::Active || market.status == MarketStatus::Locked, 'Market already closed/resolved');
+
+            market.is_open = false;
+            market.status = MarketStatus::Locked;
+
+            self.all_predictions.entry(market_id).write(market);
+
+            self.emit(MarketLocked { market_id, locked_by: get_caller_address() });
+        }
+
+        fn force_close_market(ref self: ContractState, market_id: u256, reason: ByteArray) {
+            self.emergency_close_market(market_id, 0);
+        }
 
         fn emergency_close_multiple_markets(
             ref self: ContractState, market_ids: Array<u256>, market_types: Array<u8>,
@@ -1313,12 +1330,49 @@ pub mod PredictionHub {
         }
 
 
+        fn emergency_resolve_market(ref self: ContractState, market_id: u256, market_type: u8, winning_choice: u8) {
+            self.assert_only_admin();
+            self.assert_market_exists(market_id);
+            self.assert_valid_choice(winning_choice);
+
+            let mut market = self.all_predictions.entry(market_id).read();
+            
+            assert(!market.is_resolved, 'Market already resolved');
+
+            market.is_resolved = true;
+            market.is_open = false;
+
+            let winning_choice_outcome: Outcome = self.choice_num_to_outcome(market_id, winning_choice);
+            market.winning_choice = Option::Some(winning_choice);
+            market.status = MarketStatus::Resolved(winning_choice_outcome);
+
+            self.all_predictions.entry(market_id).write(market);
+
+            self.emit(MarketResolved { market_id, resolver: get_caller_address(), winning_choice });
+        }
+
         fn emergency_resolve_multiple_markets(
             ref self: ContractState,
             market_ids: Array<u256>,
             market_types: Array<u8>,
             winning_choices: Array<u8>,
-        ) {}
+        ) {
+            self.assert_only_admin();
+
+            assert(market_ids.len() == market_types.len(), 'Arrays length mismatch');
+            assert(market_ids.len() == winning_choices.len(), 'Arrays length mismatch');
+
+            let mut i = 0;
+
+            while i < market_ids.len() {
+                let market_id = *market_ids.at(i);
+                let winning_choice = *winning_choices.at(i);
+
+                self.emergency_resolve_market(market_id, *market_types.at(i), winning_choice);
+
+                i += 1;
+            };
+        }
 
 
         fn set_protocol_token(ref self: ContractState, token_address: ContractAddress) {
