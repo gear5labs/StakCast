@@ -139,4 +139,12 @@ pub trait IPredictionHub<TContractState> {
     fn remove_all_predictions(ref self: TContractState);
     /// Upgrades the contract implementation (admin only)
     fn upgrade(ref self: TContractState, impl_hash: ClassHash);
+
+    // ================ Market Update Functions ================
+
+    /// Extends a market's duration by updating its end_time (admin/moderator only)
+    fn extend_market_duration(ref self: TContractState, market_id: u256, new_end_time: u64);
+
+    /// Modifies a market's description (admin/moderator only)
+    fn modify_market_details(ref self: TContractState, market_id: u256, new_description: ByteArray);
 }

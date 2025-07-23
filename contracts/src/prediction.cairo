@@ -1042,6 +1042,53 @@ pub mod PredictionHub {
         }
 
 
+        // ================ Market Update Functions ================
+
+        fn extend_market_duration(ref self: ContractState, market_id: u256, new_end_time: u64) {
+            self.assert_not_paused();
+            self.assert_only_moderator_or_admin();
+            self.assert_market_exists(market_id);
+            self.assert_valid_market_timing(new_end_time);
+
+            self.start_reentrancy_guard();
+
+            let mut market = self.all_predictions.entry(market_id).read();
+            
+            // Ensure market is not resolved
+            assert(!market.is_resolved, 'Cannot extend resolved market');
+            
+            // Ensure new end_time is later than current end_time
+            assert(new_end_time > market.end_time, 'New end time must be later');
+            
+            // Ensure market hasn't already ended
+            let current_time = get_block_timestamp();
+            assert(current_time < market.end_time, 'Market already ended');
+
+            market.end_time = new_end_time;
+            self.all_predictions.entry(market_id).write(market);
+
+            self.end_reentrancy_guard();
+        }
+
+        fn modify_market_details(ref self: ContractState, market_id: u256, new_description: ByteArray) {
+            self.assert_not_paused();
+            self.assert_only_moderator_or_admin();
+            self.assert_market_exists(market_id);
+
+            self.start_reentrancy_guard();
+
+            let mut market = self.all_predictions.entry(market_id).read();
+            
+            // Ensure market is not resolved
+            assert(!market.is_resolved, 'Cannot modify resolved market');
+
+            market.description = new_description;
+            self.all_predictions.entry(market_id).write(market);
+
+            self.end_reentrancy_guard();
+        }
+
+
         // ================ Enhanced Betting Functions ================
 
         fn get_protocol_token(self: @ContractState) -> ContractAddress {
