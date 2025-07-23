@@ -750,3 +750,98 @@ fn test_modify_market_details_no_update_when_description_unchanged() {
     assert(market_after_call.category == original_market.category, 'category should not change');
     assert(market_after_call.total_pool == original_market.total_pool, 'total_pool should not change');
 }
+
+#[test]
+fn test_extend_market_duration_with_time_restrictions_change() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    
+    // Create a market with initial time restrictions (1 hour min, 1 year max)
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    let original_market = contract.get_prediction(market_id);
+    
+    // Admin changes time restrictions to be more restrictive (2 hours min, 6 months max)
+    let admin_dispatcher = IAdditionalAdminDispatcher {
+        contract_address: contract.contract_address,
+    };
+    
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    let new_min_duration = 7200_u64; // 2 hours
+    let new_max_duration = 15552000_u64; // 6 months (180 days)
+    let resolution_window = 604800_u64; // 1 week (unchanged)
+    
+    admin_dispatcher.set_time_restrictions(new_min_duration, new_max_duration, resolution_window);
+    
+    // Try to extend the market duration - should validate based on original start_time
+    // Calculate a new end time that respects the NEW restrictions from the original start time
+    let market_start_time = original_market.start_time;
+    let valid_extension = market_start_time + new_min_duration + 3600; // 2 hours + 1 hour buffer
+    
+    contract.extend_market_duration(market_id, valid_extension);
+    stop_cheat_caller_address(contract.contract_address);
+    
+    let updated_market = contract.get_prediction(market_id);
+    assert(updated_market.end_time == valid_extension, 'Duration should be extended');
+    assert(updated_market.start_time == original_market.start_time, 'Start time should not change');
+}
+
+#[test]
+#[should_panic(expected: 'Market duration too short')]
+fn test_extend_market_duration_should_fail_with_new_time_restrictions() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    
+    // Create a market with initial time restrictions
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    let original_market = contract.get_prediction(market_id);
+    
+    // Admin changes time restrictions to be more restrictive
+    let admin_dispatcher = IAdditionalAdminDispatcher {
+        contract_address: contract.contract_address,
+    };
+    
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    let new_min_duration = 86400_u64; // 24 hours (very restrictive)
+    let new_max_duration = 31536000_u64; // 1 year
+    let resolution_window = 604800_u64; // 1 week
+    
+    admin_dispatcher.set_time_restrictions(new_min_duration, new_max_duration, resolution_window);
+    
+    // Try to extend the market to a duration that would be too short based on the NEW restrictions
+    // but calculated from the original start time
+    let market_start_time = original_market.start_time;
+    let invalid_extension = market_start_time + 3600; // Only 1 hour from start (less than 24h minimum)
+    
+    // This should fail because the total duration from start_time would be less than new minimum
+    contract.extend_market_duration(market_id, invalid_extension);
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+#[should_panic(expected: 'Market duration too long')]
+fn test_extend_market_duration_should_fail_with_new_max_duration_restriction() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    
+    // Create a market with initial time restrictions
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    let original_market = contract.get_prediction(market_id);
+    
+    // Admin changes time restrictions to have a lower maximum
+    let admin_dispatcher = IAdditionalAdminDispatcher {
+        contract_address: contract.contract_address,
+    };
+    
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    let new_min_duration = 3600_u64; // 1 hour
+    let new_max_duration = 86400_u64; // 1 day (much more restrictive than 1 year)
+    let resolution_window = 604800_u64; // 1 week
+    
+    admin_dispatcher.set_time_restrictions(new_min_duration, new_max_duration, resolution_window);
+    
+    // Try to extend the market to a duration that would exceed the NEW maximum
+    // calculated from the original start time
+    let market_start_time = original_market.start_time;
+    let invalid_extension = market_start_time + 172800; // 2 days from start (exceeds 1 day maximum)
+    
+    // This should fail because the total duration from start_time would exceed the new maximum
+    contract.extend_market_duration(market_id, invalid_extension);
+    stop_cheat_caller_address(contract.contract_address);
+}
