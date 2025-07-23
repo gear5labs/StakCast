@@ -7,6 +7,7 @@ pub struct PredictionMarket {
     pub category: MarketCategory,
     pub is_resolved: bool,
     pub is_open: bool,
+    pub start_time: u64,
     pub end_time: u64,
     pub status: MarketStatus,
     pub winning_choice: Option<u8>,

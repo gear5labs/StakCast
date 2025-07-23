@@ -5,7 +5,7 @@ use pragma_lib::types::DataType;
 use stakcast::admin_interface::IAdditionalAdmin;
 use stakcast::events::{
     BetPlaced, EmergencyPaused, Event, FeesCollected, MarketCreated, MarketResolved, ModeratorAdded,
-    ModeratorRemoved, WagerPlaced, WinningsCollected,
+    ModeratorRemoved, WagerPlaced, WinningsCollected, MarketEndTimeModified, MarketDetailsModified,
 };
 use stakcast::interface::IPredictionHub;
 use stakcast::types::{BetActivity, Choice, MarketStatus, Outcome, PredictionMarket, UserStake};
@@ -183,18 +183,18 @@ pub mod PredictionHub {
         }
 
 
-        fn assert_valid_market_timing(self: @ContractState, end_time: u64) {
+        fn assert_valid_market_timing(self: @ContractState, start_time: u64, end_time: u64) {
             let current_time = get_block_timestamp();
-
             let min_duration = self.min_market_duration.read();
-
             let max_duration = self.max_market_duration.read();
 
-            // Check that end_time is in the future first to avoid overflow in subtraction
-
+            // Check that end_time is in the future first
             assert(end_time > current_time, 'End time must be in future');
 
-            let duration = end_time - current_time;
+            // Check that end_time is after start_time to avoid overflow in subtraction
+            assert(end_time > start_time, 'End time must be after start');
+
+            let duration = end_time - start_time;
 
             assert(duration >= min_duration, 'Market duration too short');
 
@@ -337,7 +337,9 @@ pub mod PredictionHub {
 
             self.assert_only_moderator_or_admin();
 
-            self.assert_valid_market_timing(end_time);
+            let start_time = get_block_timestamp();
+
+            self.assert_valid_market_timing(start_time, end_time);
 
             assert(prediction_market_type <= 2, 'Invalid market type');
 
@@ -370,6 +372,7 @@ pub mod PredictionHub {
                 category: num_to_market_category(category),
                 is_resolved: false,
                 is_open: true,
+                start_time,
                 end_time,
                 status: MarketStatus::Active,
                 winning_choice: Option::None,
@@ -1068,6 +1071,48 @@ pub mod PredictionHub {
         }
         // ================ Multi-Token Support Functions ================
 
+
+        // ================ Market Update Functions ================
+
+        fn extend_market_duration(ref self: ContractState, market_id: u256, new_end_time: u64) {
+            self.assert_only_moderator_or_admin();
+            self.assert_market_exists(market_id);
+            self.assert_market_open(market_id);
+
+            let market = self.all_predictions.entry(market_id).read();
+            
+            // Use the market's original start time to validate duration constraints
+            self.assert_valid_market_timing(market.start_time, new_end_time);
+
+            let mut updated_market = market;
+            updated_market.end_time = new_end_time;
+            self.all_predictions.entry(market_id).write(updated_market);
+
+            self.emit(MarketEndTimeModified { 
+                market_id, 
+                updated_by: get_caller_address(), 
+                new_end_time 
+            });
+        }
+
+        fn modify_market_details(ref self: ContractState, market_id: u256, new_description: ByteArray) {
+            self.assert_only_moderator_or_admin();
+            self.assert_market_exists(market_id);
+
+            let mut market = self.all_predictions.entry(market_id).read();
+            
+            if market.description == new_description {
+                return;
+            }
+            
+            market.description = new_description;
+            self.all_predictions.entry(market_id).write(market);
+
+            self.emit(MarketDetailsModified { 
+                market_id, 
+                updated_by: get_caller_address() 
+            });
+        }
     }
 
 

@@ -202,7 +202,11 @@ pub fn default_create_crypto_prediction(prediction_hub: IPredictionHubDispatcher
 
 
 pub fn create_test_market(prediction_hub: IPredictionHubDispatcher) -> u256 {
-    start_cheat_caller_address(prediction_hub.contract_address, MODERATOR_ADDR());
+   create_test_market_as(prediction_hub, MODERATOR_ADDR())
+}
+
+pub fn create_test_market_as(prediction_hub: IPredictionHubDispatcher, from: ContractAddress) -> u256 {
+    start_cheat_caller_address(prediction_hub.contract_address, from);
     let mut spy = spy_events();
 
     prediction_hub
