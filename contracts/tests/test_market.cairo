@@ -716,3 +716,37 @@ fn test_modify_market_details_preserves_other_fields() {
     assert(updated_market.category == original_market.category, 'category should not change');
     assert(updated_market.total_pool == original_market.total_pool, 'total_pool should not change');
 }
+
+#[test]
+fn test_modify_market_details_no_update_when_description_unchanged() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    let original_market = contract.get_prediction(market_id);
+    let same_description = original_market.description.clone();
+    
+    let mut spy = spy_events();
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.modify_market_details(market_id, same_description.clone());
+    stop_cheat_caller_address(contract.contract_address);
+    
+    let market_after_call = contract.get_prediction(market_id);
+    
+    // Verify that no event was emitted since description didn't change
+    let events = spy.get_events();
+    assert(events.events.len() == 0, 'Should not emit event');
+    
+    // Verify that the market description is still the same
+    assert(market_after_call.description == original_market.description, 'Description should not change');
+    
+    // Verify that all other fields remain exactly the same
+    assert(market_after_call.title == original_market.title, 'Title should not change');
+    assert(market_after_call.market_id == original_market.market_id, 'Market ID should not change');
+    assert(market_after_call.is_open == original_market.is_open, 'is_open should not change');
+    assert(market_after_call.is_resolved == original_market.is_resolved, 'is_resolved should not change');
+    assert(market_after_call.end_time == original_market.end_time, 'end_time should not change');
+    assert(market_after_call.status == original_market.status, 'status should not change');
+    assert(market_after_call.choices == original_market.choices, 'choices should not change');
+    assert(market_after_call.category == original_market.category, 'category should not change');
+    assert(market_after_call.total_pool == original_market.total_pool, 'total_pool should not change');
+}

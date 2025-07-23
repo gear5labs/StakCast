@@ -1093,6 +1093,11 @@ pub mod PredictionHub {
             self.assert_market_exists(market_id);
 
             let mut market = self.all_predictions.entry(market_id).read();
+            
+            if market.description == new_description {
+                return;
+            }
+            
             market.description = new_description;
             self.all_predictions.entry(market_id).write(market);
 
