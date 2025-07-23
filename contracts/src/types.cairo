@@ -2,6 +2,7 @@
 pub struct PredictionMarket {
     pub title: ByteArray,
     pub market_id: u256,
+    pub image_url: ByteArray,
     pub description: ByteArray,
     pub choices: (Outcome, Outcome),
     pub category: MarketCategory,

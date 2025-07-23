@@ -325,6 +325,7 @@ pub mod PredictionHub {
             ref self: ContractState,
             title: ByteArray,
             description: ByteArray,
+            image_url: ByteArray,
             choices: (felt252, felt252),
             category: u8,
             end_time: u64,
@@ -365,6 +366,7 @@ pub mod PredictionHub {
             let mut market = PredictionMarket {
                 title,
                 market_id,
+                image_url,
                 description,
                 choices: (Outcome::Option1(choice_0_label), Outcome::Option2(choice_1_label)),
                 category: num_to_market_category(category),

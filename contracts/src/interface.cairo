@@ -15,6 +15,7 @@ pub trait IPredictionHub<TContractState> {
         ref self: TContractState,
         title: ByteArray,
         description: ByteArray,
+        image_url: ByteArray,
         choices: (felt252, felt252),
         category: u8,
         end_time: u64,
