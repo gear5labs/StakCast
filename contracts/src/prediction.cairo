@@ -3,6 +3,7 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 use pragma_lib::abi::{IPragmaABIDispatcher, IPragmaABIDispatcherTrait};
 use pragma_lib::types::DataType;
 use stakcast::admin_interface::IAdditionalAdmin;
+use stakcast::errors;
 use stakcast::events::{
     BetPlaced, EmergencyPaused, Event, FeesCollected, MarketCreated, MarketResolved, ModeratorAdded,
     ModeratorRemoved, WagerPlaced, WinningsCollected,
@@ -146,14 +147,14 @@ pub mod PredictionHub {
     #[generate_trait]
     impl SecurityImpl of SecurityTrait {
         fn assert_not_paused(self: @ContractState) {
-            assert(!self.is_paused.read(), 'Contract is paused');
+            assert(!self.is_paused.read(), errors::CONTRACT_IS_PAUSED);
         }
 
 
         fn assert_only_admin(self: @ContractState) {
             let caller = get_caller_address();
 
-            assert(self.admin.read() == caller, 'Only admin allowed');
+            assert(self.admin.read() == caller, errors::ONLY_ADMIN_ALLOWED);
         }
 
 
@@ -164,22 +165,22 @@ pub mod PredictionHub {
 
             let is_moderator = self.moderators.entry(caller).read();
 
-            assert(is_admin || is_moderator, 'Only admin or moderator');
+            assert(is_admin || is_moderator, errors::ONLY_ADMIN_OR_MODERATOR);
         }
 
 
         fn assert_market_creation_not_paused(self: @ContractState) {
-            assert(!self.market_creation_paused.read(), 'Market creation paused');
+            assert(!self.market_creation_paused.read(), errors::MARKET_CREATION_PAUSED);
         }
 
 
         fn assert_betting_not_paused(self: @ContractState) {
-            assert(!self.betting_paused.read(), 'Betting paused');
+            assert(!self.betting_paused.read(), errors::BETTING_PAUSED);
         }
 
 
         fn assert_resolution_not_paused(self: @ContractState) {
-            assert(!self.resolution_paused.read(), 'Resolution paused');
+            assert(!self.resolution_paused.read(), errors::RESOLUTION_PAUSED);
         }
 
 
@@ -192,13 +193,13 @@ pub mod PredictionHub {
 
             // Check that end_time is in the future first to avoid overflow in subtraction
 
-            assert(end_time > current_time, 'End time must be in future');
+            assert(end_time > current_time, errors::END_TIME_MUST_BE_IN_FUTURE);
 
             let duration = end_time - current_time;
 
-            assert(duration >= min_duration, 'Market duration too short');
+            assert(duration >= min_duration, errors::MARKET_DURATION_TOO_SHORT);
 
-            assert(duration <= max_duration, 'Market duration too long');
+            assert(duration <= max_duration, errors::MARKET_DURATION_TOO_LONG);
         }
 
 
@@ -207,38 +208,38 @@ pub mod PredictionHub {
         fn assert_market_open(self: @ContractState, market_id: u256) {
             let market = self.all_predictions.entry(market_id).read();
 
-            assert(market.is_open, 'Market is closed');
+            assert(market.is_open, errors::MARKET_IS_CLOSED);
 
-            assert(!market.is_resolved, 'Market already resolved');
+            assert(!market.is_resolved, errors::MARKET_ALREADY_RESOLVED);
 
-            assert(get_block_timestamp() < market.end_time, 'Market has ended');
+            assert(get_block_timestamp() < market.end_time, errors::MARKET_HAS_ENDED);
         }
 
 
         fn assert_market_exists(self: @ContractState, market_id: u256) {
             let market = self.all_predictions.entry(market_id).read();
 
-            assert(market.market_id == market_id, 'Market does not exist');
+            assert(market.market_id == market_id, errors::MARKET_DOES_NOT_EXIST);
         }
 
 
         /// @notice Asserts that the provided choice is valid (1 or 2)
 
         fn assert_valid_choice(self: @ContractState, choice: u8) {
-            assert(choice < 2, 'Invalid choice selected');
+            assert(choice < 2, errors::INVALID_CHOICE_SELECTED);
         }
 
 
         fn assert_valid_amount(self: @ContractState, amount: u256) {
-            assert(amount > 0, 'Amount must be positive');
+            assert(amount > 0, errors::AMOUNT_MUST_BE_POSITIVE);
 
             let min_bet = self.min_bet_amount.read();
 
             let max_bet = self.max_bet_amount.read();
 
-            assert(amount >= min_bet, 'Amount below minimum');
+            assert(amount >= min_bet, errors::AMOUNT_BELOW_MINIMUM);
 
-            assert(amount <= max_bet, 'Amount above maximum');
+            assert(amount <= max_bet, errors::AMOUNT_ABOVE_MAXIMUM);
         }
 
 
@@ -249,7 +250,7 @@ pub mod PredictionHub {
 
             let balance = token.balance_of(user);
 
-            assert(balance >= amount, 'Insufficient token balance');
+            assert(balance >= amount, errors::INSUFFICIENT_TOKEN_BALANCE);
         }
 
 
@@ -258,21 +259,21 @@ pub mod PredictionHub {
 
             let allowance = token.allowance(user, starknet::get_contract_address());
 
-            assert(allowance >= amount, 'Insufficient token allowance');
+            assert(allowance >= amount, errors::INSUFFICIENT_TOKEN_ALLOWANCE);
         }
 
 
         fn assert_market_resolved(self: @ContractState, market_id: u256) {
             let market = self.all_predictions.entry(market_id).read();
 
-            assert(market.is_resolved, 'Market is not resolved');
+            assert(market.is_resolved, errors::MARKET_IS_NOT_RESOLVED);
 
-            assert(market.winning_choice.is_some(), 'Market resolved');
+            assert(market.winning_choice.is_some(), errors::MARKET_RESOLVED);
         }
 
 
         fn start_reentrancy_guard(ref self: ContractState) {
-            assert(!self.reentrancy_guard.read(), 'Reentrant call');
+            assert(!self.reentrancy_guard.read(), errors::REENTRANT_CALL);
 
             self.reentrancy_guard.write(true);
         }
@@ -339,7 +340,7 @@ pub mod PredictionHub {
 
             self.assert_valid_market_timing(end_time);
 
-            assert(prediction_market_type <= 2, 'Invalid market type');
+            assert(prediction_market_type <= 2, errors::INVALID_MARKET_TYPE);
 
             self.start_reentrancy_guard();
 
@@ -417,7 +418,7 @@ pub mod PredictionHub {
         fn get_all_predictions_by_market_category(
             self: @ContractState, category: u8,
         ) -> Array<PredictionMarket> {
-            assert(category <= 7, 'Invalid market type!');
+            assert(category <= 7, errors::INVALID_MARKET_CATEGORY);
 
             let mut predictions = ArrayTrait::new();
 
@@ -517,7 +518,7 @@ pub mod PredictionHub {
             let success = token_dispatcher
                 .transfer_from(caller, starknet::get_contract_address(), amount);
 
-            assert(success, 'Token transfer failed');
+            assert(success, errors::TOKEN_TRANSFER_FAILED);
 
             self.assert_market_open(market_id);
 
@@ -569,7 +570,7 @@ pub mod PredictionHub {
 
                     market_stats.amount_staked_option_b += amount;
                 },
-                _ => panic!("Invalid choice selected"),
+                _ => panic!("{}", errors::INVALID_CHOICE_SELECTED),
             }
 
             user_stake.total_invested = user_stake.total_invested + amount;
@@ -608,7 +609,7 @@ pub mod PredictionHub {
 
             let user_addr: ContractAddress = get_caller_address();
 
-            assert(!self.claimed.entry((market_id, user_addr)).read(), 'Already claimed');
+            assert(!self.claimed.entry((market_id, user_addr)).read(), errors::ALREADY_CLAIMED);
 
             let market: PredictionMarket = self.all_predictions.entry(market_id).read();
 
@@ -624,7 +625,7 @@ pub mod PredictionHub {
                 user_stake.shares_b
             };
 
-            assert(user_amount_on_option_winning > 0, 'No winning stake for user');
+            assert(user_amount_on_option_winning > 0, errors::NO_WINNING_STAKE_FOR_USER);
 
             let user_reward: u256 = self.calculate_user_winnings(market_id, user_addr);
 
@@ -636,7 +637,7 @@ pub mod PredictionHub {
 
             let success = token_dispatcher.transfer(user_addr, user_reward);
 
-            assert(success, 'ERC20 transfer failed');
+            assert(success, errors::ERC20_TRANSFER_FAILED);
         }
 
 
@@ -961,15 +962,15 @@ pub mod PredictionHub {
 
             let mut market = self.all_predictions.entry(market_id).read();
 
-            assert(!market.is_resolved, 'Market already resolved');
+            assert(!market.is_resolved, errors::MARKET_ALREADY_RESOLVED);
 
             let current_time = get_block_timestamp();
 
-            assert(current_time >= market.end_time, 'Market not yet ended');
+            assert(current_time >= market.end_time, errors::MARKET_NOT_YET_ENDED);
 
             let resolution_deadline = market.end_time + self.resolution_window.read();
 
-            assert(current_time <= resolution_deadline, 'Resolution window expired');
+            assert(current_time <= resolution_deadline, errors::RESOLUTION_WINDOW_EXPIRED);
 
             market.is_resolved = true;
 
@@ -1014,7 +1015,7 @@ pub mod PredictionHub {
         fn add_moderator(ref self: ContractState, moderator: ContractAddress) {
             self.assert_only_admin();
 
-            assert(!self.moderators.entry(moderator).read(), 'Already a moderator');
+            assert(!self.moderators.entry(moderator).read(), errors::ALREADY_A_MODERATOR);
 
             self.moderators.entry(moderator).write(true);
 
@@ -1036,7 +1037,7 @@ pub mod PredictionHub {
         fn upgrade(ref self: ContractState, impl_hash: ClassHash) {
             self.assert_only_admin();
 
-            assert(impl_hash.is_non_zero(), 'Class hash cannot be zero');
+            assert(impl_hash.is_non_zero(), errors::CLASS_HASH_CANNOT_BE_ZERO);
 
             starknet::syscalls::replace_class_syscall(impl_hash).unwrap();
         }
@@ -1078,7 +1079,7 @@ pub mod PredictionHub {
         fn remove_moderator(ref self: ContractState, moderator: ContractAddress) {
             self.assert_only_admin();
 
-            assert(self.moderators.entry(moderator).read(), 'Not a moderator');
+            assert(self.moderators.entry(moderator).read(), errors::NOT_A_MODERATOR);
 
             self.moderators.entry(moderator).write(false);
 
@@ -1161,11 +1162,11 @@ pub mod PredictionHub {
         ) {
             self.assert_only_admin();
 
-            assert(min_duration > 0, 'Min duration must be positive');
+            assert(min_duration > 0, errors::MIN_DURATION_MUST_BE_POSITIVE);
 
-            assert(max_duration > min_duration, 'Max must be greater than min');
+            assert(max_duration > min_duration, errors::MAX_MUST_BE_GREATER_THAN_MIN);
 
-            assert(resolution_window > 0, 'Resolution window positive');
+            assert(resolution_window > 0, errors::RESOLUTION_WINDOW_POSITIVE);
 
             self.min_market_duration.write(min_duration);
 
@@ -1178,7 +1179,7 @@ pub mod PredictionHub {
         fn set_platform_fee(ref self: ContractState, fee_percentage: u256) {
             self.assert_only_admin();
 
-            assert(fee_percentage <= 1000, 'Fee cannot exceed 10%'); // 1000 basis points = 10%
+            assert(fee_percentage <= 1000, errors::FEE_CANNOT_EXCEED_10_PERCENT); // 1000 basis points = 10%
 
             self.platform_fee_percentage.write(fee_percentage);
         }
@@ -1297,7 +1298,7 @@ pub mod PredictionHub {
         ) {
             self.assert_only_admin();
 
-            assert(market_ids.len() == market_types.len(), 'Arrays length mismatch');
+            assert(market_ids.len() == market_types.len(), errors::ARRAYS_LENGTH_MISMATCH);
 
             let mut i = 0;
 
@@ -1331,9 +1332,9 @@ pub mod PredictionHub {
         fn set_protocol_restrictions(ref self: ContractState, min_amount: u256, max_amount: u256) {
             self.assert_only_admin();
 
-            assert(min_amount > 0, 'Min amount must be positive');
+            assert(min_amount > 0, errors::MIN_AMOUNT_MUST_BE_POSITIVE);
 
-            assert(max_amount > min_amount, 'Max must be greater than min');
+            assert(max_amount > min_amount, errors::MAX_MUST_BE_GREATER_THAN_MIN);
 
             self.min_bet_amount.write(min_amount);
 
@@ -1346,13 +1347,13 @@ pub mod PredictionHub {
         ) {
             self.assert_only_admin();
 
-            assert(amount > 0, 'Amount must be positive');
+            assert(amount > 0, errors::AMOUNT_MUST_BE_POSITIVE);
 
             let token = IERC20Dispatcher { contract_address: self.protocol_token.read() };
 
             let success = token.transfer(recipient, amount);
 
-            assert(success, 'Emergency withdrawal failed');
+            assert(success, errors::EMERGENCY_WITHDRAWAL_FAILED);
         }
     }
 
@@ -1396,7 +1397,7 @@ pub mod PredictionHub {
 
             let balance = token.balance_of(user);
 
-            assert(balance >= amount, 'Insufficient token balance');
+            assert(balance >= amount, errors::INSUFFICIENT_TOKEN_BALANCE);
         }
 
 
@@ -1410,21 +1411,21 @@ pub mod PredictionHub {
 
             let allowance = token.allowance(user, starknet::get_contract_address());
 
-            assert(allowance >= amount, 'Insufficient token allowance');
+            assert(allowance >= amount, errors::INSUFFICIENT_TOKEN_ALLOWANCE);
         }
 
 
         fn choice_num_to_outcome(self: @ContractState, market_id: u256, choice: u8) -> Outcome {
             let market = self.all_predictions.entry(market_id).read();
 
-            assert(choice <= 1, 'Invalid Choice');
+            assert(choice <= 1, errors::INVALID_CHOICE);
 
             let (outcome1, outcome2) = market.choices;
 
             match choice {
                 0 => outcome1,
                 1 => outcome2,
-                _ => panic!("invalid choice"),
+                _ => panic!("{}", errors::INVALID_CHOICE_PANIC),
             }
         }
 
@@ -1442,7 +1443,7 @@ pub mod PredictionHub {
 
             // 2. Ensure the market is resolved and has a winning choice.
 
-            assert(market.is_resolved, 'Market not resolved');
+            assert(market.is_resolved, errors::MARKET_NOT_RESOLVED);
 
             let winning_choice = market.winning_choice.unwrap();
 
