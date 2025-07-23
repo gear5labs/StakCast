@@ -1072,25 +1072,15 @@ pub mod PredictionHub {
         // ================ Market Update Functions ================
 
         fn extend_market_duration(ref self: ContractState, market_id: u256, new_end_time: u64) {
-            // Check authorization - only moderators or admin can update markets
             self.assert_only_moderator_or_admin();
-
-            // Ensure the market exists
             self.assert_market_exists(market_id);
-
-            // Validate the new end time
+            self.assert_market_open(market_id);
             self.assert_valid_market_timing(new_end_time);
 
-            // Read the current market
             let mut market = self.all_predictions.entry(market_id).read();
-
-            // Update the end time
             market.end_time = new_end_time;
-
-            // Write the updated market back to storage
             self.all_predictions.entry(market_id).write(market);
 
-            // Emit event
             self.emit(MarketDurationExtended { 
                 market_id, 
                 updated_by: get_caller_address(), 

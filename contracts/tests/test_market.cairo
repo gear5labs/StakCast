@@ -7,7 +7,7 @@ use stakcast::admin_interface::{IAdditionalAdminDispatcher, IAdditionalAdminDisp
 use stakcast::interface::{IPredictionHubDispatcher, IPredictionHubDispatcherTrait};
 use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
 use crate::test_utils::{
-    ADMIN_ADDR, FEE_RECIPIENT_ADDR, MODERATOR_ADDR, USER1_ADDR, USER2_ADDR, create_test_market,
+    ADMIN_ADDR, FEE_RECIPIENT_ADDR, MODERATOR_ADDR, USER1_ADDR, USER2_ADDR, create_test_market, create_test_market_as,
     default_create_crypto_prediction, default_create_predictions, setup_test_environment,
 };
 
@@ -371,4 +371,184 @@ fn test_get_market_status() {
 fn test_get_market_should_panic_if_non_existent_market() {
     let (contract, _admin_contract, _token) = setup_test_environment();
     contract.get_prediction(999);
+}
+
+#[test]
+#[should_panic(expected: 'Only admin or moderator')]
+fn test_extend_market_duration_should_panic_if_not_admin_nor_moderator() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    contract.extend_market_duration(999, 1000);
+}
+
+#[test]
+fn test_extend_market_duration_success_by_admin() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    let original_market = contract.get_prediction(market_id);
+    let new_end_time = original_market.end_time + 3600;
+    
+    let mut spy = spy_events();
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.extend_market_duration(market_id, new_end_time);
+    stop_cheat_caller_address(contract.contract_address);
+    
+    let updated_market = contract.get_prediction(market_id);
+    assert(updated_market.end_time == new_end_time, 'End time not updated');
+    
+    // Verify that an event was emitted from the correct contract
+    let events = spy.get_events();
+    assert(events.events.len() == 1, 'Should emit exactly 1 event');
+    
+    let (event_from, event_data) = events.events.at(0);
+    assert(*event_from == contract.contract_address, 'Event from wrong contract');
+    
+    assert((*event_data.data.at(0)).into() == market_id, 'Wrong market_id in event');
+    assert(*event_data.data.at(1) == 0, 'Wrong updated_by in event');
+    assert(*event_data.data.at(2) == ADMIN_ADDR().into(), 'Wrong updated_by in event');
+    assert(*event_data.data.at(3) == new_end_time.into(), 'Wrong new_end_time in event');
+}
+
+#[test]
+fn test_extend_market_duration_success_by_moderator() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    let original_market = contract.get_prediction(market_id);
+    let new_end_time = original_market.end_time + 7200;
+    
+    let mut spy = spy_events();
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    contract.extend_market_duration(market_id, new_end_time);
+    stop_cheat_caller_address(contract.contract_address);
+    
+    let updated_market = contract.get_prediction(market_id);
+    assert(updated_market.end_time == new_end_time, 'End time not updated');
+
+    let events = spy.get_events();
+    assert(events.events.len() == 1, 'Should emit exactly 1 event');
+    
+    let (event_from, event_data) = events.events.at(0);
+    assert(*event_from == contract.contract_address, 'Event from wrong contract');
+    
+    assert((*event_data.data.at(0)).into() == market_id, 'Wrong market_id in event');
+    assert(*event_data.data.at(1) == 0, 'Wrong updated_by in event');
+    assert(*event_data.data.at(2) == MODERATOR_ADDR().into(), 'Wrong updated_by in event');
+    assert(*event_data.data.at(3) == new_end_time.into(), 'Wrong new_end_time in event');
+}
+
+#[test]
+#[should_panic(expected: 'Market does not exist')]
+fn test_extend_market_duration_should_panic_if_market_does_not_exist() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    let future_time = get_block_timestamp() + 86400;
+    contract.extend_market_duration(999, future_time); // Non-existent market
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+#[should_panic(expected: 'Market is closed')]
+fn test_extend_market_duration_should_panic_if_market_is_closed() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    
+    // Resolve the market to close it
+    let market = contract.get_prediction(market_id);
+    start_cheat_block_timestamp(contract.contract_address, market.end_time + 1);
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.resolve_prediction(market_id, 0);
+    stop_cheat_caller_address(contract.contract_address);
+    
+    let new_end_time = market.end_time + 3600;
+ 
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.extend_market_duration(market_id, new_end_time);
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+#[should_panic(expected: 'Market has ended')]
+fn test_extend_market_duration_should_panic_if_market_has_ended() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    
+    let market = contract.get_prediction(market_id);
+    start_cheat_block_timestamp(contract.contract_address, market.end_time + 1);
+    
+    let new_end_time = market.end_time + 3600;
+ 
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.extend_market_duration(market_id, new_end_time);
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+#[should_panic(expected: 'End time must be in future')]
+fn test_extend_market_duration_should_panic_if_new_end_time_is_in_past() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    let block_timestamp = 3600;
+    
+    start_cheat_block_timestamp(contract.contract_address, block_timestamp);
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.extend_market_duration(market_id, block_timestamp - 1000);
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+#[should_panic(expected: 'Market duration too short')]
+fn test_extend_market_duration_should_panic_if_new_duration_too_short() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    
+    let short_time = get_block_timestamp() + 1800; // 30 minutes (less than 1 hour minimum)
+ 
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.extend_market_duration(market_id, short_time);
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+#[should_panic(expected: 'Market duration too long')]
+fn test_extend_market_duration_should_panic_if_new_duration_too_long() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+
+    let long_time = get_block_timestamp() + 40000000; // More than 1 year maximum
+    
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.extend_market_duration(market_id, long_time);
+    stop_cheat_caller_address(contract.contract_address);
+    
+}
+
+#[test]
+fn test_extend_market_duration_multiple_extensions() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    
+    let original_market = contract.get_prediction(market_id);
+    let first_extension = original_market.end_time + 3600;
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.extend_market_duration(market_id, first_extension);
+    stop_cheat_caller_address(contract.contract_address);
+    
+    let market_after_first = contract.get_prediction(market_id);
+    assert(market_after_first.end_time == first_extension, 'First extension failed');
+    
+    let second_extension = first_extension + 7200;
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.extend_market_duration(market_id, second_extension);
+    stop_cheat_caller_address(contract.contract_address);
+    
+    let market_after_second = contract.get_prediction(market_id);
+    assert(market_after_second.end_time == second_extension, 'Second extension failed');
 }
