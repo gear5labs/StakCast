@@ -5,7 +5,7 @@ use pragma_lib::types::DataType;
 use stakcast::admin_interface::IAdditionalAdmin;
 use stakcast::events::{
     BetPlaced, EmergencyPaused, Event, FeesCollected, MarketCreated, MarketResolved, ModeratorAdded,
-    ModeratorRemoved, WagerPlaced, WinningsCollected, MarketDurationExtended, MarketDetailsModified,
+    ModeratorRemoved, WagerPlaced, WinningsCollected, MarketEndTimeModified, MarketDetailsModified,
 };
 use stakcast::interface::IPredictionHub;
 use stakcast::types::{BetActivity, Choice, MarketStatus, Outcome, PredictionMarket, UserStake};
@@ -1081,7 +1081,7 @@ pub mod PredictionHub {
             market.end_time = new_end_time;
             self.all_predictions.entry(market_id).write(market);
 
-            self.emit(MarketDurationExtended { 
+            self.emit(MarketEndTimeModified { 
                 market_id, 
                 updated_by: get_caller_address(), 
                 new_end_time 

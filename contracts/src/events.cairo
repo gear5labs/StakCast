@@ -69,7 +69,7 @@ pub struct BetPlaced {
 }
 
 #[derive(Drop, starknet::Event)]
-pub struct MarketDurationExtended {
+pub struct MarketEndTimeModified {
     pub market_id: u256,
     pub updated_by: ContractAddress,
     pub new_end_time: u64,
@@ -94,6 +94,6 @@ pub enum Event {
     FeesCollected: FeesCollected,
     WinningsCollected: WinningsCollected,
     BetPlaced: BetPlaced,
-    MarketDurationExtended: MarketDurationExtended,
+    MarketEndTimeModified: MarketEndTimeModified,
     MarketDetailsModified: MarketDetailsModified,
 }
