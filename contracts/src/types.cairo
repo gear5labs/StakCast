@@ -80,6 +80,8 @@ pub enum MarketStatus {
 pub struct UserStake {
     pub shares_a: u256, // Fixed-point shares
     pub shares_b: u256, // Fixed-point shares
+    pub total_amount_a: u256, // Fixed-point amount
+    pub total_amount_b: u256, // Fixed-point amount
     pub total_invested: u256 // Fixed-point amount
 }
 
