@@ -1089,22 +1089,13 @@ pub mod PredictionHub {
         }
 
         fn modify_market_details(ref self: ContractState, market_id: u256, new_description: ByteArray) {
-            // Check authorization - only moderators or admin can update markets
             self.assert_only_moderator_or_admin();
-
-            // Ensure the market exists
             self.assert_market_exists(market_id);
 
-            // Read the current market
             let mut market = self.all_predictions.entry(market_id).read();
-
-            // Update the description
             market.description = new_description;
-
-            // Write the updated market back to storage
             self.all_predictions.entry(market_id).write(market);
 
-            // Emit event
             self.emit(MarketDetailsModified { 
                 market_id, 
                 updated_by: get_caller_address() 

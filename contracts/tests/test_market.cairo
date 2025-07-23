@@ -552,3 +552,167 @@ fn test_extend_market_duration_multiple_extensions() {
     let market_after_second = contract.get_prediction(market_id);
     assert(market_after_second.end_time == second_extension, 'Second extension failed');
 }
+
+#[test]
+fn test_modify_market_details_success_by_admin() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    let original_market = contract.get_prediction(market_id);
+    let new_description = "Updated market description by admin";
+    
+    let mut spy = spy_events();
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.modify_market_details(market_id, new_description.clone());
+    stop_cheat_caller_address(contract.contract_address);
+    
+    let updated_market = contract.get_prediction(market_id);
+    assert(updated_market.description == new_description, 'Description not updated');
+    assert(updated_market.title == original_market.title, 'Title should not change');
+    assert(updated_market.market_id == original_market.market_id, 'Market ID should not change');
+    
+    // Verify that an event was emitted
+    let events = spy.get_events();
+    assert(events.events.len() == 1, 'Should emit exactly 1 event');
+    
+    let (event_from, event_data) = events.events.at(0);
+    assert(*event_from == contract.contract_address, 'Event from wrong contract');
+    
+    assert((*event_data.data.at(0)).into() == market_id, 'Wrong market_id in event');
+    assert(*event_data.data.at(1) == 0, 'Wrong updated_by in event');
+    assert(*event_data.data.at(2) == ADMIN_ADDR().into(), 'Wrong updated_by in event');
+}
+
+#[test]
+fn test_modify_market_details_success_by_moderator() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    let original_market = contract.get_prediction(market_id);
+    let new_description = "Updated market description by moderator";
+    
+    let mut spy = spy_events();
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    contract.modify_market_details(market_id, new_description.clone());
+    stop_cheat_caller_address(contract.contract_address);
+    
+    let updated_market = contract.get_prediction(market_id);
+    assert(updated_market.description == new_description, 'Description not updated');
+    assert(updated_market.title == original_market.title, 'Title should not change');
+    assert(updated_market.market_id == original_market.market_id, 'Market ID should not change');
+
+    let events = spy.get_events();
+    assert(events.events.len() == 1, 'Should emit exactly 1 event');
+    
+    let (event_from, event_data) = events.events.at(0);
+    assert(*event_from == contract.contract_address, 'Event from wrong contract');
+    
+    assert((*event_data.data.at(0)).into() == market_id, 'Wrong market_id in event');
+    assert(*event_data.data.at(1) == 0, 'Wrong updated_by in event');
+    assert(*event_data.data.at(2) == MODERATOR_ADDR().into(), 'Wrong updated_by in event');
+}
+
+#[test]
+#[should_panic(expected: 'Only admin or moderator')]
+fn test_modify_market_details_should_panic_if_not_admin_nor_moderator() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    let new_description = "This should fail";
+
+    start_cheat_caller_address(contract.contract_address, USER1_ADDR());
+    contract.modify_market_details(market_id, new_description);
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+#[should_panic(expected: 'Market does not exist')]
+fn test_modify_market_details_should_panic_if_market_does_not_exist() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.modify_market_details(999, "This should fail"); // Non-existent market
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+fn test_modify_market_details_multiple_updates() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    let first_description = "First updated description";
+    let second_description = "Second updated description";
+    
+    // First update by admin
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.modify_market_details(market_id, first_description.clone());
+    stop_cheat_caller_address(contract.contract_address);
+    
+    let market_after_first = contract.get_prediction(market_id);
+    assert(market_after_first.description == first_description, 'First update failed');
+    
+    // Second update by moderator
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    contract.modify_market_details(market_id, second_description.clone());
+    stop_cheat_caller_address(contract.contract_address);
+    
+    let market_after_second = contract.get_prediction(market_id);
+    assert(market_after_second.description == second_description, 'Second update failed');
+}
+
+#[test]
+fn test_modify_market_details_empty_description() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    let empty_description = "";
+    
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.modify_market_details(market_id, empty_description.clone());
+    stop_cheat_caller_address(contract.contract_address);
+    
+    let updated_market = contract.get_prediction(market_id);
+    assert(updated_market.description == empty_description, 'Empty description not set');
+}
+
+#[test]
+fn test_modify_market_details_very_long_description() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    let long_description = "This is a very long description that contains many characters to test if the function can handle longer text inputs without any issues. It should work fine as ByteArray can handle large strings.";
+    
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.modify_market_details(market_id, long_description.clone());
+    stop_cheat_caller_address(contract.contract_address);
+    
+    let updated_market = contract.get_prediction(market_id);
+    assert(updated_market.description == long_description, 'Long description not set');
+}
+
+#[test]
+fn test_modify_market_details_preserves_other_fields() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+    
+    let market_id = create_test_market_as(contract, ADMIN_ADDR());
+    let original_market = contract.get_prediction(market_id);
+    let new_description = "New description to test field preservation";
+    
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.modify_market_details(market_id, new_description.clone());
+    stop_cheat_caller_address(contract.contract_address);
+    
+    let updated_market = contract.get_prediction(market_id);
+    
+    // Check that only description changed
+    assert(updated_market.description == new_description, 'Description not updated');
+    assert(updated_market.title == original_market.title, 'Title should not change');
+    assert(updated_market.market_id == original_market.market_id, 'Market ID should not change');
+    assert(updated_market.is_open == original_market.is_open, 'is_open should not change');
+    assert(updated_market.is_resolved == original_market.is_resolved, 'is_resolved should not change');
+    assert(updated_market.end_time == original_market.end_time, 'end_time should not change');
+    assert(updated_market.status == original_market.status, 'status should not change');
+    assert(updated_market.choices == original_market.choices, 'choices should not change');
+    assert(updated_market.category == original_market.category, 'category should not change');
+    assert(updated_market.total_pool == original_market.total_pool, 'total_pool should not change');
+}
