@@ -39,7 +39,7 @@ fn test_buy_share_success() {
     // user 1 buys 10 shares of option 1
     let user1_amount = turn_number_to_precision_point(10);
     let user2_amount = turn_number_to_precision_point(20);
-    let user3_amount = turn_number_to_precision_point(40);
+    let user3_amount = turn_number_to_precision_point(10);
 
     let user1_balance_before = _token.balance_of(USER1_ADDR());
     let contract_balance_before = _token.balance_of(contract.contract_address);
@@ -78,6 +78,7 @@ fn test_buy_share_success() {
 
     // user 3 buys 40 shares of option 2
     let user3_balance_before = _token.balance_of(USER3_ADDR());
+    println!("user 3 balance before: {}", user3_balance_before);
     let contract_balance_before3 = _token.balance_of(contract.contract_address);
     start_cheat_caller_address(contract.contract_address, USER3_ADDR());
     contract.buy_shares(market_id, 1, user3_amount);

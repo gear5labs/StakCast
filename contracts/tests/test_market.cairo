@@ -173,7 +173,16 @@ fn test_create_market_should_panic_if_end_time_is_too_short() {
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR().into());
     let small_time = get_block_timestamp() + 10;
     contract
-        .create_predictions("Market 2", "Description 2", "https://pinata.com/image.png", ('True', 'False'), 1, small_time, 0, None);
+        .create_predictions(
+            "Market 2",
+            "Description 2",
+            "https://pinata.com/image.png",
+            ('True', 'False'),
+            1,
+            small_time,
+            0,
+            None,
+        );
     stop_cheat_caller_address(contract.contract_address);
 }
 
@@ -184,7 +193,16 @@ fn test_create_market_should_panic_if_end_time_is_too_long() {
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR().into());
     let large_time = get_block_timestamp() + 1000000000;
     contract
-        .create_predictions("Market 2", "Description 2", "https://pinata.com/image.png", ('True', 'False'), 0, large_time, 0, None);
+        .create_predictions(
+            "Market 2",
+            "Description 2",
+            "https://pinata.com/image.png",
+            ('True', 'False'),
+            0,
+            large_time,
+            0,
+            None,
+        );
     stop_cheat_caller_address(contract.contract_address);
 }
 
@@ -310,7 +328,14 @@ fn test_creat_market_multiple_moderators_can_create_markets() {
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
     contract
         .create_predictions(
-            "Moderator 1 Market", "Market by moderator 1", "https://pinata.com/image.png", ('Yes', 'No'), 3, future_time, 0, None,
+            "Moderator 1 Market",
+            "Market by moderator 1",
+            "https://pinata.com/image.png",
+            ('Yes', 'No'),
+            3,
+            future_time,
+            0,
+            None,
         );
 
     let mut market1_id = 0;

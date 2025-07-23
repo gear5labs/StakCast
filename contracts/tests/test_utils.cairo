@@ -98,12 +98,16 @@ pub fn setup_test_environment() -> (
     // Setup token balances and allowances
     start_cheat_caller_address(token.contract_address, USER1_ADDR());
     token.transfer(USER2_ADDR(), 500000000000000000000000); // 500k tokens to USER2
-
+    token.transfer(USER3_ADDR(), 500000000000000000000000); // 500k tokens to USER3
     token.approve(prediction_hub.contract_address, 1000000000000000000000000); // 1M approval
     stop_cheat_caller_address(token.contract_address);
 
     start_cheat_caller_address(token.contract_address, USER2_ADDR());
     token.approve(prediction_hub.contract_address, 500000000000000000000000); // 500k approval
+    stop_cheat_caller_address(token.contract_address);
+
+    start_cheat_caller_address(token.contract_address, USER3_ADDR());
+    token.approve(prediction_hub.contract_address, 1000000000000000000000000); // 1M approval
     stop_cheat_caller_address(token.contract_address);
 
     (prediction_hub, admin_interface, token)
