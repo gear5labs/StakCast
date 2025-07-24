@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Welcome to <%= companyName %></title>
+		<style>
+			body {
+				font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+				margin: 0;
+				padding: 0;
+				background-color: #f8f9fa;
+				line-height: 1.6;
+			}
+			.email-container {
+				max-width: 600px;
+				margin: 40px auto;
+				background: #ffffff;
+				border-radius: 8px;
+				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+				overflow: hidden;
+			}
+			.header {
+				background: linear-gradient(135deg, #28a745, #20c997);
+				color: white;
+				padding: 30px;
+				text-align: center;
+			}
+			.header h1 {
+				margin: 0;
+				font-size: 24px;
+				font-weight: 600;
+			}
+			.content {
+				padding: 40px 30px;
+			}
+			.greeting {
+				font-size: 18px;
+				color: #333;
+				margin-bottom: 20px;
+			}
+			.message {
+				color: #666;
+				margin-bottom: 30px;
+				font-size: 16px;
+			}
+			.welcome-button {
+				display: inline-block;
+				background: linear-gradient(135deg, #007bff, #0056b3);
+				color: white;
+				text-decoration: none;
+				padding: 15px 30px;
+				border-radius: 6px;
+				font-weight: 600;
+				font-size: 16px;
+				margin: 20px 0;
+				transition: transform 0.2s;
+			}
+			.welcome-button:hover {
+				transform: translateY(-2px);
+			}
+			.features {
+				background-color: #f8f9fa;
+				border-radius: 6px;
+				padding: 20px;
+				margin: 30px 0;
+			}
+			.footer {
+				background-color: #f8f9fa;
+				padding: 20px 30px;
+				text-align: center;
+				color: #666;
+				font-size: 14px;
+			}
+			.footer a {
+				color: #007bff;
+				text-decoration: none;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="email-container">
+			<div class="header">
+				<h1>Welcome to <%= companyName %>!</h1>
+			</div>
+
+			<div class="content">
+				<div class="greeting">Hi <%= name %>,</div>
+
+				<div class="message">
+					Welcome to <%= companyName %>! We're excited to have you join our community of prediction market enthusiasts.
+					Your account has been successfully created and you're ready to start exploring.
+				</div>
+
+				<div style="text-align: center">
+					<a href="http://localhost:3000/dashboard" class="welcome-button">Get Started</a>
+				</div>
+
+				<div class="features">
+					<h3>What you can do with <%= companyName %>:</h3>
+					<ul>
+						<li>Create and participate in prediction markets</li>
+						<li>Trade on various topics and events</li>
+						<li>Earn rewards for accurate predictions</li>
+						<li>Connect with other traders and analysts</li>
+					</ul>
+				</div>
+
+				<div class="message">
+					If you have any questions or need help getting started, don't hesitate to reach out to our support team.
+				</div>
+			</div>
+
+			<div class="footer">
+				<p>Best regards,<br />The <%= companyName %> Team</p>
+				<p>Need help? Contact us at <a href="mailto:support@stakcast.com">support@stakcast.com</a></p>
+			</div>
+		</div>
+	</body>
+</html>
