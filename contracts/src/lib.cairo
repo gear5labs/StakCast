@@ -1,4 +1,5 @@
 pub mod admin_interface;
+pub mod errors;
 pub mod events;
 pub mod interface;
 pub mod prediction;
