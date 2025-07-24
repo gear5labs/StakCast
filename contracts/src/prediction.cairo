@@ -501,7 +501,6 @@ pub mod PredictionHub {
             }
         }
 
-
         fn buy_shares(ref self: ContractState, market_id: u256, choice: u8, amount: u256) {
             let caller = get_caller_address();
 

@@ -599,7 +599,7 @@ export default [
             type: "(core::integer::u256, core::integer::u256)",
           },
         ],
-        state_mutability: "external",
+        state_mutability: "view",
       },
       {
         name: "buy_shares",
@@ -639,7 +639,7 @@ export default [
             type: "stakcast::types::UserStake",
           },
         ],
-        state_mutability: "external",
+        state_mutability: "view",
       },
       {
         name: "claim",

@@ -4,7 +4,7 @@
 		"module": "commonjs",
 		"lib": ["es2020"], // Added lib to match target
 		"rootDir": "./src", // Added explicit root directory
-		"typeRoots": ["./node_modules/@types", "./src/@types"],
+		"typeRoots": ["./node_modules/**/@types", "./src/@types"],
 		"outDir": "./dist",
 		"removeComments": true,
 		"esModuleInterop": true,

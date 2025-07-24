@@ -36,7 +36,6 @@ const UserPredictionsSection = () => {
     abi,
     address: STAKCAST_CONTRACT_ADDRESS as "0x",
   });
-
   const handleCollectWinnings = async (prediction: UserPrediction) => {
     if (!contract) return;
     setClaiming(prediction.market.market_id.toString());
@@ -151,15 +150,10 @@ const UserPredictionsSection = () => {
         <div className="flex items-center gap-2">
           <Wallet className="w-4 h-4 text-slate-500" />
           <span className="font-semibold text-slate-900 dark:text-white">
-            {formatAmount(
-              p.userBets
-                .reduce(
-                  (sum, bet) =>
-                    sum + (bet.stake?.amount ? Number(bet.stake.amount) : 0),
-                  0
-                )
-                .toString()
-            ).toString()}
+            {p.total_invested.toFixed(2)}
+          </span>
+          <span className="ml-[2px] font-semibold text-slate-900 dark:text-white">
+            STK
           </span>
         </div>
       ),

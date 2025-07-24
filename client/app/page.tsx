@@ -9,7 +9,7 @@ import Header from "./components/layout/Header";
 import { useMarketData } from "./hooks/useMarket";
 import { Market } from "./types";
 import { useAppContext } from "./context/appContext";
-import {  normalizeWEI } from "./utils/utils";
+
 import Modal from "./components/ui/Modal";
 import PurchaseSection from "./components/sections/PurchaseSection";
 // import { useState } from "react";
@@ -213,7 +213,7 @@ const Home = () => {
                         },
                       ]}
                       totalRevenue={
-                        normalizeWEI(market?.total_pool.toString()) || "$0"
+                       market?.total_pool.toString()|| "$0"
                       }
                       onClick={() => handleMarketClick(market)}
                       isClosed={isClosed}

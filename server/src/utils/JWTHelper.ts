@@ -11,13 +11,13 @@ class JwtHelper {
 
 	public generateAccessToken(userId: string) {
 		return jwt.sign({ userId }, accessTokenSecret, {
-			expiresIn: config.JWT.accessToken.exp,
+			expiresIn: config.JWT.accessToken.exp as '15m',
 		});
 	}
 
 	public generateRefreshToken(userId: string) {
 		return jwt.sign({ userId }, refreshTokenSecret, {
-			expiresIn: config.JWT.refreshToken.exp,
+			expiresIn: config.JWT.refreshToken.exp as '15m',
 		});
 	}
 

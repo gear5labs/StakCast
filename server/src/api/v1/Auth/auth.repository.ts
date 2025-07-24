@@ -32,9 +32,10 @@ export default class AuthRepository {
 	}
 
 	async removeRefreshToken(userId: string): Promise<void> {
-		await this.authRepository.update(
-			{ userId },
-			{ refreshToken: undefined, refreshTokenExpires: undefined }
-		);
+		await this.authRepository.update({ userId }, { refreshToken: undefined, refreshTokenExpires: undefined });
+	}
+
+	async save(auth: Auth): Promise<Auth> {
+		return this.authRepository.save(auth);
 	}
 }

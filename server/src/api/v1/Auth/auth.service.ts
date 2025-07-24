@@ -157,4 +157,5 @@ export default class AuthService {
     const tokens = await this.generateTokens(user.id);
     return { user, ...tokens };
   }
+  
 }
