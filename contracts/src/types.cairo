@@ -75,6 +75,7 @@ pub enum MarketStatus {
     Active,
     Locked,
     Resolved: Outcome,
+    Closed,
 }
 
 #[derive(Drop, Copy, Serde, starknet::Store, Clone)]
