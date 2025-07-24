@@ -4,8 +4,8 @@ use pragma_lib::abi::{IPragmaABIDispatcher, IPragmaABIDispatcherTrait};
 use pragma_lib::types::DataType;
 use stakcast::admin_interface::IAdditionalAdmin;
 use stakcast::events::{
-    BetPlaced, EmergencyPaused, Event, FeesCollected, MarketCreated, MarketResolved, ModeratorAdded,
-    ModeratorRemoved, WagerPlaced, WinningsCollected,
+    BetPlaced, EmergencyPaused, Event, FeesCollected, MarketCreated, MarketExtended, MarketModified,
+    MarketResolved, ModeratorAdded, ModeratorRemoved, WagerPlaced, WinningsCollected,
 };
 use stakcast::interface::IPredictionHub;
 use stakcast::types::{BetActivity, Choice, MarketStatus, Outcome, PredictionMarket, UserStake};
@@ -590,6 +590,46 @@ pub mod PredictionHub {
 
             // End reentrancy guard
             self.end_reentrancy_guard();
+        }
+
+
+        fn extend_market_duration(
+            ref self: ContractState, market_id: u256, new_end_time: u64
+        ) {
+            self.assert_only_moderator_or_admin();
+            self.assert_market_exists(market_id);
+
+            let mut market = self.all_predictions.entry(market_id).read();
+
+            assert(!market.is_resolved, 'Market already resolved');
+            assert(new_end_time > market.end_time, 'New end time must be later');
+
+            let current_time = get_block_timestamp();
+            assert(new_end_time > current_time, 'End time must be in future');
+
+            let max_duration = self.max_market_duration.read();
+            let new_duration_from_now = new_end_time - current_time;
+            assert(new_duration_from_now <= max_duration, 'Market duration too long');
+
+            market.end_time = new_end_time;
+            self.all_predictions.entry(market_id).write(market);
+
+            self.emit(MarketExtended { market_id, new_end_time });
+        }
+
+        fn modify_market_details(
+            ref self: ContractState, market_id: u256, new_description: ByteArray
+        ) {
+            self.assert_only_moderator_or_admin();
+            self.assert_market_exists(market_id);
+
+            let mut market = self.all_predictions.entry(market_id).read();
+            assert(!market.is_resolved, 'Market already resolved');
+
+            market.description = new_description;
+            self.all_predictions.entry(market_id).write(market);
+
+            self.emit(MarketModified { market_id });
         }
 
 

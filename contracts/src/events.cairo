@@ -68,6 +68,19 @@ pub struct BetPlaced {
     pub amount: u256,
 }
 
+#[derive(Drop, starknet::Event)]
+pub struct MarketExtended {
+    #[key]
+    pub market_id: u256,
+    pub new_end_time: u64,
+}
+
+#[derive(Drop, starknet::Event)]
+pub struct MarketModified {
+    #[key]
+    pub market_id: u256,
+}
+
 // ================ Main Event Enum ================
 
 #[derive(Drop, starknet::Event)]
@@ -81,4 +94,6 @@ pub enum Event {
     FeesCollected: FeesCollected,
     WinningsCollected: WinningsCollected,
     BetPlaced: BetPlaced,
+    MarketExtended: MarketExtended,
+    MarketModified: MarketModified,
 }
