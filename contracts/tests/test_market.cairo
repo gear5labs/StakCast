@@ -403,3 +403,201 @@ fn test_get_market_should_panic_if_non_existent_market() {
     let (contract, _admin_contract, _token) = setup_test_environment();
     contract.get_prediction(999);
 }
+
+#[test]
+fn test_extend_market_duration_success() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    // Create a market (create_test_market handles its own caller address)
+    let market_id = create_test_market(contract);
+
+    // Get original market details
+    let original_market = contract.get_prediction(market_id);
+    let original_end_time = original_market.end_time;
+
+    // Extend the market duration by 1 day (86400 seconds) as moderator
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let new_end_time = original_end_time + 86400;
+
+    let mut spy = spy_events();
+    contract.extend_market_duration(market_id, new_end_time);
+
+    // Verify the market was updated
+    let updated_market = contract.get_prediction(market_id);
+    assert(updated_market.end_time == new_end_time, 'End time not updated');
+
+    // Verify event was emitted
+    let events = spy.get_events();
+    assert(events.events.len() == 1, 'Should emit 1 event');
+
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+fn test_extend_market_duration_admin_access() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    // Create a market (create_test_market handles its own caller address)
+    let market_id = create_test_market(contract);
+
+    // Extend as admin
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    let original_market = contract.get_prediction(market_id);
+    let new_end_time = original_market.end_time + 86400;
+
+    contract.extend_market_duration(market_id, new_end_time);
+
+    let updated_market = contract.get_prediction(market_id);
+    assert(updated_market.end_time == new_end_time, 'Admin should be able to extend');
+
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+#[should_panic(expected: ('Only admin or moderator',))]
+fn test_extend_market_duration_unauthorized() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    // Create a market (create_test_market handles its own caller address)
+    let market_id = create_test_market(contract);
+
+    // Try to extend as regular user (should fail)
+    start_cheat_caller_address(contract.contract_address, USER1_ADDR());
+    let market = contract.get_prediction(market_id);
+    let new_end_time = market.end_time + 86400;
+
+    contract.extend_market_duration(market_id, new_end_time);
+}
+
+#[test]
+#[should_panic(expected: ('Market does not exist',))]
+fn test_extend_market_duration_nonexistent_market() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    let future_time = get_block_timestamp() + 86400;
+    contract.extend_market_duration(999, future_time);
+}
+
+#[test]
+#[should_panic(expected: ('New end time must be later',))]
+fn test_extend_market_duration_earlier_time() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let market = contract.get_prediction(market_id);
+    let earlier_time = market.end_time - 3600; // 1 hour earlier
+
+    contract.extend_market_duration(market_id, earlier_time);
+}
+
+#[test]
+#[should_panic(expected: ('End time must be in future',))]
+fn test_extend_market_duration_past_time() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let market = contract.get_prediction(market_id);
+
+    start_cheat_block_timestamp(contract.contract_address, market.end_time + 86400); // Move 1 day forward
+    let past_time = market.end_time + 3600; // 1 hour after market end, but still in the past from current time
+
+    contract.extend_market_duration(market_id, past_time);
+}
+
+#[test]
+fn test_modify_market_details_success() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let new_description = "Updated market description";
+
+    let mut spy = spy_events();
+    contract.modify_market_details(market_id, new_description);
+
+    let _updated_market = contract.get_prediction(market_id);
+
+    let events = spy.get_events();
+    assert(events.events.len() == 1, 'Should emit 1 event');
+
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+fn test_modify_market_details_admin_access() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    let new_description = "Admin updated description";
+
+    contract.modify_market_details(market_id, new_description);
+
+    let _updated_market = contract.get_prediction(market_id);
+
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+#[should_panic(expected: ('Only admin or moderator',))]
+fn test_modify_market_details_unauthorized() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    start_cheat_caller_address(contract.contract_address, USER1_ADDR());
+    let new_description = "Unauthorized modification";
+
+    contract.modify_market_details(market_id, new_description);
+}
+
+#[test]
+#[should_panic(expected: ('Market does not exist',))]
+fn test_modify_market_details_nonexistent_market() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    let new_description = "Some description";
+    contract.modify_market_details(999, new_description);
+}
+
+#[test]
+#[should_panic(expected: ('Market already resolved',))]
+fn test_extend_market_duration_resolved_market() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let market = contract.get_prediction(market_id);
+    start_cheat_block_timestamp(contract.contract_address, market.end_time + 1);
+
+    contract.resolve_prediction(market_id, 0);
+
+    let new_end_time = market.end_time + 86400;
+    contract.extend_market_duration(market_id, new_end_time);
+}
+
+#[test]
+#[should_panic(expected: ('Market already resolved',))]
+fn test_modify_market_details_resolved_market() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let market = contract.get_prediction(market_id);
+    start_cheat_block_timestamp(contract.contract_address, market.end_time + 1);
+
+    contract.resolve_prediction(market_id, 0);
+
+    let new_description = "Should not work";
+    contract.modify_market_details(market_id, new_description);
+}

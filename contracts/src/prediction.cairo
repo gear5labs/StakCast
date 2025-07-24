@@ -6,6 +6,7 @@ use stakcast::admin_interface::IAdditionalAdmin;
 use stakcast::events::{
     BetPlaced, EmergencyPaused, Event, FeesCollected, MarketCreated, MarketEmergencyClosed,
     MarketForceClosed, MarketResolved, ModeratorAdded, ModeratorRemoved, WagerPlaced, WinningsCollected,
+    MarketExtended, MarketModified,
 };
 use stakcast::interface::IPredictionHub;
 use stakcast::types::{BetActivity, Choice, MarketStatus, Outcome, PredictionMarket, UserStake};
@@ -600,6 +601,46 @@ pub mod PredictionHub {
 
             // End reentrancy guard
             self.end_reentrancy_guard();
+        }
+
+
+        fn extend_market_duration(
+            ref self: ContractState, market_id: u256, new_end_time: u64
+        ) {
+            self.assert_only_moderator_or_admin();
+            self.assert_market_exists(market_id);
+
+            let mut market = self.all_predictions.entry(market_id).read();
+
+            assert(!market.is_resolved, 'Market already resolved');
+            assert(new_end_time > market.end_time, 'New end time must be later');
+
+            let current_time = get_block_timestamp();
+            assert(new_end_time > current_time, 'End time must be in future');
+
+            let max_duration = self.max_market_duration.read();
+            let new_duration_from_now = new_end_time - current_time;
+            assert(new_duration_from_now <= max_duration, 'Market duration too long');
+
+            market.end_time = new_end_time;
+            self.all_predictions.entry(market_id).write(market);
+
+            self.emit(MarketExtended { market_id, new_end_time });
+        }
+
+        fn modify_market_details(
+            ref self: ContractState, market_id: u256, new_description: ByteArray
+        ) {
+            self.assert_only_moderator_or_admin();
+            self.assert_market_exists(market_id);
+
+            let mut market = self.all_predictions.entry(market_id).read();
+            assert(!market.is_resolved, 'Market already resolved');
+
+            market.description = new_description;
+            self.all_predictions.entry(market_id).write(market);
+
+            self.emit(MarketModified { market_id });
         }
 
 
@@ -1279,11 +1320,11 @@ pub mod PredictionHub {
             prediction.status = MarketStatus::Closed;
             prediction.is_open = false;
             self.all_predictions.entry(market_id).write(prediction);
-            self.emit(MarketForceClosed { 
-                market_id, 
-                reason, 
-                closed_by: get_caller_address(), 
-                time: current_time 
+            self.emit(MarketForceClosed {
+                market_id,
+                reason,
+                closed_by: get_caller_address(),
+                time: current_time
             });
         }
 
@@ -1308,15 +1349,15 @@ pub mod PredictionHub {
             market.is_resolved = true;
             market.is_open = false;
             market.winning_choice = Option::Some(winning_choice);
-            
+
             let winning_choice_outcome: Outcome = self.choice_num_to_outcome(market_id, winning_choice);
             market.status = MarketStatus::Resolved(winning_choice_outcome);
 
             self.all_predictions.entry(market_id).write(market);
-            self.emit(MarketResolved { 
-                market_id, 
-                resolver: get_caller_address(), 
-                winning_choice 
+            self.emit(MarketResolved {
+                market_id,
+                resolver: get_caller_address(),
+                winning_choice
             });
 
             self.end_reentrancy_guard();
@@ -1331,7 +1372,7 @@ pub mod PredictionHub {
             self.assert_only_admin();
             assert(market_ids.len() == winning_choices.len(), 'Arrays must have same length');
             assert(market_ids.len() == market_types.len(), 'Arrays must have same length');
-            
+
             for i in 0..market_ids.len() {
                 let market_id = *market_ids.at(i);
                 let winning_choice = *winning_choices.at(i);
