@@ -13,6 +13,7 @@ const ADMIN_CONST: felt252 = 123;
 const MODERATOR_CONST: felt252 = 456;
 const USER1_CONST: felt252 = 101112;
 const USER2_CONST: felt252 = 131415;
+const USER3_CONST: felt252 = 161718;
 const FEE_RECIPIENT_CONST: felt252 = 161718;
 const PRAGMA_ORACLE_CONST: felt252 = 192021;
 
@@ -33,7 +34,7 @@ pub fn USER2_ADDR() -> ContractAddress {
 }
 
 pub fn USER3_ADDR() -> ContractAddress {
-    USER2_CONST.try_into().unwrap()
+    USER3_CONST.try_into().unwrap()
 }
 
 pub fn FEE_RECIPIENT_ADDR() -> ContractAddress {
@@ -97,12 +98,16 @@ pub fn setup_test_environment() -> (
     // Setup token balances and allowances
     start_cheat_caller_address(token.contract_address, USER1_ADDR());
     token.transfer(USER2_ADDR(), 500000000000000000000000); // 500k tokens to USER2
-
+    token.transfer(USER3_ADDR(), 500000000000000000000000); // 500k tokens to USER3
     token.approve(prediction_hub.contract_address, 1000000000000000000000000); // 1M approval
     stop_cheat_caller_address(token.contract_address);
 
     start_cheat_caller_address(token.contract_address, USER2_ADDR());
     token.approve(prediction_hub.contract_address, 500000000000000000000000); // 500k approval
+    stop_cheat_caller_address(token.contract_address);
+
+    start_cheat_caller_address(token.contract_address, USER3_ADDR());
+    token.approve(prediction_hub.contract_address, 1000000000000000000000000); // 1M approval
     stop_cheat_caller_address(token.contract_address);
 
     (prediction_hub, admin_interface, token)
@@ -111,6 +116,7 @@ pub fn setup_test_environment() -> (
 pub fn default_create_predictions(prediction_hub: IPredictionHubDispatcher) {
     let title: ByteArray = "Will Donald Trump Be President";
     let description: ByteArray = "This is a pool to check if donald trump will be president";
+    let image_url: ByteArray = "https://pinata.com/image.png";
     let choices: (felt252, felt252) = ('Yes', 'No');
     let category: u8 = 0;
     let end_time: u64 = get_block_timestamp() + 86400; // 1 day from now
@@ -123,6 +129,7 @@ pub fn default_create_predictions(prediction_hub: IPredictionHubDispatcher) {
         .create_predictions(
             title.clone(),
             description,
+            image_url,
             choices,
             category,
             end_time,
@@ -155,6 +162,7 @@ pub fn default_create_predictions(prediction_hub: IPredictionHubDispatcher) {
 pub fn default_create_crypto_prediction(prediction_hub: IPredictionHubDispatcher) {
     let title: ByteArray = "ETH Price Prediction";
     let description: ByteArray = "Will Ethereum price be above $3000 by tomorrow?";
+    let image_url: ByteArray = "https://pinata.com/image.png";
     let choices: (felt252, felt252) = ('Above $3000', 'Below $3000');
     let category: u8 = 2;
     let end_time: u64 = get_block_timestamp() + 86400;
@@ -166,6 +174,7 @@ pub fn default_create_crypto_prediction(prediction_hub: IPredictionHubDispatcher
         .create_predictions(
             title.clone(),
             description,
+            image_url,
             choices,
             category,
             end_time,
@@ -209,6 +218,7 @@ pub fn create_test_market(prediction_hub: IPredictionHubDispatcher) -> u256 {
         .create_predictions(
             "Will Donald Trump Be President",
             "This is a pool to check if donald trump will be president",
+            "https://pinata.com/image.png",
             ('Yes', 'No'),
             0,
             get_block_timestamp() + 86400,

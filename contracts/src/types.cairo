@@ -2,6 +2,7 @@
 pub struct PredictionMarket {
     pub title: ByteArray,
     pub market_id: u256,
+    pub image_url: ByteArray,
     pub description: ByteArray,
     pub choices: (Outcome, Outcome),
     pub category: MarketCategory,
@@ -74,12 +75,15 @@ pub enum MarketStatus {
     Active,
     Locked,
     Resolved: Outcome,
+    Closed,
 }
 
 #[derive(Drop, Copy, Serde, starknet::Store, Clone)]
 pub struct UserStake {
     pub shares_a: u256, // Fixed-point shares
     pub shares_b: u256, // Fixed-point shares
+    pub total_amount_a: u256, // Fixed-point amount
+    pub total_amount_b: u256, // Fixed-point amount
     pub total_invested: u256 // Fixed-point amount
 }
 

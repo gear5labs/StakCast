@@ -4,8 +4,8 @@ use pragma_lib::abi::{IPragmaABIDispatcher, IPragmaABIDispatcherTrait};
 use pragma_lib::types::DataType;
 use stakcast::admin_interface::IAdditionalAdmin;
 use stakcast::events::{
-    BetPlaced, EmergencyPaused, Event, FeesCollected, MarketCreated, MarketResolved, ModeratorAdded,
-    ModeratorRemoved, WagerPlaced, WinningsCollected,
+    BetPlaced, EmergencyPaused, Event, FeesCollected, MarketCreated, MarketEmergencyClosed,
+    MarketResolved, ModeratorAdded, ModeratorRemoved, WagerPlaced, WinningsCollected,
 };
 use stakcast::interface::IPredictionHub;
 use stakcast::types::{BetActivity, Choice, MarketStatus, Outcome, PredictionMarket, UserStake};
@@ -211,13 +211,19 @@ pub mod PredictionHub {
 
             assert(!market.is_resolved, 'Market already resolved');
 
+            assert(market.status != MarketStatus::Closed, 'Market is closed');
+
             assert(get_block_timestamp() < market.end_time, 'Market has ended');
+        }
+
+        fn assert_market_not_resolved(self: @ContractState, market_id: u256) {
+            let market = self.all_predictions.entry(market_id).read();
+            assert(!market.is_resolved, 'Market is already resolved');
         }
 
 
         fn assert_market_exists(self: @ContractState, market_id: u256) {
             let market = self.all_predictions.entry(market_id).read();
-
             assert(market.market_id == market_id, 'Market does not exist');
         }
 
@@ -325,6 +331,7 @@ pub mod PredictionHub {
             ref self: ContractState,
             title: ByteArray,
             description: ByteArray,
+            image_url: ByteArray,
             choices: (felt252, felt252),
             category: u8,
             end_time: u64,
@@ -365,6 +372,7 @@ pub mod PredictionHub {
             let mut market = PredictionMarket {
                 title,
                 market_id,
+                image_url,
                 description,
                 choices: (Outcome::Option1(choice_0_label), Outcome::Option2(choice_1_label)),
                 category: num_to_market_category(category),
@@ -553,6 +561,7 @@ pub mod PredictionHub {
                     market.total_shares_option_one += shares;
 
                     user_stake.shares_a = user_stake.shares_a + shares;
+                    user_stake.total_amount_a = user_stake.total_amount_a + amount;
 
                     market_stats.traders_option_a += 1;
 
@@ -564,6 +573,7 @@ pub mod PredictionHub {
                     market.total_shares_option_two += shares;
 
                     user_stake.shares_b = user_stake.shares_b + shares;
+                    user_stake.total_amount_b = user_stake.total_amount_b + amount;
 
                     market_stats.traders_option_b += 1;
 
@@ -1241,75 +1251,31 @@ pub mod PredictionHub {
 
             let mut i = 1;
 
-            // while i <= total_markets {
-            //     // Check all market types
-
-            //     let mut market_type: u8 = 0;
-
-            //     while market_type < 3_u8 {
-            //         if market_type == 0 {
-            //             let market = self.predictions.entry(i).read();
-
-            //             if market.market_id != 0 {
-            //                 if market.is_resolved {
-            //                     resolved_markets += 1;
-            //                 } else if market.is_open {
-            //                     active_markets += 1;
-            //                 }
-            //             }
-            //         } else if market_type == 1 {
-            //             let market = self.crypto_predictions.entry(i).read();
-
-            //             if market.market_id != 0 {
-            //                 if market.is_resolved {
-            //                     resolved_markets += 1;
-            //                 } else if market.is_open {
-            //                     active_markets += 1;
-            //                 }
-            //             }
-            //         } else if market_type == 2 {
-            //             let market = self.sports_predictions.entry(i).read();
-
-            //             if market.market_id != 0 {
-            //                 if market.is_resolved {
-            //                     resolved_markets += 1;
-            //                 } else if market.is_open {
-            //                     active_markets += 1;
-            //                 }
-            //             }
-            //         }
-
-            //         market_type += 1;
-            //     }
-
-            //     i += 1;
-            // }
-
             (total_markets, active_markets, resolved_markets)
         }
 
 
-        fn emergency_close_market(ref self: ContractState, market_id: u256, market_type: u8) {}
-
-
-        fn emergency_close_multiple_markets(
-            ref self: ContractState, market_ids: Array<u256>, market_types: Array<u8>,
-        ) {
+        fn emergency_close_market(ref self: ContractState, market_id: u256) {
             self.assert_only_admin();
+            self.assert_market_exists(market_id);
+            self.assert_market_open(market_id);
+            self.assert_market_not_resolved(market_id);
 
-            assert(market_ids.len() == market_types.len(), 'Arrays length mismatch');
+            let mut prediction: PredictionMarket = self.all_predictions.entry(market_id).read();
+            let current_time = get_block_timestamp();
+            prediction.status = MarketStatus::Closed;
+            prediction.is_open = false;
+            self.all_predictions.entry(market_id).write(prediction);
+            self.emit(MarketEmergencyClosed { market_id, time: current_time });
+        }
 
-            let mut i = 0;
 
-            while i < market_ids.len() {
+        fn emergency_close_multiple_markets(ref self: ContractState, market_ids: Array<u256>) {
+            self.assert_only_admin();
+            for i in 0..market_ids.len() {
                 let market_id = *market_ids.at(i);
-
-                let market_type = *market_types.at(i);
-
-                self.emergency_close_market(market_id, market_type);
-
-                i += 1;
-            };
+                self.emergency_close_market(market_id);
+            }
         }
 
 
