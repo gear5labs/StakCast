@@ -6,7 +6,8 @@ export const buyShares = async (req: Request, res: Response) => {
     const { userId, marketId, amount } = req.body;
     const result = await buySharesService(userId, marketId, amount);
     res.status(200).json({ success: true, data: result });
-  } catch (error: any) {
-    res.status(400).json({ success: false, message: error.message });
+  } catch (error) {
+    const err = error as Error;
+    res.status(400).json({ success: false, message: error: err.message });
   }
 };
