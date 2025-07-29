@@ -1,13 +1,14 @@
 import { Account, Contract, RpcProvider, uint256 } from 'starknet';
-import { TransactionResult, ContractConfig} from '../../../types/admin.types';
+import { TransactionResult, ContractConfig, ContractTransactionResponse } from '../../../types/admin.types';
+import { injectable } from 'tsyringe';
 
+@injectable()
 class AdminService {
-  private static instance: AdminService;
   private provider: RpcProvider;
   private account: Account;
   private contract: Contract;
 
-  private constructor() {
+  public constructor() {
     const config: ContractConfig = {
       nodeUrl: process.env.NEXT_PUBLIC_RPC_URL || 'https://starknet-sepolia.public.blastapi.io',
       contractAddress: '0x004acb0f694dbcabcb593a84fcb44a03f8e1b681173da5d0962ed8a171689534',
@@ -22,67 +23,13 @@ class AdminService {
       config.adminPrivateKey
     );
 
-    // Contract ABI
-    const abi = [
-      {
-        name: "pause",
-        type: "function",
-        inputs: [],
-        outputs: []
-      },
-      {
-        name: "unpause",
-        type: "function",
-        inputs: [],
-        outputs: []
-      },
-      {
-        name: "set_platform_fee",
-        type: "function",
-        inputs: [
-          { name: "fee_percentage", type: "core::integer::u256" }
-        ],
-        outputs: []
-      },
-      {
-        name: "set_protocol_token",
-        type: "function",
-        inputs: [
-          { name: "token_address", type: "core::felt252" }
-        ],
-        outputs: []
-      },
-      {
-        name: "emergency_close_market",
-        type: "function",
-        inputs: [
-          { name: "market_id", type: "core::felt252" },
-          { name: "market_type", type: "core::felt252" }
-        ],
-        outputs: []
-      },
-      {
-        name: "emergency_withdraw_tokens",
-        type: "function",
-        inputs: [
-          { name: "amount", type: "core::integer::u256" },
-          { name: "recipient", type: "core::felt252" }
-        ],
-        outputs: []
-      }
-    ];
-
+ 
+    const abi = require('./admin.abi.json');
     this.contract = new Contract(abi, config.contractAddress, this.account);
   }
 
-  static getInstance(): AdminService {
-    if (!AdminService.instance) {
-      AdminService.instance = new AdminService();
-    }
-    return AdminService.instance;
-  }
-
-  private async executeTransaction(fn: () => Promise<any>): Promise<TransactionResult> {
+  
+  private async executeTransaction(fn: () => Promise<ContractTransactionResponse>): Promise<TransactionResult> {
     try {
       const result = await fn();
       const txHash = result.transaction_hash;
@@ -92,11 +39,12 @@ class AdminService {
         txHash, 
         message: 'Transaction successful' 
       };
-    } catch (error: any) {
-      console.error('Transaction error:', error);
+    } catch (error) {
+      const err = error as Error;
+      console.error('Transaction error:', err);
       return { 
         success: false, 
-        error: error.message || 'Transaction failed' 
+        error: err.message || 'Transaction failed' 
       };
     }
   }
@@ -119,7 +67,8 @@ class AdminService {
       return this.executeTransaction(() => 
         this.contract.set_platform_fee(fee)
       );
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       return { success: false, error: 'Invalid fee percentage' };
     }
   }
@@ -135,8 +84,6 @@ class AdminService {
   }
 
   async removeSupportedToken(tokenAddress: string): Promise<TransactionResult> {
-    // Note: Check if your contract has a remove function
-    // If not, you might need to implement differently
     return { 
       success: false, 
       error: 'Remove token functionality not implemented in contract' 
@@ -163,7 +110,8 @@ class AdminService {
       return this.executeTransaction(() => 
         this.contract.emergency_withdraw_tokens(amountUint256, recipient)
       );
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       return { success: false, error: 'Invalid amount' };
     }
   }

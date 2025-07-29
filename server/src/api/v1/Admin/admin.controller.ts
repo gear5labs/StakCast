@@ -1,30 +1,36 @@
-// lib/admin/controllers/admin.controller.ts
 import { Request, Response } from 'express';
+import { injectable, inject } from 'tsyringe';
 import AdminService from './admin.service';
 import AdminStateService from './adminState.service';
 
+@injectable()
 class AdminController {
-  private static service = AdminService.getInstance();
+  constructor(
+    @inject(AdminService) private service: AdminService,
+    @inject(AdminStateService) private stateService: AdminStateService
+  ) {}
 
-  static async pauseContract(req: Request, res: Response) {
+  async pauseContract(req: Request, res: Response) {
     try {
-      const result = await AdminController.service.pauseContract();
+      const result = await this.service.pauseContract();
       res.status(result.success ? 200 : 400).json(result);
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
+    } catch (error) {
+      const err = error as Error;
+      res.status(500).json({ success: false, error: err.message });
     }
   }
 
-  static async unpauseContract(req: Request, res: Response) {
+  async unpauseContract(req: Request, res: Response) {
     try {
-      const result = await AdminController.service.unpauseContract();
+      const result = await this.service.unpauseContract();
       res.status(result.success ? 200 : 400).json(result);
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
+    } catch (error) {
+      const err = error as Error;
+      res.status(500).json({ success: false, error: err.message });
     }
   }
 
-  static async setPlatformFee(req: Request, res: Response) {
+  async setPlatformFee(req: Request, res: Response) {
     try {
       const { feePercentage } = req.body;
       
@@ -35,14 +41,15 @@ class AdminController {
         });
       }
 
-      const result = await AdminController.service.setPlatformFee(feePercentage);
+      const result = await this.service.setPlatformFee(feePercentage);
       res.status(result.success ? 200 : 400).json(result);
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
+    } catch (error) {
+      const err = error as Error;
+      res.status(500).json({ success: false, error: err.message });
     }
   }
 
-  static async addSupportedToken(req: Request, res: Response) {
+  async addSupportedToken(req: Request, res: Response) {
     try {
       const { tokenAddress } = req.body;
       
@@ -53,14 +60,15 @@ class AdminController {
         });
       }
 
-      const result = await AdminController.service.addSupportedToken(tokenAddress);
+      const result = await this.service.addSupportedToken(tokenAddress);
       res.status(result.success ? 200 : 400).json(result);
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
+    } catch (error) {
+      const err = error as Error;
+      res.status(500).json({ success: false, error: err.message });
     }
   }
 
-  static async removeSupportedToken(req: Request, res: Response) {
+  async removeSupportedToken(req: Request, res: Response) {
     try {
       const { tokenAddress } = req.body;
       
@@ -71,14 +79,15 @@ class AdminController {
         });
       }
 
-      const result = await AdminController.service.removeSupportedToken(tokenAddress);
+      const result = await this.service.removeSupportedToken(tokenAddress);
       res.status(result.success ? 200 : 400).json(result);
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
+    } catch (error) {
+      const err = error as Error;
+      res.status(500).json({ success: false, error: err.message });
     }
   }
 
-  static async emergencyCloseMarket(req: Request, res: Response) {
+  async emergencyCloseMarket(req: Request, res: Response) {
     try {
       const { marketId, marketType } = req.body;
       
@@ -89,14 +98,15 @@ class AdminController {
         });
       }
 
-      const result = await AdminController.service.emergencyCloseMarket(marketId, marketType);
+      const result = await this.service.emergencyCloseMarket(marketId, marketType);
       res.status(result.success ? 200 : 400).json(result);
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
+    } catch (error) {
+      const err = error as Error;
+      res.status(500).json({ success: false, error: err.message });
     }
   }
 
-  static async emergencyWithdraw(req: Request, res: Response) {
+  async emergencyWithdraw(req: Request, res: Response) {
     try {
       const { amount, recipient } = req.body;
       
@@ -107,18 +117,21 @@ class AdminController {
         });
       }
 
-      const result = await AdminController.service.emergencyWithdraw(amount, recipient);
+      const result = await this.service.emergencyWithdraw(amount, recipient);
       res.status(result.success ? 200 : 400).json(result);
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
+    } catch (error) {
+      const err = error as Error;
+      res.status(500).json({ success: false, error: err.message });
     }
   }
-static async getAdminState(req: Request, res: Response) {
+
+  async getAdminState(req: Request, res: Response) {
     try {
-      const state = AdminStateService.getInstance().getState();
+      const state = this.stateService.getState();
       res.status(200).json({ success: true, state });
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
+    } catch (error) {
+      const err = error as Error;
+      res.status(500).json({ success: false, error: err.message });
     }
   }
 }

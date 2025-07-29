@@ -1,0 +1,48 @@
+[
+  {
+    "name": "pause",
+    "type": "function",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "name": "unpause",
+    "type": "function",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "name": "set_platform_fee",
+    "type": "function",
+    "inputs": [
+      { "name": "fee_percentage", "type": "core::integer::u256" }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "set_protocol_token",
+    "type": "function",
+    "inputs": [
+      { "name": "token_address", "type": "core::felt252" }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "emergency_close_market",
+    "type": "function",
+    "inputs": [
+      { "name": "market_id", "type": "core::felt252" },
+      { "name": "market_type", "type": "core::felt252" }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "emergency_withdraw_tokens",
+    "type": "function",
+    "inputs": [
+      { "name": "amount", "type": "core::integer::u256" },
+      { "name": "recipient", "type": "core::felt252" }
+    ],
+    "outputs": []
+  }
+]

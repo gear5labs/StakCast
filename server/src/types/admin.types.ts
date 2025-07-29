@@ -1,4 +1,3 @@
-// lib/admin/types/admin.types.ts
 export interface TransactionResult {
   success: boolean;
   txHash?: string;
@@ -12,3 +11,4 @@ export interface ContractConfig {
   adminPrivateKey: string;
   adminAddress: string;
 }
+export type ContractTransactionResponse = { transaction_hash: string };

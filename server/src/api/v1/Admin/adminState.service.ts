@@ -1,10 +1,16 @@
 import { Contract, RpcProvider } from 'starknet';
+import { injectable } from 'tsyringe';
 
+@injectable()
 class AdminStateService {
-  private static instance: AdminStateService;
   private provider: RpcProvider;
   private contract: Contract;
-  private state: any = {
+  private state: {
+    paused: boolean | null;
+    platformFee: string | null;
+    protocolToken: string | null;
+    lastUpdated: string | null;
+  } = {
     paused: null,
     platformFee: null,
     protocolToken: null,
@@ -12,26 +18,19 @@ class AdminStateService {
   };
   private pollInterval: NodeJS.Timeout | null = null;
 
-  private constructor() {
-    const nodeUrl = process.env.NEXT_PUBLIC_RPC_URL || 'https://starknet-sepolia.public.blastapi.io';
-    const contractAddress = '0x004acb0f694dbcabcb593a84fcb44a03f8e1b681173da5d0962ed8a171689534';
+  public constructor() {
+    const { ADMIN_CONTRACT } = require('../../../config/config');
     const abi = [
       { name: 'is_paused', type: 'function', inputs: [], outputs: [{ type: 'core::bool' }] },
       { name: 'get_platform_fee', type: 'function', inputs: [], outputs: [{ type: 'core::integer::u256' }] },
       { name: 'get_protocol_token', type: 'function', inputs: [], outputs: [{ type: 'core::starknet::contract_address::ContractAddress' }] }
     ];
-    this.provider = new RpcProvider({ nodeUrl });
-    this.contract = new Contract(abi, contractAddress, this.provider);
+    this.provider = new RpcProvider({ nodeUrl: ADMIN_CONTRACT.nodeUrl });
+    this.contract = new Contract(abi, ADMIN_CONTRACT.contractAddress, this.provider);
     this.startPolling();
   }
 
-  static getInstance(): AdminStateService {
-    if (!AdminStateService.instance) {
-      AdminStateService.instance = new AdminStateService();
-    }
-    return AdminStateService.instance;
-  }
-
+  
   private async pollState() {
     try {
       const [paused, platformFee, protocolToken] = await Promise.all([
@@ -46,7 +45,6 @@ class AdminStateService {
         lastUpdated: new Date().toISOString()
       };
     } catch (err) {
-      // Optionally log error
     }
   }
 
