@@ -44,4 +44,9 @@ export const config = {
 
 //template by solomonsolomonsolomon
 
+export const ADMIN_CONTRACT = {
+  nodeUrl: process.env.NEXT_PUBLIC_RPC_URL || 'https://starknet-sepolia.public.blastapi.io',
+  contractAddress: process.env.ADMIN_CONTRACT_ADDRESS || ''
+};
+
 export default config;
