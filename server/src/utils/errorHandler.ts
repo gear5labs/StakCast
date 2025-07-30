@@ -1,4 +1,4 @@
-import express, { NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import logger from "../config/logger";
 
 export class ApplicationError extends Error {
@@ -12,25 +12,19 @@ export class ApplicationError extends Error {
 	}
 }
 
-const RouteErrorHandler =
-	(fn: (req: express.Request, res: express.Response, next: NextFunction) => Promise<any>) =>
-	(req: express.Request, res: express.Response, next: NextFunction) =>
-		Promise.resolve(fn(req, res, next)).catch(error => next(error));
+export const asyncHandler =
+	(fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) =>
+	(req: Request, res: Response, next: NextFunction) =>
+		Promise.resolve(fn(req, res, next)).catch(next);
 
-export async function ErrorHandler(err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
-	logger.error(`Error occurred: ${err.message} at ${req.method} ${req.url}`, {
-		statusCode: err.statusCode || 500,
-		method: req.method,
-		url: req.url,
-		ip: req.ip,
-	});
+export async function ErrorHandler(err: any, req: Request, res: Response, next: NextFunction) {
+	if (err instanceof ApplicationError) {
+		logger.error(`Application Error: ${err.message}`, { statusCode: err.statusCode });
+		return res.status(err.statusCode).json({ error: err.message });
+	}
 
-	return res.status(err?.statusCode || 500).json({
-		success: false,
-		status: err?.statusCode || 500,
-		msg: `${err?.message}` || "Internal server error",
-		error: err,
-	});
+	logger.error(`Unhandled Error: ${err.message}`, { stack: err.stack });
+	return res.status(500).json({ error: "Internal Server Error" });
 }
 
-export default RouteErrorHandler;
+export default ErrorHandler;
