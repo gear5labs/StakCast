@@ -1,6 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne, JoinColumn } from "typeorm";
+import {
+	Entity,
+	PrimaryGeneratedColumn,
+	Column,
+	CreateDateColumn,
+	UpdateDateColumn,
+	OneToOne,
+	JoinColumn,
+} from "typeorm";
 import { User } from "../User/user.entity";
-import bcrypt from "bcryptjs";
+import * as bcrypt from "bcryptjs";
 
 @Entity("auth")
 export class Auth {
