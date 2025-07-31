@@ -133,6 +133,10 @@ export default [
         name: "Resolved",
         type: "stakcast::types::Outcome",
       },
+      {
+        name: "Closed",
+        type: "()",
+      },
     ],
   },
   {
@@ -160,6 +164,10 @@ export default [
       {
         name: "market_id",
         type: "core::integer::u256",
+      },
+      {
+        name: "image_url",
+        type: "core::byte_array::ByteArray",
       },
       {
         name: "description",
@@ -238,6 +246,14 @@ export default [
         type: "core::integer::u256",
       },
       {
+        name: "total_amount_a",
+        type: "core::integer::u256",
+      },
+      {
+        name: "total_amount_b",
+        type: "core::integer::u256",
+      },
+      {
         name: "total_invested",
         type: "core::integer::u256",
       },
@@ -257,6 +273,10 @@ export default [
           },
           {
             name: "description",
+            type: "core::byte_array::ByteArray",
+          },
+          {
+            name: "image_url",
             type: "core::byte_array::ByteArray",
           },
           {
@@ -980,10 +1000,6 @@ export default [
             name: "market_id",
             type: "core::integer::u256",
           },
-          {
-            name: "market_type",
-            type: "core::integer::u8",
-          },
         ],
         outputs: [],
         state_mutability: "external",
@@ -995,10 +1011,6 @@ export default [
           {
             name: "market_ids",
             type: "core::array::Array::<core::integer::u256>",
-          },
-          {
-            name: "market_types",
-            type: "core::array::Array::<core::integer::u8>",
           },
         ],
         outputs: [],
