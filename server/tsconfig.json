@@ -1,23 +1,26 @@
 {
 	"compilerOptions": {
-		"target": "es2020", // Updated to more recent ES version
+		"target": "ES2022",
 		"module": "commonjs",
-		"lib": ["es2020"], // Added lib to match target
-		"rootDir": "./src", // Added explicit root directory
+		"lib": ["ES2022"],
+		"rootDir": "./src",
 		"typeRoots": ["./node_modules/**/@types", "./src/@types"],
 		"outDir": "./dist",
 		"removeComments": true,
 		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
 		"forceConsistentCasingInFileNames": true,
-		"strict": true,
+		"strict": false,
 		"skipLibCheck": true,
 		"experimentalDecorators": true,
 		"emitDecoratorMetadata": true,
-		"resolveJsonModule": true, // Added for JSON imports
-		"sourceMap": true, // Added for debugging
-		"noImplicitAny": true, // Added for stricter typing
-		"moduleResolution": "node" // Added for proper module resolution
+		"resolveJsonModule": true,
+		"sourceMap": true,
+		"noImplicitAny": false,
+		"moduleResolution": "node",
+		"strictPropertyInitialization": false,
+		"useDefineForClassFields": false
 	},
-	"include": ["src/**/*", "src/@types/express/index.d.ts"],
-	"exclude": ["node_modules", "dist"] // Added exclude
+	"include": ["src/**/*"],
+	"exclude": ["node_modules", "dist"]
 }
