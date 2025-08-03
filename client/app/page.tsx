@@ -18,10 +18,10 @@ const Home = () => {
   const searchParams = useSearchParams();
   const currentCategory = searchParams.get("category") || "All";
   const { searchQuery } = useAppContext();
-// const [selectedOption, setSelectedOption] = useState<{
-//   marketId: string;
-//   option: string;
-// } | null>(null);
+  // const [selectedOption, setSelectedOption] = useState<{
+  //   marketId: string;
+  //   option: string;
+  // } | null>(null);
 
   const getHookCategory = (urlCategory: string) => {
     switch (urlCategory.toLowerCase()) {
@@ -119,11 +119,10 @@ const Home = () => {
         <div className="w-72 flex rounded-xl overflow-hidden shadow mb-6 border border-green-200 dark:border-green-800 bg-white dark:bg-gray-900">
           <div
             className={`flex-1 text-center py-2 cursor-pointer transition-all font-semibold text-base
-                ${
-                  tab === "active"
-                    ? "bg-gradient-to-r from-green-400 to-green-600 text-white shadow-inner"
-                    : "bg-white dark:bg-gray-900 text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-950"
-                }
+                ${tab === "active"
+                ? "bg-gradient-to-r from-green-400 to-green-600 text-white shadow-inner"
+                : "bg-white dark:bg-gray-900 text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-950"
+              }
               `}
             onClick={() => setTab("active")}
           >
@@ -131,11 +130,10 @@ const Home = () => {
           </div>
           <div
             className={`flex-1 text-center py-2 cursor-pointer transition-all font-semibold text-base
-                ${
-                  tab === "all"
-                    ? "bg-gradient-to-r from-green-400 to-green-600 text-white shadow-inner"
-                    : "bg-white dark:bg-gray-900 text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-950"
-                }
+                ${tab === "all"
+                ? "bg-gradient-to-r from-green-400 to-green-600 text-white shadow-inner"
+                : "bg-white dark:bg-gray-900 text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-950"
+              }
               `}
             onClick={() => setTab("all")}
           >
@@ -186,16 +184,14 @@ const Home = () => {
               return (
                 <div
                   key={market?.market_id || index}
-                  className={`h-full transition-all duration-300 ${
-                    isClosed
-                      ? "cursor-not-allowed"
-                      : "hover:-translate-y-1 cursor-pointer"
-                  }`}
+                  className={`h-full transition-all duration-300 ${isClosed
+                    ? "cursor-not-allowed"
+                    : "hover:-translate-y-1 cursor-pointer"
+                    }`}
                 >
                   <div
-                    className={`h-full shadow-md rounded-xl transition-all duration-300 ${
-                      isClosed ? "opacity-75" : "hover:shadow-xl"
-                    }`}
+                    className={`h-full shadow-md rounded-xl transition-all duration-300 ${isClosed ? "opacity-75" : "hover:shadow-xl"
+                      }`}
                   >
                     <MarketCard
                       name={market?.title || "Untitled Market"}
@@ -213,7 +209,7 @@ const Home = () => {
                         },
                       ]}
                       totalRevenue={
-                       market?.total_pool.toString()|| "$0"
+                        market?.total_pool.toString() || "$0"
                       }
                       onClick={() => handleMarketClick(market)}
                       isClosed={isClosed}
@@ -236,8 +232,8 @@ const Home = () => {
                 {searchQuery
                   ? `No markets match your search for "${searchQuery}"`
                   : currentCategory === "All"
-                  ? "There are currently no markets available."
-                  : `No markets found in the "${currentCategory}" category.`}
+                    ? "There are currently no markets available."
+                    : `No markets found in the "${currentCategory}" category.`}
               </p>
             </div>
           </div>
