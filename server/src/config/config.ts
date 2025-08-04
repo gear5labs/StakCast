@@ -15,7 +15,6 @@ export const config = {
 			exp: process.env.REFRESH_TOKEN_EXP ?? "1w",
 		},
 	},
-
 	db: {
 		redis: {
 			port: process.env.REDIS_PORT || 6379,
@@ -36,6 +35,11 @@ export const config = {
 		user: process.env.EMAIL_USER?.trim(),
 		password: process.env.EMAIL_PASS?.trim(),
 		url: process.env.FRONTEND_URL?.trim() || "/",
+	},
+	starknet: {
+		nodeUrl: process.env.NODE_URL?.trim(),
+		accountClassHash:
+			process.env.OZ_ACCOUNT_CLASS_HASH?.trim() || "0x540d7f5ec7ecf317e68d48564934cb99259781b1ee3cedbbc37ec5337f8e688",
 	},
 };
 
