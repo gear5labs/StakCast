@@ -3,6 +3,8 @@ import CryptoJS from "crypto-js";
 import { Account, ec, RpcProvider, hash, CallData } from "starknet";
 import config from "../config/config";
 import { uint8ArrayToWordArray, wordArrayToUint8Array } from "../utils/starknetUtils";
+import { Token } from "../types/wallet.types";
+import axios from "axios";
 @injectable()
 export default class StarknetService {
 	private static isInitialized = false;
@@ -57,6 +59,39 @@ export default class StarknetService {
 		}
 	}
 
+	private async fundWallet(
+		address: string,
+		token: Token = "STRK",
+		amount: string = "50000000000000000000"
+	): Promise<{ success: boolean; message?: string; error?: any }> {
+		const unit = token === "ETH" ? "WEI" : "FRI";
+
+		try {
+			const response = await axios.post(
+				"http://127.0.0.1:5050/mint",
+				{
+					address,
+					amount,
+					unit,
+				},
+				{
+					headers: { "Content-Type": "application/json" },
+				}
+			);
+
+			return {
+				success: true,
+				message: response.data?.message || "Mint successful",
+			};
+		} catch (error: any) {
+			console.error(`Failed to fund ${token} to ${address}:`, error?.message || error);
+			return {
+				success: false,
+				error: error?.response?.data || error.message || "Unknown error",
+			};
+		}
+	}
+
 	async generateStarknetAddress(userPassword: string) {
 		const privateKey = ec.starkCurve.utils.randomPrivateKey();
 		const publicKey = ec.starkCurve.getStarkKey(privateKey);
@@ -87,6 +122,12 @@ export default class StarknetService {
 				success: false,
 				error: "Invalid password or corrupted encrypted private key.",
 			};
+		}
+
+		const fundResponse = await this.fundWallet(userAddress);
+
+		if (!fundResponse.success) {
+			throw new Error(fundResponse.error);
 		}
 
 		const account = new Account(StarknetService.rpcProvider, userAddress, decrypted);

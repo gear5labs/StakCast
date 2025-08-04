@@ -4,3 +4,5 @@ export interface DeployResult {
 	transactionHash?: string;
 	error?: string;
 }
+
+export type Token = "STRK" | "ETH";
