@@ -2,8 +2,8 @@
 
 import type React from "react";
 import { useState } from "react";
-import { TrendingUp, ArrowLeft, DollarSign, Target, Award } from "lucide-react";
-import { useAccount} from "@starknet-react/core";
+import { TrendingUp, ArrowLeft, DollarSign, Target, Award, Plus } from "lucide-react";
+import { useAccount } from "@starknet-react/core";
 
 import { StatsCard } from "./(cards)/statsCard";
 import { Chart } from "./(components)/chart";
@@ -13,13 +13,15 @@ import ActivePredictions from "./(components)/activepredictions";
 // import RecentActivity from "./(components)/recentActivity";
 import Claimable from "./(components)/claimable";
 import { useIsConnected } from "../hooks/useIsConnected";
+import CreateMarketModal from "../components/ui/CreateMarketModal";
 
 type TimeFrame = "7d" | "1m" | "all";
 
 const DashboardPage = () => {
   const { address } = useAccount();
-   const connected=useIsConnected();
+  const connected = useIsConnected();
   const [activeTimeFrame, setActiveTimeFrame] = useState<TimeFrame>("1m");
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const { predictions } = useUserPredictions();
   console.log(predictions)
   const handleGoBack = () => {
@@ -54,9 +56,18 @@ const DashboardPage = () => {
               Welcome back, {address?.slice(0, 6)}...{address?.slice(-4)}
             </p>
           </div>
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-sm font-medium">
-            <div className="w-2 h-2 bg-green-500 rounded-full" />
-            Connected
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Create Market</span>
+            </button>
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-sm font-medium">
+              <div className="w-2 h-2 bg-green-500 rounded-full" />
+              Connected
+            </div>
           </div>
         </div>
 
@@ -82,17 +93,16 @@ const DashboardPage = () => {
                   <button
                     key={timeFrame}
                     onClick={() => setActiveTimeFrame(timeFrame)}
-                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                      activeTimeFrame === timeFrame
-                        ? "bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm"
-                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                    }`}
+                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${activeTimeFrame === timeFrame
+                      ? "bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      }`}
                   >
                     {timeFrame === "7d"
                       ? "7 Days"
                       : timeFrame === "1m"
-                      ? "1 Month"
-                      : "All Time"}
+                        ? "1 Month"
+                        : "All Time"}
                   </button>
                 ))}
               </div>
@@ -147,8 +157,16 @@ const DashboardPage = () => {
           {/* Recent Activity */}
           {/* <RecentActivity /> */}
         </div>
-        
+
       </div>
+
+      {/* Create Market Modal */}
+      <CreateMarketModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        closeOnOverlayClick={false}
+        closeOnEsc={false}
+      />
     </div>
   );
 };

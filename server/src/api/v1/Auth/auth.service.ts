@@ -4,7 +4,8 @@ import AuthRepository from "./auth.repository";
 import { ApplicationError } from "../../../utils/errorHandler";
 import HttpStatusCodes from "../../../constants/HttpStatusCodes";
 import UserRepository from "../User/user.repository";
-import nodemailer from "nodemailer";
+import QueueService from "../../../services/queueService";
+import config from "../../../config/config";
 
 @injectable()
 export default class AuthService {
@@ -15,7 +16,9 @@ export default class AuthService {
 		@inject(AuthRepository)
 		private authRepository: AuthRepository,
 		@inject(UserRepository)
-		private userRepository: UserRepository
+		private userRepository: UserRepository,
+		@inject(QueueService)
+		private queueService: QueueService
 	) {}
 
 	async register(email: string, password: string, firstName: string, lastName: string) {
@@ -110,27 +113,22 @@ export default class AuthService {
 	}
 
 	async sendPasswordResetMail(email: string) {
-		const user =  await this.userRepository.findByEmail(email);
-		if (!user) return;
+		const user = await this.userRepository.findByEmail(email);
+		if (!user) return; // Don't reveal if email exists
 
 		const resetToken = jwt.sign({ id: user.id }, this.JWT_SECRET, { expiresIn: "1h" });
-		const mailResetPasswordUrl = "";
+		const resetUrl = `${config.email.url}/reset-password?token=${resetToken}`;
 
-		const transporter = nodemailer.createTransport({
-      	service: "Gmail",
-      	auth: {
-      	  user: process.env.EMAIL_USERNAME,
-      	  pass: process.env.EMAIL_PASSWORD,
-      	},
-    	});
-    	const mailOptions = {
- 	   	from: process.env.EMAIL_USERNAME,
-	    to: user.email,
- 	    subject: "Password Reset Request",
-    	text: `You requested a password reset. Click this link to reset your password: ${mailResetPasswordUrl}`,
-    	};
-
-    	await transporter.sendMail(mailOptions);
+		// Add job to queue instead of sending email directly
+		await this.queueService.addEmailJob({
+			type: 'PASSWORD_RESET',
+			data: {
+				email: user.email,
+				name: `${user.firstName} ${user.lastName}`,
+				resetToken,
+				resetUrl
+			}
+		});
 	}
 
 	async resetPassword(token: string, newPassword: string) {

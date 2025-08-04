@@ -46,6 +46,7 @@ fn test_create_multiple_prediction_markets() {
         .create_predictions(
             "Market 2",
             "Description 2",
+            "https://pinata.com/image.png",
             ('True', 'False'),
             0,
             future_time + 3600,
@@ -156,6 +157,7 @@ fn test_create_market_should_panic_if_end_time_not_in_future() {
         .create_predictions(
             "Invalid Time Market",
             "This should fail due to past end time",
+            "https://pinata.com/image.png",
             ('Yes', 'No'),
             0,
             past_time,
@@ -171,7 +173,16 @@ fn test_create_market_should_panic_if_end_time_is_too_short() {
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR().into());
     let small_time = get_block_timestamp() + 10;
     contract
-        .create_predictions("Market 2", "Description 2", ('True', 'False'), 1, small_time, 0, None);
+        .create_predictions(
+            "Market 2",
+            "Description 2",
+            "https://pinata.com/image.png",
+            ('True', 'False'),
+            1,
+            small_time,
+            0,
+            None,
+        );
     stop_cheat_caller_address(contract.contract_address);
 }
 
@@ -182,7 +193,16 @@ fn test_create_market_should_panic_if_end_time_is_too_long() {
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR().into());
     let large_time = get_block_timestamp() + 1000000000;
     contract
-        .create_predictions("Market 2", "Description 2", ('True', 'False'), 0, large_time, 0, None);
+        .create_predictions(
+            "Market 2",
+            "Description 2",
+            "https://pinata.com/image.png",
+            ('True', 'False'),
+            0,
+            large_time,
+            0,
+            None,
+        );
     stop_cheat_caller_address(contract.contract_address);
 }
 
@@ -216,6 +236,7 @@ fn test_create_market_create_multiple_market_types() {
         .create_predictions(
             "General Market",
             "General prediction description",
+            "https://pinata.com/image.png",
             ('Option A', 'Option B'),
             0,
             future_time,
@@ -233,6 +254,7 @@ fn test_create_market_create_multiple_market_types() {
         .create_predictions(
             "Crypto Market",
             "Crypto prediction description",
+            "https://pinata.com/image.png",
             ('Up', 'Down'),
             3,
             future_time + 3600,
@@ -250,6 +272,7 @@ fn test_create_market_create_multiple_market_types() {
         .create_predictions(
             "Sports Market",
             "Sports prediction description",
+            "https://pinata.com/image.png",
             ('Team A', 'Team B'),
             2,
             future_time + 7200,
@@ -305,7 +328,14 @@ fn test_creat_market_multiple_moderators_can_create_markets() {
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
     contract
         .create_predictions(
-            "Moderator 1 Market", "Market by moderator 1", ('Yes', 'No'), 3, future_time, 0, None,
+            "Moderator 1 Market",
+            "Market by moderator 1",
+            "https://pinata.com/image.png",
+            ('Yes', 'No'),
+            3,
+            future_time,
+            0,
+            None,
         );
 
     let mut market1_id = 0;
@@ -322,6 +352,7 @@ fn test_creat_market_multiple_moderators_can_create_markets() {
         .create_predictions(
             "Moderator 2 Market",
             "Market by moderator 2",
+            "https://pinata.com/image.png",
             ('True', 'False'),
             4,
             future_time + 3600,

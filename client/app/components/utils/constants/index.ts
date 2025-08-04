@@ -6,7 +6,6 @@ export const ETHTokenAddress =
 export const STRKTokenAddress =
   "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
 
-
 export const SKTokenAddress =
   "0x0620e07581e4b797d2dbe6f1ef507899cdd186cc19a96791ac18335a17359c4f";
 
@@ -20,7 +19,7 @@ export const ARGENT_DUMMY_CONTRACT_SEPOLIA_ADDRESS =
   "0x88d3cc4377a6cdfd27545a11548bd070c4e2e1e3df3d402922dbc4350b416";
 
 export const STAKCAST_CONTRACT_ADDRESS =
-  "0x004acb0f694dbcabcb593a84fcb44a03f8e1b681173da5d0962ed8a171689534";
+  "0x05b5fcf9bc77b7c0530b0a54e1125dbcac43f6022cfe9156564a5025b030334b";
 export const CHAIN_ID =
   process.env.NEXT_PUBLIC_CHAIN_ID === constants.NetworkName.SN_MAIN
     ? constants.NetworkName.SN_MAIN

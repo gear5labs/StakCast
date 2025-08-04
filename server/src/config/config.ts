@@ -17,22 +17,19 @@ export const config = {
 	},
 
 	db: {
-
-		redis:{
-			port:process.env.REDIS_PORT || 6379,
-			host:process.env.REDIS_HOST || 'localhost',
-			password:process.env.REDIS_PASSWORD || undefined
-
+		redis: {
+			port: process.env.REDIS_PORT || 6379,
+			host: process.env.REDIS_HOST || "localhost",
+			password: process.env.REDIS_PASSWORD || undefined,
 		},
-		postgres:{
-			port:process.env.POSTRES_PORT || 5432,
-			host:process.env.POSTGRES_HOST || 'localhost',
-			username:process.env.POSTGRES_USERNAME || 'root',
-			password:process.env.POSTGRES_PASSWORD || '',
-			database:process.env.POSTGRES_DB_NAME || 'stakcast'
-		}
+		postgres: {
+			port: process.env.POSTGRES_PORT || 5432, // Fixed: was POSTRES_PORT
+			host: process.env.POSTGRES_HOST || "localhost",
+			username: process.env.POSTGRES_USERNAME || "root",
+			password: process.env.POSTGRES_PASSWORD || "",
+			database: process.env.POSTGRES_DB_NAME || "stakcast",
+		},
 		// mongo_uri: getMongoUri() || "mongodb://localhost:27017/testdb",
-		
 	},
 	email: {
 		SMTP_HOST: process.env.EMAIL_SMTP_HOST?.trim(),

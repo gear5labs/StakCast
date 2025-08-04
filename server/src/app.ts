@@ -3,6 +3,8 @@ import { ErrorHandler } from "./utils/errorHandler";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
+import { container } from "tsyringe";
+import QueueService from "./services/queueService";
 
 import appRoutes from ".";
 const app: Application = express();
@@ -20,5 +22,11 @@ app.get("/", (req, res) => {
 
 app.use("/api", appRoutes);
 app.use(ErrorHandler);
+
+// Initialize queue service as singleton
+if (!container.isRegistered(QueueService)) {
+	const queueService = new QueueService();
+	container.registerInstance(QueueService, queueService);
+}
 
 export default app;
