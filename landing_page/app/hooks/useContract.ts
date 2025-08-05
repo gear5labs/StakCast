@@ -3,7 +3,11 @@ import { Contract, RpcProvider } from 'starknet';
 import PredictionHubABI from '../../abi/PredictionHub.json';
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
-const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://starknet-sepolia.public.blastapi.io/rpc/v0_7";
+const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL;
+
+// Demo/fallback constants
+const DEMO_TVL = '150000';
+const DEMO_TOTAL_MARKETS = 3;
 
 export interface Market {
   market_id: string;
@@ -41,8 +45,8 @@ export const useWallet = () => {
       }
     } catch (error) {
       console.error('Failed to connect wallet:', error);
-      setIsConnected(true);
-      setAddress("0x1234...5678");
+      setIsConnected(false);
+      setAddress(null);
     } finally {
       setConnecting(false);
     }
@@ -63,6 +67,12 @@ export const useContract = () => {
   useEffect(() => {
     const initContract = async () => {
       try {
+        if (!CONTRACT_ADDRESS) {
+          throw new Error('CONTRACT_ADDRESS is not defined');
+        }
+        if (!RPC_URL) {
+          throw new Error('RPC_URL is not defined');
+        }
         const rpcProvider = new RpcProvider({ nodeUrl: RPC_URL });
         const contractInstance = new Contract(PredictionHubABI, CONTRACT_ADDRESS, rpcProvider);
         
@@ -71,7 +81,7 @@ export const useContract = () => {
         console.log('Contract initialized successfully');
       } catch (error) {
         console.error('Failed to initialize contract:', error);
-        setContract({} as Contract);
+        setContract(null);
       }
     };
 
@@ -154,8 +164,8 @@ export const useMarkets = () => {
           ];
 
           setMarkets(mockMarkets);
-          setTvl("150000");
-          setTotalMarkets(3);
+          setTvl(DEMO_TVL);
+          setTotalMarkets(DEMO_TOTAL_MARKETS);
           setError("Demo Mode - Contract integration in progress");
         }
         
