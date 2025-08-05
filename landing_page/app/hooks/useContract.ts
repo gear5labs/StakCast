@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { Contract, RpcProvider } from 'starknet';
 import PredictionHubABI from '../../abi/PredictionHub.json';
 
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+if (!CONTRACT_ADDRESS) {
+  throw new Error("NEXT_PUBLIC_CONTRACT_ADDRESS environment variable must be set.");
+}
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://starknet-sepolia.public.blastapi.io/rpc/v0_7";
 
 export interface Market {
