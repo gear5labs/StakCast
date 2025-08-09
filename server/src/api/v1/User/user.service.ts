@@ -1,13 +1,11 @@
-// src/services/UserService.ts
-import { injectable } from "tsyringe";
-import { DataSource } from "typeorm";
+import { inject, injectable } from "tsyringe";
 import UserRepository from "./user.repository";
 import User from "./user.entity";
 import AppDataSource from "../../../config/DataSource";
 
 @injectable()
 export default class UserService {
-	constructor(private userRepository: UserRepository) {}
+	constructor(@inject(UserRepository) private userRepository: UserRepository) {}
 
 	async createUser(userData: { email: string; firstName: string; lastName: string }): Promise<User> {
 		const existingUser = await this.userRepository.findByEmail(userData.email);
