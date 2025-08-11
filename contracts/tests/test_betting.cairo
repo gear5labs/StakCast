@@ -39,7 +39,7 @@ fn test_buy_share_success() {
     // user 1 buys 10 shares of option 1
     let user1_amount = turn_number_to_precision_point(10);
     let user2_amount = turn_number_to_precision_point(20);
-    let user3_amount = turn_number_to_precision_point(40);
+    let user3_amount = turn_number_to_precision_point(10);
 
     let user1_balance_before = _token.balance_of(USER1_ADDR());
     let contract_balance_before = _token.balance_of(contract.contract_address);
@@ -50,6 +50,13 @@ fn test_buy_share_success() {
     let contract_balance_after = _token.balance_of(contract.contract_address);
     assert(user1_balance_after == user1_balance_before - user1_amount, 'u1 debit');
     assert(contract_balance_after == contract_balance_before + user1_amount, 'u1 credit');
+
+    // assert userstake details were updates as expected
+    let bet_details_user_1: UserStake = contract.get_user_stake_details(market_id, USER1_ADDR());
+    assert(bet_details_user_1.total_amount_a == user1_amount, 'u1 total amount should be 10');
+    assert(bet_details_user_1.shares_a > 0, 'u1 shares a should be 10');
+    assert(bet_details_user_1.total_amount_b == 0, 'u1 total amount b should be 0');
+    assert(bet_details_user_1.total_invested == user1_amount, 'u1 total invested should be 10');
 
     // user 2 buys 20 shares of option 2
     let user2_balance_before = _token.balance_of(USER2_ADDR());
@@ -62,8 +69,16 @@ fn test_buy_share_success() {
     assert(user2_balance_after == user2_balance_before - user2_amount, 'u2 debit');
     assert(contract_balance_after2 == contract_balance_before2 + user2_amount, 'u2 credit');
 
+    // assert userstake details were updates as expected
+    let bet_details_user_2: UserStake = contract.get_user_stake_details(market_id, USER2_ADDR());
+    assert(bet_details_user_2.total_amount_a == user2_amount, 'u2 total amount a should be 20');
+    assert(bet_details_user_2.shares_b == 0, 'u2 shares b should be 20');
+    assert(bet_details_user_2.total_amount_b == 0, 'u2 total amount b should be 20');
+    assert(bet_details_user_2.total_invested == user2_amount, 'u2 total invested should be 20');
+
     // user 3 buys 40 shares of option 2
     let user3_balance_before = _token.balance_of(USER3_ADDR());
+    println!("user 3 balance before: {}", user3_balance_before);
     let contract_balance_before3 = _token.balance_of(contract.contract_address);
     start_cheat_caller_address(contract.contract_address, USER3_ADDR());
     contract.buy_shares(market_id, 1, user3_amount);
@@ -72,6 +87,13 @@ fn test_buy_share_success() {
     let contract_balance_after3 = _token.balance_of(contract.contract_address);
     assert(user3_balance_after == user3_balance_before - user3_amount, 'u3 debit');
     assert(contract_balance_after3 == contract_balance_before3 + user3_amount, 'u3 credit');
+
+    // assert userstake details were updates as expected
+    let bet_details_user_3: UserStake = contract.get_user_stake_details(market_id, USER3_ADDR());
+    assert(bet_details_user_3.total_amount_a == 0, 'u3 total amount a should be 0');
+    assert(bet_details_user_3.shares_b > 0, 'u3 shares b should be 40');
+    assert(bet_details_user_3.total_amount_b == user3_amount, 'u3 total amount b should be 40');
+    assert(bet_details_user_3.total_invested == user3_amount, 'u3 total invested should be 40');
 
     let market_shares_after = contract.calculate_share_prices(market_id);
     let bet_details_user_1: UserStake = contract.get_user_stake_details(market_id, USER1_ADDR());
@@ -136,8 +158,6 @@ fn test_get_all_bets_for_user() {
 
     // user 1 buys 10 shares of option 1
     let user1_amount = turn_number_to_precision_point(10);
-    let user2_amount = turn_number_to_precision_point(20);
-    let user3_amount = turn_number_to_precision_point(40);
 
     let user1_balance_before = _token.balance_of(USER1_ADDR());
     let contract_balance_before = _token.balance_of(contract.contract_address);

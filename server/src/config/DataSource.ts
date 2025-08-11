@@ -2,6 +2,7 @@ import { DataSource } from "typeorm"
 import config from "./config";
 import { User } from "../api/v1/User/user.entity";
 import { Auth } from "../api/v1/Auth/auth.entity";
+import {Wallet} from "../api/v1/Wallet/wallet.entity";
 
 const AppDataSource = new DataSource({
     type: 'postgres',
@@ -10,7 +11,7 @@ const AppDataSource = new DataSource({
     username: config.db.postgres.username,
     password: config.db.postgres.password,
     database: config.db.postgres.database,
-    entities: [User, Auth],
+    entities: [User, Auth, Wallet],
     synchronize: process.env.NODE_ENV !== 'production', // Auto-create database schema in development
     logging: process.env.NODE_ENV !== 'production',
 })

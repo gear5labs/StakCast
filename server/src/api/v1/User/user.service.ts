@@ -1,20 +1,22 @@
-// src/services/UserService.ts
-import { injectable } from "tsyringe";
-import { DataSource } from "typeorm";
+import { inject, injectable } from "tsyringe";
 import UserRepository from "./user.repository";
 import User from "./user.entity";
 import AppDataSource from "../../../config/DataSource";
+import { QueryRunner } from "typeorm";
 
 @injectable()
 export default class UserService {
-	constructor(private userRepository: UserRepository) {}
+	constructor(@inject(UserRepository) private userRepository: UserRepository) {}
 
-	async createUser(userData: { email: string; firstName: string; lastName: string }): Promise<User> {
+	async createUser(
+		userData: { email: string; firstName: string; lastName: string },
+		queryRunner?: QueryRunner
+	): Promise<User> {
 		const existingUser = await this.userRepository.findByEmail(userData.email);
 		if (existingUser) {
 			throw new Error("User already exists");
 		}
-		return this.userRepository.createUser(userData);
+		return this.userRepository.createUser(userData, queryRunner);
 	}
 
 	async getUserById(userId: string): Promise<User> {
@@ -25,8 +27,8 @@ export default class UserService {
 		return user;
 	}
 
-	async getUserByEmail(email: string): Promise<User> {
-		const user = await this.userRepository.findByEmail(email);
+	async getUserByEmail(email: string, queryRunner?: QueryRunner): Promise<User> {
+		const user = await this.userRepository.findByEmail(email, queryRunner);
 		if (!user) {
 			throw new Error("User not found");
 		}

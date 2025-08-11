@@ -17,8 +17,9 @@ export default class UserRepository {
 		return repository.save(user);
 	}
 
-	async findByEmail(email: string): Promise<User | null> {
-		return this.userRepository.findOne({ where: { email } });
+	async findByEmail(email: string, queryRunner?: QueryRunner): Promise<User | null> {
+		const repository = queryRunner ? queryRunner.manager.getRepository(User) : this.userRepository;
+		return repository.findOne({ where: { email } });
 	}
 
 	async findById(userId: string): Promise<User | null> {

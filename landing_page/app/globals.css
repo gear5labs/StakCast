@@ -254,3 +254,40 @@
     }
   }
 
+  
+/* Light mode button visibility fixes */
+@layer components {
+  .light button[data-variant="ghost"]:not(:hover) {
+    @apply text-slate-700 bg-transparent;
+  }
+
+  .light button[data-variant="outline"]:not(:hover) {
+    @apply border-slate-300 text-slate-700 bg-transparent;
+  }
+
+  .light button[data-variant="ghost"]:hover {
+    @apply text-slate-900 bg-slate-100;
+  }
+
+  .light button[data-variant="outline"]:hover {
+    @apply border-slate-400 text-slate-900 bg-slate-50;
+  }
+
+  /* Ensure default buttons have proper contrast in light mode */
+  .light button:not([data-variant]) {
+    @apply bg-slate-900 text-white hover:bg-slate-800;
+  }
+
+  /* Fix any invisible text issues in light mode */
+  .light {
+    @apply text-slate-900;
+  }
+
+  .light .text-muted-foreground {
+    @apply text-slate-600;
+  }
+
+  .light .bg-muted {
+    @apply bg-slate-100;
+  }
+}
