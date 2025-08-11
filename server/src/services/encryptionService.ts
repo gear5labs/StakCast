@@ -4,7 +4,7 @@ import { randomBytes, createCipheriv, createDecipheriv, pbkdf2Sync } from "crypt
 export type GcmBlob = { ct: string; iv: string; tag: string }; // base64 fields
 export type KeystoreRecord = {
 	version: 1;
-	data: GcmBlob; // AES-GCM(DEK, plaintext private key)
+	data: GcmBlob; // AES-GCM(DEK, privateKey private key)
 	wraps: {
 		password: GcmBlob & { kdf: { algo: "pbkdf2-sha256"; iter: number; salt: string } };
 		recovery: GcmBlob & { kdf: { algo: "none" } }; // raw 32B recovery key, no KDF
@@ -13,10 +13,10 @@ export type KeystoreRecord = {
 
 @injectable()
 export class EncryptionService {
-	private aesGcmEnc(key: Buffer, plaintext: Buffer): GcmBlob {
+	private aesGcmEnc(key: Buffer, privateKey: Buffer): GcmBlob {
 		const iv = randomBytes(12);
 		const c = createCipheriv("aes-256-gcm", key, iv);
-		const ct = Buffer.concat([c.update(plaintext), c.final()]);
+		const ct = Buffer.concat([c.update(privateKey), c.final()]);
 		const tag = c.getAuthTag();
 		return { ct: ct.toString("base64"), iv: iv.toString("base64"), tag: tag.toString("base64") };
 	}
@@ -41,10 +41,10 @@ export class EncryptionService {
 	 * Create keystore with envelope encryption and one-time recovery key.
 	 * Returns keystore record + recovery key (hex) to show once.
 	 */
-	createKeystore(plaintext: Uint8Array, password: string): { record: KeystoreRecord; recoveryKeyHex: string } {
+	createKeystore(privateKey: Uint8Array, password: string): { record: KeystoreRecord; recoveryKeyHex: string } {
 		const DEK = randomBytes(32);
 
-		const data = this.aesGcmEnc(DEK, Buffer.from(plaintext));
+		const data = this.aesGcmEnc(DEK, Buffer.from(privateKey));
 
 		const salt = randomBytes(16).toString("base64");
 		const iter = 150_000;
@@ -72,8 +72,8 @@ export class EncryptionService {
 			const { iter, salt } = record.wraps.password.kdf;
 			const KEKpwd = this.deriveKEK(password, salt, iter);
 			const DEK = this.aesGcmDec(KEKpwd, record.wraps.password);
-			const plaintext = this.aesGcmDec(DEK, record.data);
-			return new Uint8Array(plaintext);
+			const privateKey = this.aesGcmDec(DEK, record.data);
+			return new Uint8Array(privateKey);
 		} catch {
 			throw new Error("Invalid password or corrupted keystore.");
 		}
