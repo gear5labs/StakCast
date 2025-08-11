@@ -7,7 +7,8 @@ use stakcast::admin_interface::IAdditionalAdmin;
 use stakcast::errors;
 use stakcast::events::{
     BetPlaced, EmergencyPaused, Event, FeesCollected, MarketCreated, MarketEmergencyClosed,
-    MarketForceClosed, MarketResolved, ModeratorAdded, ModeratorRemoved, WagerPlaced, WinningsCollected,
+    MarketForceClosed, MarketResolved, ModeratorAdded, ModeratorRemoved, WagerPlaced,
+    WinningsCollected,
 };
 use stakcast::interface::IPredictionHub;
 use stakcast::types::{BetActivity, Choice, MarketStatus, Outcome, PredictionMarket, UserStake};
@@ -225,7 +226,6 @@ pub mod PredictionHub {
         fn assert_market_exists(self: @ContractState, market_id: u256) {
             let market = self.all_predictions.entry(market_id).read();
             assert(market.market_id == market_id, errors::MARKET_DOES_NOT_EXIST);
-
         }
 
 
@@ -1277,19 +1277,17 @@ pub mod PredictionHub {
             self.assert_market_exists(market_id);
             self.assert_market_not_resolved(market_id);
 
-            assert(market_ids.len() == market_types.len(), errors::ARRAYS_LENGTH_MISMATCH);
-
             let mut prediction: PredictionMarket = self.all_predictions.entry(market_id).read();
             let current_time = get_block_timestamp();
             prediction.status = MarketStatus::Closed;
             prediction.is_open = false;
             self.all_predictions.entry(market_id).write(prediction);
-            self.emit(MarketForceClosed { 
-                market_id, 
-                reason, 
-                closed_by: get_caller_address(), 
-                time: current_time 
-            });
+            self
+                .emit(
+                    MarketForceClosed {
+                        market_id, reason, closed_by: get_caller_address(), time: current_time,
+                    },
+                );
         }
 
         fn emergency_close_multiple_markets(ref self: ContractState, market_ids: Array<u256>) {
@@ -1313,16 +1311,13 @@ pub mod PredictionHub {
             market.is_resolved = true;
             market.is_open = false;
             market.winning_choice = Option::Some(winning_choice);
-            
-            let winning_choice_outcome: Outcome = self.choice_num_to_outcome(market_id, winning_choice);
+
+            let winning_choice_outcome: Outcome = self
+                .choice_num_to_outcome(market_id, winning_choice);
             market.status = MarketStatus::Resolved(winning_choice_outcome);
 
             self.all_predictions.entry(market_id).write(market);
-            self.emit(MarketResolved { 
-                market_id, 
-                resolver: get_caller_address(), 
-                winning_choice 
-            });
+            self.emit(MarketResolved { market_id, resolver: get_caller_address(), winning_choice });
 
             self.end_reentrancy_guard();
         }
@@ -1336,7 +1331,7 @@ pub mod PredictionHub {
             self.assert_only_admin();
             assert(market_ids.len() == winning_choices.len(), 'Arrays must have same length');
             assert(market_ids.len() == market_types.len(), 'Arrays must have same length');
-            
+
             for i in 0..market_ids.len() {
                 let market_id = *market_ids.at(i);
                 let winning_choice = *winning_choices.at(i);
