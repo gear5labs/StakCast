@@ -1,93 +1,59 @@
 import { injectable } from "tsyringe";
-import CryptoJS from "crypto-js";
-import { Account, ec, RpcProvider, hash, CallData } from "starknet";
+import { Account, ec, RpcProvider, hash, CallData, Contract } from "starknet";
 import config from "../config/config";
-import { uint8ArrayToWordArray, wordArrayToUint8Array } from "../utils/starknetUtils";
-import { Token } from "../types/wallet.types";
-import axios from "axios";
+import { decryptPrivateKey, encryptPrivateKey } from "../utils/starknetUtils";
+
 @injectable()
 export default class StarknetService {
-	private static isInitialized = false;
-	private static rpcProvider: RpcProvider;
-
+	private readonly rpcProvider: RpcProvider;
 	private readonly OZ_ACCOUNT_CLASS_HASH: string = "";
+	private readonly FAUCET_ADDRESS: string = "";
+	private readonly FAUCET_PK: string = "";
+	private readonly DRIP_AMOUNT: number = 0;
+	private readonly STRK_TOKEN: string = "";
 
 	constructor() {
 		this.OZ_ACCOUNT_CLASS_HASH = config.starknet.accountClassHash;
 
-		if (!StarknetService.isInitialized) {
-			this.connectProvider();
-			StarknetService.isInitialized = true;
-		}
-	}
-
-	private connectProvider() {
-		StarknetService.rpcProvider = new RpcProvider({
+		this.rpcProvider = new RpcProvider({
 			nodeUrl: config.starknet.nodeUrl,
 			retries: 3,
 		});
+
+		this.FAUCET_ADDRESS = config.starknet.faucetAddress;
+		this.FAUCET_PK = config.starknet.faucetPK;
+		this.DRIP_AMOUNT = Number(config.starknet.dripAmount);
+		this.STRK_TOKEN = config.starknet.strkToken;
 	}
 
-	private encryptPrivateKey(privateKey: Uint8Array, password: string): string {
-		const salt = CryptoJS.lib.WordArray.random(16);
-		const key = CryptoJS.PBKDF2(password, salt, {
-			keySize: 256 / 32,
-			iterations: 100_000,
-		});
-		const data = uint8ArrayToWordArray(privateKey);
-		const ciphertext = CryptoJS.AES.encrypt(data, key, { iv: salt });
-
-		return JSON.stringify({
-			ciphertext: ciphertext.toString(),
-			salt: salt.toString(),
-		});
-	}
-
-	private decryptPrivateKey(encryptedData: string, password: string): Uint8Array | null {
+	private async fundWallet(recipient: string): Promise<{ success: boolean; message?: string; error?: any }> {
 		try {
-			const { ciphertext, salt } = JSON.parse(encryptedData);
-			const saltWordArray = CryptoJS.enc.Hex.parse(salt);
-			const key = CryptoJS.PBKDF2(password, saltWordArray, {
-				keySize: 256 / 32,
-				iterations: 100_000,
-			});
-			const decrypted = CryptoJS.AES.decrypt(ciphertext, key, { iv: saltWordArray });
-			return wordArrayToUint8Array(decrypted);
-		} catch (err) {
-			console.error("Decryption failed:", err);
-			return null;
-		}
-	}
+			const faucetAccount = new Account(this.rpcProvider, this.FAUCET_ADDRESS, this.FAUCET_PK);
 
-	private async fundWallet(
-		address: string,
-		token: Token = "STRK",
-		amount: string = "50000000000000000000"
-	): Promise<{ success: boolean; message?: string; error?: any }> {
-		const unit = token === "ETH" ? "WEI" : "FRI";
+			const { abi: tokenABI } = await this.rpcProvider.getClassAt(this.STRK_TOKEN);
 
-		try {
-			const response = await axios.post(
-				"http://127.0.0.1:5050/mint",
-				{
-					address,
-					amount,
-					unit,
-				},
-				{
-					headers: { "Content-Type": "application/json" },
-				}
-			);
+			if (!tokenABI) {
+				throw new Error(`No ABI found for ${this.STRK_TOKEN}`);
+			}
+
+			const tokenContract = new Contract(tokenABI, this.STRK_TOKEN, this.rpcProvider);
+			tokenContract.connect(faucetAccount);
+
+			// Prepare and send transfer
+			const dripCall = tokenContract.populate("transfer", [recipient, this.DRIP_AMOUNT]);
+			const res = await tokenContract.transfer(dripCall.calldata);
+
+			await this.rpcProvider.waitForTransaction(res.transaction_hash);
 
 			return {
 				success: true,
-				message: response.data?.message || "Mint successful",
+				message: `Funded ${recipient} with ${this.DRIP_AMOUNT} strk tokens`,
 			};
 		} catch (error: any) {
-			console.error(`Failed to fund ${token} to ${address}:`, error?.message || error);
+			console.error(`Failed to fund wallet ${recipient}:`, error);
 			return {
 				success: false,
-				error: error?.response?.data || error.message || "Unknown error",
+				error: error?.message || error,
 			};
 		}
 	}
@@ -99,7 +65,7 @@ export default class StarknetService {
 		const calldata = CallData.compile({ publicKey });
 		const contractAddress = hash.calculateContractAddressFromHash(publicKey, this.OZ_ACCOUNT_CLASS_HASH, calldata, 0);
 
-		const encryptedPrivateKey = this.encryptPrivateKey(privateKey, userPassword);
+		const encryptedPrivateKey = encryptPrivateKey(privateKey, userPassword);
 
 		return {
 			success: true,
@@ -115,7 +81,7 @@ export default class StarknetService {
 		encryptedPrivateKey: string,
 		userPassword: string
 	) {
-		const decrypted = this.decryptPrivateKey(encryptedPrivateKey, userPassword);
+		const decrypted = decryptPrivateKey(encryptedPrivateKey, userPassword);
 
 		if (!decrypted) {
 			return {
@@ -125,12 +91,11 @@ export default class StarknetService {
 		}
 
 		const fundResponse = await this.fundWallet(userAddress);
-
 		if (!fundResponse.success) {
 			throw new Error(fundResponse.error);
 		}
 
-		const account = new Account(StarknetService.rpcProvider, userAddress, decrypted);
+		const account = new Account(this.rpcProvider, userAddress, decrypted);
 
 		try {
 			const constructorCalldata = CallData.compile({ publicKey: userPubKey });
@@ -141,7 +106,7 @@ export default class StarknetService {
 				addressSalt: userPubKey,
 			});
 
-			await StarknetService.rpcProvider.waitForTransaction(transaction_hash);
+			await this.rpcProvider.waitForTransaction(transaction_hash);
 
 			return {
 				success: true,

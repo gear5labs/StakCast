@@ -3,6 +3,7 @@ import WalletRepository from "./wallet.repository";
 import Wallet from "./wallet.entity";
 import StarknetService from "../../../services/starknetService";
 import { DeployResult } from "../../../types/wallet.types";
+import { QueryRunner } from "typeorm";
 
 @injectable()
 export default class WalletService {
@@ -13,7 +14,7 @@ export default class WalletService {
 		private walletRepository: WalletRepository
 	) {}
 
-	async createWallet(userId: string, password: string): Promise<Wallet> {
+	async createWallet(userId: string, password: string, queryRunner?: QueryRunner): Promise<Wallet> {
 		const wallet = await this.walletRepository.findByUserId(userId);
 
 		if (wallet) {
@@ -22,16 +23,23 @@ export default class WalletService {
 
 		const walletData = await this.starknetService.generateStarknetAddress(password);
 
-		return this.walletRepository.createWallet({
-			userId: userId,
-			publicKey: walletData.userPubKey,
-			encryptedPrivateKey: walletData.userPrivateKey,
-			address: walletData.userAddress,
-		});
+		return this.walletRepository.createWallet(
+			{
+				userId: userId,
+				publicKey: walletData.userPubKey,
+				encryptedPrivateKey: walletData.userPrivateKey,
+				address: walletData.userAddress,
+			},
+			queryRunner
+		);
 	}
 
 	async deployWallet(userId: string, password: string): Promise<DeployResult> {
 		const wallet = await this.getWalletByUserId(userId);
+
+		if (!wallet) {
+			throw new Error("Wallet not found");
+		}
 
 		if (wallet.deployed) {
 			throw new Error("Wallet already deplyed");
@@ -51,6 +59,16 @@ export default class WalletService {
 		}
 
 		return result;
+	}
+
+	async updateWallet(userId: string, walletData: Partial<Wallet>, queryRunner?: QueryRunner) {
+		const wallet = await this.getWalletByUserId(userId);
+
+		if (!wallet) {
+			throw new Error("Wallet not found");
+		}
+
+		await this.walletRepository.updateWallet(wallet.id, walletData, queryRunner);
 	}
 
 	async getWalletByUserId(userId: string): Promise<Wallet> {

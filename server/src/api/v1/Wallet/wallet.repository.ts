@@ -25,8 +25,9 @@ export default class WalletRepository {
 		return this.walletRepository.findOne({ where: { id: id } });
 	}
 
-	async updateWallet(walletId: string, walletData: Partial<Wallet>): Promise<Wallet | null> {
-		await this.walletRepository.update(walletId, walletData);
+	async updateWallet(walletId: string, walletData: Partial<Wallet>, queryRunner?: QueryRunner): Promise<Wallet | null> {
+		const repository = queryRunner ? queryRunner.manager.getRepository(Wallet) : this.walletRepository;
+		await repository.update(walletId, walletData);
 		return this.findById(walletId);
 	}
 }

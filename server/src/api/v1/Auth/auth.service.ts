@@ -7,12 +7,14 @@ import QueueService from "../../../services/queueService";
 import config from "../../../config/config";
 import UserService from "../User/user.service";
 import WalletService from "../Wallet/wallet.service";
+import AppDataSource from "../../../config/DataSource";
+import { DataSource, QueryRunner } from "typeorm";
 
 @injectable()
 export default class AuthService {
 	private readonly JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 	private readonly REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || "your-refresh-secret-key";
-
+	private readonly dataSource: DataSource;
 	constructor(
 		@inject(AuthRepository)
 		private authRepository: AuthRepository,
@@ -22,26 +24,46 @@ export default class AuthService {
 		private walletService: WalletService,
 		@inject(QueueService)
 		private queueService: QueueService
-	) {}
+	) {
+		this.dataSource = AppDataSource;
+	}
 
-	async register(email: string, password: string, firstName: string, lastName: string) {
+	async register(email: string, password: string, firstName: string, lastName: string, walletPassword: string) {
 		const existingUser = await this.userService.getUserByEmail(email);
+
 		if (existingUser) {
 			throw new ApplicationError("Email already registered", HttpStatusCodes.CONFLICT);
 		}
 
-		const user = await this.userService.createUser({
-			email,
-			firstName,
-			lastName,
-		});
+		const queryRunner = this.dataSource.createQueryRunner();
+		await queryRunner.connect();
+		await queryRunner.startTransaction();
 
-		const wallet = await this.walletService.createWallet(user.id, password);
+		try {
+			const user = await this.userService.createUser(
+				{
+					email,
+					firstName,
+					lastName,
+				},
+				queryRunner
+			);
 
-		await this.authRepository.createAuth(user.id, password);
+			const wallet = await this.walletService.createWallet(user.id, walletPassword, queryRunner);
 
-		const tokens = await this.generateTokens(user.id);
-		return { ...wallet, user, ...tokens };
+			await this.authRepository.createAuth(user.id, password, queryRunner);
+
+			const tokens = await this.generateTokens(user.id, queryRunner);
+
+			await queryRunner.commitTransaction();
+
+			return { ...wallet, user, ...tokens };
+		} catch (err) {
+			await queryRunner.rollbackTransaction();
+			throw err;
+		} finally {
+			await queryRunner.release();
+		}
 	}
 
 	async login(email: string, password: string) {
@@ -101,14 +123,13 @@ export default class AuthService {
 		}
 	}
 
-	private async generateTokens(userId: string) {
+	private async generateTokens(userId: string, queryRunner?: QueryRunner) {
 		const accessToken = jwt.sign({ id: userId }, this.JWT_SECRET, { expiresIn: "15m" });
 		const refreshToken = jwt.sign({ id: userId }, this.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
 
 		const expiresIn = new Date();
 		expiresIn.setDate(expiresIn.getDate() + 7); // 7 days
-		await this.authRepository.updateRefreshToken(userId, refreshToken, expiresIn);
-
+		await this.authRepository.updateRefreshToken(userId, refreshToken, expiresIn, queryRunner);
 		return { accessToken, refreshToken };
 	}
 
@@ -144,16 +165,16 @@ export default class AuthService {
 	}
 
 	async resetPassword(token: string, newPassword: string) {
+		const queryRunner = this.dataSource.createQueryRunner();
+		await queryRunner.connect();
+		await queryRunner.startTransaction();
 		try {
 			const decoded = jwt.verify(token, this.JWT_SECRET) as { id: string };
-			const auth = await this.authRepository.findByUserId(decoded.id);
-			if (!auth) throw new ApplicationError("Invalid token", HttpStatusCodes.UNAUTHORIZED);
-
-			auth.password = newPassword;
-			await auth.hashPassword();
-			await this.authRepository.save(auth);
+			await this.authRepository.updatePassword(decoded.id, newPassword, queryRunner);
 		} catch {
 			throw new ApplicationError("Invalid or expired token", HttpStatusCodes.UNAUTHORIZED);
+		} finally {
+			await queryRunner.release();
 		}
 	}
 

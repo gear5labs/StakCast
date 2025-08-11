@@ -2,17 +2,18 @@ import { inject, injectable } from "tsyringe";
 import UserRepository from "./user.repository";
 import User from "./user.entity";
 import AppDataSource from "../../../config/DataSource";
+import { QueryRunner } from "typeorm";
 
 @injectable()
 export default class UserService {
 	constructor(@inject(UserRepository) private userRepository: UserRepository) {}
 
-	async createUser(userData: { email: string; firstName: string; lastName: string }): Promise<User> {
+	async createUser(userData: { email: string; firstName: string; lastName: string }, queryRunner?: QueryRunner): Promise<User> {
 		const existingUser = await this.userRepository.findByEmail(userData.email);
 		if (existingUser) {
 			throw new Error("User already exists");
 		}
-		return this.userRepository.createUser(userData);
+		return this.userRepository.createUser(userData, queryRunner);
 	}
 
 	async getUserById(userId: string): Promise<User> {

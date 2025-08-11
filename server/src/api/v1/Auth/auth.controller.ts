@@ -8,8 +8,8 @@ export default class AuthController {
 
 	async register(req: Request, res: Response) {
 		try {
-			const { email, password, firstName, lastName } = req.body;
-			const result = await this.authService.register(email, password, firstName, lastName);
+			const { email, password, firstName, lastName, walletPassword } = req.body;
+			const result = await this.authService.register(email, password, firstName, lastName, walletPassword);
 			res.status(201).json(result);
 		} catch (error) {
 			res.status(400).json({ error: (error as Error).message });
@@ -54,7 +54,6 @@ export default class AuthController {
 
 	async changePassword(req: Request, res: Response) {
 		try {
-
 			const { currentPassword, newPassword } = req.body;
 			const userId = req.user?.id as string;
 			await this.authService.changePassword(userId, currentPassword, newPassword);
@@ -62,7 +61,7 @@ export default class AuthController {
 		} catch (error) {
 			res.status(400).json({ error: (error as Error).message });
 		}
-    }
+	}
 
 	async forgotPassword(req: Request, res: Response) {
 		try {
@@ -84,7 +83,7 @@ export default class AuthController {
 		}
 	}
 
-  async googleSignIn(req: Request, res: Response) {
+	async googleSignIn(req: Request, res: Response) {
 		try {
 			const { idToken } = req.body;
 			const result = await this.authService.googleSignIn(idToken);
@@ -92,5 +91,5 @@ export default class AuthController {
 		} catch (error) {
 			res.status(401).json({ error: (error as Error).message });
 		}
-  }
+	}
 }
