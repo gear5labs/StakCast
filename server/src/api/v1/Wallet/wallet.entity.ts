@@ -22,7 +22,7 @@ export class Wallet {
 	publicKey!: string;
 
 	@Column({ type: "text" })
-	encryptedPrivateKey!: string;
+	keystoreJson!: string;
 
 	@Column({ type: "bool", default: false })
 	deployed!: boolean;

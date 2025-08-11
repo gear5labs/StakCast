@@ -18,8 +18,9 @@ export default class AuthRepository {
 		return repository.save(auth);
 	}
 
-	async findByUserId(userId: string): Promise<Auth | null> {
-		return this.authRepository.findOne({ where: { userId } });
+	async findByUserId(userId: string, queryRunner?: QueryRunner): Promise<Auth | null> {
+		const repository = queryRunner ? queryRunner.manager.getRepository(Auth) : this.authRepository;
+		return repository.findOne({ where: { userId } });
 	}
 
 	async updateRefreshToken(
@@ -40,8 +41,13 @@ export default class AuthRepository {
 
 	async updatePassword(userId: string, newPassword: string, queryRunner?: QueryRunner): Promise<Auth> {
 		const repository = queryRunner ? queryRunner.manager.getRepository(Auth) : this.authRepository;
-		const auth = await repository.findOne({ where: { userId } });
-		if (!auth) throw new Error("User not found");
+
+		const auth = await this.findByUserId(userId, queryRunner);
+
+		if (!auth) {
+			throw new Error("User not found");
+		}
+
 		auth.password = newPassword;
 		await auth.hashPassword();
 		return repository.save(auth);
@@ -49,9 +55,5 @@ export default class AuthRepository {
 
 	async removeRefreshToken(userId: string): Promise<void> {
 		await this.authRepository.update({ userId }, { refreshToken: undefined, refreshTokenExpires: undefined });
-	}
-
-	async save(auth: Auth): Promise<Auth> {
-		return this.authRepository.save(auth);
 	}
 }

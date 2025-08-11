@@ -8,7 +8,10 @@ import { QueryRunner } from "typeorm";
 export default class UserService {
 	constructor(@inject(UserRepository) private userRepository: UserRepository) {}
 
-	async createUser(userData: { email: string; firstName: string; lastName: string }, queryRunner?: QueryRunner): Promise<User> {
+	async createUser(
+		userData: { email: string; firstName: string; lastName: string },
+		queryRunner?: QueryRunner
+	): Promise<User> {
 		const existingUser = await this.userRepository.findByEmail(userData.email);
 		if (existingUser) {
 			throw new Error("User already exists");
@@ -24,8 +27,8 @@ export default class UserService {
 		return user;
 	}
 
-	async getUserByEmail(email: string): Promise<User> {
-		const user = await this.userRepository.findByEmail(email);
+	async getUserByEmail(email: string, queryRunner?: QueryRunner): Promise<User> {
+		const user = await this.userRepository.findByEmail(email, queryRunner);
 		if (!user) {
 			throw new Error("User not found");
 		}

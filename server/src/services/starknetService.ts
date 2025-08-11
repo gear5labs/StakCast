@@ -1,49 +1,56 @@
-import { injectable } from "tsyringe";
+import { injectable, inject } from "tsyringe";
 import { Account, ec, RpcProvider, hash, CallData, Contract } from "starknet";
 import config from "../config/config";
-import { decryptPrivateKey, encryptPrivateKey } from "../utils/starknetUtils";
+import { EncryptionService, KeystoreRecord } from "./encryptionService";
 
 @injectable()
-export default class StarknetService {
-	private readonly rpcProvider: RpcProvider;
+export class StarknetService {
+	private static isInitialized = false;
+	private static rpcProvider: RpcProvider;
 	private readonly OZ_ACCOUNT_CLASS_HASH: string = "";
 	private readonly FAUCET_ADDRESS: string = "";
 	private readonly FAUCET_PK: string = "";
 	private readonly DRIP_AMOUNT: number = 0;
 	private readonly STRK_TOKEN: string = "";
 
-	constructor() {
+	constructor(@inject(EncryptionService) private encryptionService: EncryptionService) {
 		this.OZ_ACCOUNT_CLASS_HASH = config.starknet.accountClassHash;
 
-		this.rpcProvider = new RpcProvider({
+		if (!StarknetService.isInitialized) {
+			this.connectProvider();
+			StarknetService.isInitialized = true;
+		}
+	}
+
+	private get rpc() {
+		return StarknetService.rpcProvider;
+	}
+
+	private connectProvider() {
+		StarknetService.rpcProvider = new RpcProvider({
 			nodeUrl: config.starknet.nodeUrl,
 			retries: 3,
 		});
-
-		this.FAUCET_ADDRESS = config.starknet.faucetAddress;
-		this.FAUCET_PK = config.starknet.faucetPK;
-		this.DRIP_AMOUNT = Number(config.starknet.dripAmount);
-		this.STRK_TOKEN = config.starknet.strkToken;
 	}
 
 	private async fundWallet(recipient: string): Promise<{ success: boolean; message?: string; error?: any }> {
 		try {
-			const faucetAccount = new Account(this.rpcProvider, this.FAUCET_ADDRESS, this.FAUCET_PK);
+			const faucetAccount = new Account(this.rpc, this.FAUCET_ADDRESS, this.FAUCET_PK);
 
-			const { abi: tokenABI } = await this.rpcProvider.getClassAt(this.STRK_TOKEN);
+			const { abi: tokenABI } = await this.rpc.getClassAt(this.STRK_TOKEN);
 
 			if (!tokenABI) {
 				throw new Error(`No ABI found for ${this.STRK_TOKEN}`);
 			}
 
-			const tokenContract = new Contract(tokenABI, this.STRK_TOKEN, this.rpcProvider);
+			const tokenContract = new Contract(tokenABI, this.STRK_TOKEN, this.rpc);
 			tokenContract.connect(faucetAccount);
 
 			// Prepare and send transfer
 			const dripCall = tokenContract.populate("transfer", [recipient, this.DRIP_AMOUNT]);
 			const res = await tokenContract.transfer(dripCall.calldata);
 
-			await this.rpcProvider.waitForTransaction(res.transaction_hash);
+			await this.rpc.waitForTransaction(res.transaction_hash);
 
 			return {
 				success: true,
@@ -58,6 +65,11 @@ export default class StarknetService {
 		}
 	}
 
+	// ---------- Public flows ----------
+	/**
+	 * Generate Starknet account + keystore (envelope encryption) + recovery key.
+	 * Store `keystoreJson` in DB; show `recoveryKeyHex` once to the user.
+	 */
 	async generateStarknetAddress(userPassword: string) {
 		const privateKey = ec.starkCurve.utils.randomPrivateKey();
 		const publicKey = ec.starkCurve.getStarkKey(privateKey);
@@ -65,48 +77,38 @@ export default class StarknetService {
 		const calldata = CallData.compile({ publicKey });
 		const contractAddress = hash.calculateContractAddressFromHash(publicKey, this.OZ_ACCOUNT_CLASS_HASH, calldata, 0);
 
-		const encryptedPrivateKey = encryptPrivateKey(privateKey, userPassword);
+		const { record, recoveryKeyHex } = this.encryptionService.createKeystore(privateKey, userPassword);
 
 		return {
 			success: true,
 			userAddress: contractAddress,
 			userPubKey: publicKey.toString(),
-			userPrivateKey: encryptedPrivateKey,
+			keystoreJson: JSON.stringify(record),
+			recoveryKeyHex,
 		};
 	}
 
-	async deployStarknetAccount(
-		userAddress: string,
-		userPubKey: string,
-		encryptedPrivateKey: string,
-		userPassword: string
-	) {
-		const decrypted = decryptPrivateKey(encryptedPrivateKey, userPassword);
-
-		if (!decrypted) {
-			return {
-				success: false,
-				error: "Invalid password or corrupted encrypted private key.",
-			};
-		}
-
-		const fundResponse = await this.fundWallet(userAddress);
-		if (!fundResponse.success) {
-			throw new Error(fundResponse.error);
-		}
-
-		const account = new Account(this.rpcProvider, userAddress, decrypted);
-
+	async deployStarknetAccount(userAddress: string, userPubKey: string, keystoreJson: string, userPassword: string) {
 		try {
-			const constructorCalldata = CallData.compile({ publicKey: userPubKey });
+			const record = JSON.parse(keystoreJson) as KeystoreRecord;
+			const privateKeyBytes = this.encryptionService.unlockWithPassword(record, userPassword);
 
+			const fundResponse = await this.fundWallet(userAddress);
+
+			if (!fundResponse.success) {
+				throw new Error(fundResponse.error);
+			}
+
+			const account = new Account(this.rpc, userAddress, privateKeyBytes);
+
+			const constructorCalldata = CallData.compile({ publicKey: userPubKey });
 			const { transaction_hash, contract_address } = await account.deployAccount({
 				classHash: this.OZ_ACCOUNT_CLASS_HASH,
 				constructorCalldata,
 				addressSalt: userPubKey,
 			});
 
-			await this.rpcProvider.waitForTransaction(transaction_hash);
+			await this.rpc.waitForTransaction(transaction_hash);
 
 			return {
 				success: true,
@@ -115,10 +117,7 @@ export default class StarknetService {
 			};
 		} catch (err: any) {
 			console.error("Account deployment failed:", err);
-			return {
-				success: false,
-				error: err?.message || "Unknown deployment error.",
-			};
+			return { success: false, error: err?.message || "Unknown deployment error." };
 		}
 	}
 }

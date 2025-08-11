@@ -75,8 +75,8 @@ export default class AuthController {
 
 	async resetPassword(req: Request, res: Response) {
 		try {
-			const { token, newPassword } = req.body;
-			await this.authService.resetPassword(token, newPassword);
+			const { token, recoveryKeyHex, newPassword } = req.body;
+			await this.authService.resetPassword(token, recoveryKeyHex, newPassword);
 			res.json({ message: "Password has been reset" });
 		} catch (error) {
 			res.status(400).json({ error: (error as Error).message });
