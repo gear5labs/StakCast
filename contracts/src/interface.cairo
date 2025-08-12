@@ -1,6 +1,8 @@
 use starknet::ContractAddress;
 use starknet::class_hash::ClassHash;
-use crate::types::{BetActivity, Outcome, PredictionMarket, UserStake};
+use crate::types::{
+    BetActivity, Outcome, PredictionMarket, StakingActivity, UserDashboard, UserStake,
+};
 
 // ================ Contract Interface ================
 
@@ -57,6 +59,9 @@ pub trait IPredictionHub<TContractState> {
     fn get_all_locked_markets(self: @TContractState) -> Array<PredictionMarket>;
     fn get_all_resolved_markets(self: @TContractState) -> Array<PredictionMarket>;
 
+    fn get_all_users_in_market(self: @TContractState, market_id: u256) -> Array<ContractAddress>;
+
+
     fn get_all_closed_bets_for_user(
         self: @TContractState, user: ContractAddress,
     ) -> Array<PredictionMarket>;
@@ -102,7 +107,7 @@ pub trait IPredictionHub<TContractState> {
     /// Returns an array of all resolved general prediction markets
     fn get_all_resolved_prediction_markets(self: @TContractState) -> Array<PredictionMarket>;
 
-    fn is_prediction_market_open_for_betting(ref self: TContractState, market_id: u256) -> bool;
+    fn is_prediction_market_open_for_betting(self: @TContractState, market_id: u256) -> bool;
 
     // ================ Market Resolution ================
 
@@ -118,6 +123,10 @@ pub trait IPredictionHub<TContractState> {
     fn get_user_stake_details(
         self: @TContractState, market_id: u256, user: ContractAddress,
     ) -> UserStake;
+
+    fn get_user_dashboard(self: @TContractState, user: ContractAddress) -> UserDashboard;
+
+    fn get_staking_activity(self: @TContractState, user: ContractAddress) -> Array<StakingActivity>;
 
     fn claim(ref self: TContractState, market_id: u256);
 

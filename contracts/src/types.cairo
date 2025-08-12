@@ -1,3 +1,4 @@
+use starknet::storage::Vec;
 #[derive(Drop, Serde, starknet::Store, Clone)]
 pub struct PredictionMarket {
     pub title: ByteArray,
@@ -99,4 +100,21 @@ pub enum Outcome {
 pub struct BetActivity {
     pub choice: u8, // 0 or 1 
     pub amount: u256,
+}
+
+
+#[derive(Drop, Serde, Copy, starknet::Store, PartialEq)]
+pub struct UserDashboard {
+    pub total_markets_participated: u256,
+    pub total_wins: u256,
+    pub total_losses: u256,
+    pub total_trades: u256,
+    pub total_gained: u256,
+}
+
+#[derive(Drop, Serde, Copy, starknet::Store, PartialEq)]
+pub struct StakingActivity {
+    pub market_id: u256,
+    pub amount: u256,
+    pub timestamp: u64,
 }
