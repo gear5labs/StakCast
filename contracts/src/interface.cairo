@@ -23,6 +23,12 @@ pub trait IPredictionHub<TContractState> {
         crypto_prediction: Option<(felt252, u128)>,
     );
 
+    /// Extends the duration of an existing market
+    fn extend_market_duration(ref self: TContractState, market_id: u256, new_end_time: u64);
+
+    /// Modifies the description of an existing market
+    fn modify_market_details(ref self: TContractState, market_id: u256, new_description: ByteArray);
+
     // ================ Market Queries ================
 
     /// Returns the total number of prediction markets created
