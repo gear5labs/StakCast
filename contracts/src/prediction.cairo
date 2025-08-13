@@ -11,7 +11,10 @@ use stakcast::events::{
     MarketExtended, MarketModified,
 };
 use stakcast::interface::IPredictionHub;
-use stakcast::types::{BetActivity, Choice, MarketStatus, Outcome, PredictionMarket, UserStake};
+use stakcast::types::{
+    BetActivity, Choice, MarketStatus, Outcome, PredictionMarket, StakingActivity, UserDashboard,
+    UserStake,
+};
 use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
 use starknet::{ClassHash, ContractAddress, get_block_timestamp, get_caller_address};
 
@@ -72,6 +75,10 @@ pub mod PredictionHub {
         user_nonces: Map<ContractAddress, u256>, // Tracks nonce for each user
         market_ids: Map<u256, u256>,
         market_stats: Map<u256, MarketStats>,
+        market_users: Map<u256, Vec<ContractAddress>>, // market to a list of users
+        market_user_choices: Map<
+            (u256, u8), Vec<ContractAddress>,
+        >, // (market_id, choice) to a list of users
         // user traded status
 
         user_traded_status: Map<
@@ -81,7 +88,10 @@ pub mod PredictionHub {
 
         user_predictions: Map<ContractAddress, Vec<u256>>, // user to a list of market ids
         claimed: Map<(u256, ContractAddress), bool>,
-        market_analytics: Map<u256, Vec<BetActivity>> // market to a list of BetActivity structs
+        market_analytics: Map<u256, Vec<BetActivity>>, // market to a list of BetActivity structs
+        // user analytics
+        user_dashboard: Map<ContractAddress, UserDashboard>,
+        staking_activity: Map<ContractAddress, Vec<StakingActivity>>,
     }
 
 
@@ -540,20 +550,29 @@ pub mod PredictionHub {
 
             let mut user_stake: UserStake = self.bet_details.entry((market_id, caller)).read();
 
+            let mut user_dashboard = self.user_dashboard.entry(caller).read();
             // Check if user has traded on this market before
             let user_traded = self.user_traded_status.entry((market_id, caller)).read();
 
             let mut market_stats = self.market_stats.entry(market_id).read();
 
+            let mut market_users = self.market_users.entry(market_id);
+
+            let mut market_user_choices = self.market_user_choices.entry((market_id, choice));
+
             if !user_traded {
                 market_stats.total_trades += 1;
+                user_dashboard.total_markets_participated += 1;
                 self.user_traded_status.entry((market_id, caller)).write(true);
-
+                market_users.push(caller);
+                market_user_choices.push(caller);
                 // Add market_id to user's list of predictions
                 // add bet to user bet collection
                 self.user_predictions.entry(caller).push(market_id);
             }
 
+            user_dashboard.total_gained += amount;
+            user_dashboard.total_trades += 1;
             // Update market stats
             match user_choice {
                 Outcome::Option1 => {
@@ -582,6 +601,12 @@ pub mod PredictionHub {
                 },
                 _ => panic_with_felt252(errors::INVALID_CHOICE_SELECTED),
             }
+            self.user_dashboard.entry(caller).write(user_dashboard);
+
+            self
+                .staking_activity
+                .entry(caller)
+                .push(StakingActivity { market_id, amount, timestamp: get_block_timestamp() });
 
             user_stake.total_invested = user_stake.total_invested + amount;
 
@@ -679,6 +704,10 @@ pub mod PredictionHub {
 
             let user_reward: u256 = self.calculate_user_winnings(market_id, user_addr);
 
+            let mut user_dashboard = self.user_dashboard.entry(user_addr).read();
+            user_dashboard.total_gained += user_reward;
+            self.user_dashboard.entry(user_addr).write(user_dashboard);
+
             // Transfer ERC20 reward to the user
 
             let token_contract_address = self.protocol_token.read();
@@ -749,6 +778,26 @@ pub mod PredictionHub {
 
             markets
         }
+
+        fn get_user_dashboard(self: @ContractState, user: ContractAddress) -> UserDashboard {
+            self.user_dashboard.entry(user).read()
+        }
+
+        fn get_staking_activity(
+            self: @ContractState, user: ContractAddress,
+        ) -> Array<StakingActivity> {
+            let mut staking_activity = ArrayTrait::new();
+
+            let staking_activity_array = self.staking_activity.entry(user);
+
+            for i in 0..staking_activity_array.len() {
+                let activity = staking_activity_array.at(i).read();
+                staking_activity.append(activity);
+            }
+
+            staking_activity
+        }
+
 
         fn get_all_resolved_markets(self: @ContractState) -> Array<PredictionMarket> {
             let mut markets = ArrayTrait::new();
@@ -981,8 +1030,23 @@ pub mod PredictionHub {
             predictions
         }
 
+        fn get_all_users_in_market(
+            self: @ContractState, market_id: u256,
+        ) -> Array<ContractAddress> {
+            let mut users = ArrayTrait::new();
 
-        fn is_prediction_market_open_for_betting(ref self: ContractState, market_id: u256) -> bool {
+            let market_users = self.market_users.entry(market_id);
+
+            for i in 0..market_users.len() {
+                let user: ContractAddress = market_users.at(i).read();
+                users.append(user);
+            }
+
+            users
+        }
+
+
+        fn is_prediction_market_open_for_betting(self: @ContractState, market_id: u256) -> bool {
             self.assert_not_paused();
 
             self.assert_resolution_not_paused();
@@ -1032,6 +1096,39 @@ pub mod PredictionHub {
             market.winning_choice = Option::Some(winning_choice);
 
             market.status = MarketStatus::Resolved(winning_choice_outcome);
+
+            let market_user_choices = self.market_user_choices.entry((market_id, winning_choice));
+
+            for i in 0..market_user_choices.len() {
+                let user: ContractAddress = market_user_choices.at(i).read();
+
+                let user_stake: UserStake = self.bet_details.entry((market_id, user)).read();
+                let mut user_dashboard = self.user_dashboard.entry(user).read();
+
+                match winning_choice {
+                    0 => {
+                        if user_stake.shares_a > 0 {
+                            user_dashboard.total_wins += 1;
+                            user_dashboard.total_gained += user_stake.shares_a;
+                            self.user_dashboard.entry(user).write(user_dashboard);
+                        } else {
+                            user_dashboard.total_losses += 1;
+                            self.user_dashboard.entry(user).write(user_dashboard);
+                        }
+                    },
+                    1 => {
+                        if user_stake.shares_b > 0 {
+                            user_dashboard.total_wins += 1;
+                            user_dashboard.total_gained += user_stake.shares_b;
+                            self.user_dashboard.entry(user).write(user_dashboard);
+                        } else {
+                            user_dashboard.total_losses += 1;
+                            self.user_dashboard.entry(user).write(user_dashboard);
+                        }
+                    },
+                    _ => {},
+                }
+            }
 
             self.all_predictions.entry(market_id).write(market);
 
@@ -1352,6 +1449,7 @@ pub mod PredictionHub {
             market.is_resolved = true;
             market.is_open = false;
             market.winning_choice = Option::Some(winning_choice);
+
 
             let winning_choice_outcome: Outcome = self.choice_num_to_outcome(market_id, winning_choice);
             market.status = MarketStatus::Resolved(winning_choice_outcome);

@@ -5,7 +5,7 @@ use snforge_std::{
 };
 use stakcast::admin_interface::{IAdditionalAdminDispatcher, IAdditionalAdminDispatcherTrait};
 use stakcast::interface::{IPredictionHubDispatcher, IPredictionHubDispatcherTrait};
-use stakcast::types::{BetActivity, PredictionMarket, UserStake};
+use stakcast::types::{BetActivity, PredictionMarket, StakingActivity, UserDashboard, UserStake};
 use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
 use crate::test_utils::{
     ADMIN_ADDR, FEE_RECIPIENT_ADDR, HALF_PRECISION, MODERATOR_ADDR, USER1_ADDR, USER2_ADDR,
@@ -39,7 +39,8 @@ fn test_buy_share_success() {
     // user 1 buys 10 shares of option 1
     let user1_amount = turn_number_to_precision_point(10);
     let user2_amount = turn_number_to_precision_point(20);
-    let user3_amount = turn_number_to_precision_point(10);
+    let user3_amount = turn_number_to_precision_point(5);
+    let user3_amount_second = turn_number_to_precision_point(5);
 
     let user1_balance_before = _token.balance_of(USER1_ADDR());
     let contract_balance_before = _token.balance_of(contract.contract_address);
@@ -57,6 +58,14 @@ fn test_buy_share_success() {
     assert(bet_details_user_1.shares_a > 0, 'u1 shares a should be 10');
     assert(bet_details_user_1.total_amount_b == 0, 'u1 total amount b should be 0');
     assert(bet_details_user_1.total_invested == user1_amount, 'u1 total invested should be 10');
+
+    // assert user dashboard details were updates as expected
+    let user_dashboard_user_1: UserDashboard = contract.get_user_dashboard(USER1_ADDR());
+    assert(user_dashboard_user_1.total_markets_participated == 1, 'total markets should be 1');
+    assert(user_dashboard_user_1.total_wins == 0, 'u1 total wins should be 0');
+    assert(user_dashboard_user_1.total_losses == 0, 'u1 total losses should be 0');
+    assert(user_dashboard_user_1.total_trades == 1, 'u1 total trades should be 1');
+    assert(user_dashboard_user_1.total_gained == user1_amount, 'u1 total gained should be 10');
 
     // user 2 buys 20 shares of option 2
     let user2_balance_before = _token.balance_of(USER2_ADDR());
@@ -76,29 +85,94 @@ fn test_buy_share_success() {
     assert(bet_details_user_2.total_amount_b == 0, 'u2 total amount b should be 20');
     assert(bet_details_user_2.total_invested == user2_amount, 'u2 total invested should be 20');
 
+    // assert user dashboard details were updates as expected
+    let user_dashboard_user_2: UserDashboard = contract.get_user_dashboard(USER2_ADDR());
+    assert(user_dashboard_user_2.total_markets_participated == 1, 'total markets should be 1');
+    assert(user_dashboard_user_2.total_wins == 0, 'u2 total wins should be 0');
+    assert(user_dashboard_user_2.total_losses == 0, 'u2 total losses should be 0');
+    assert(user_dashboard_user_2.total_trades == 1, 'u2 total trades should be 1');
+    assert(user_dashboard_user_2.total_gained == user2_amount, 'u2 total gained should be 20');
+
     // user 3 buys 40 shares of option 2
     let user3_balance_before = _token.balance_of(USER3_ADDR());
     println!("user 3 balance before: {}", user3_balance_before);
     let contract_balance_before3 = _token.balance_of(contract.contract_address);
     start_cheat_caller_address(contract.contract_address, USER3_ADDR());
     contract.buy_shares(market_id, 1, user3_amount);
+
+    // assert user dashboard details were updates as expected
+    let user_dashboard_user_3: UserDashboard = contract.get_user_dashboard(USER3_ADDR());
+    assert(user_dashboard_user_3.total_markets_participated == 1, 'total markets should be 1');
+    assert(user_dashboard_user_3.total_wins == 0, 'u3 total wins should be 0');
+    assert(user_dashboard_user_3.total_losses == 0, 'u3 total losses should be 0');
+    assert(user_dashboard_user_3.total_trades == 1, 'u3 total trades should be 1');
+    assert(user_dashboard_user_3.total_gained == user3_amount, 'u3 total gained should be 5');
+
+    contract.buy_shares(market_id, 1, user3_amount_second);
+
+    // assert user dashboard details were updates as expected
+    let user_dashboard_user_3_after: UserDashboard = contract.get_user_dashboard(USER3_ADDR());
+    assert(
+        user_dashboard_user_3_after.total_markets_participated == 1, 'total markets should be 1',
+    );
+    assert(user_dashboard_user_3_after.total_wins == 0, 'u3 total wins should be 0');
+    assert(user_dashboard_user_3_after.total_losses == 0, 'u3 total losses should be 0');
+    assert(user_dashboard_user_3_after.total_trades == 2, 'u3 total trades should be 2');
+    assert(
+        user_dashboard_user_3_after.total_gained == user3_amount + user3_amount_second,
+        'u3 total gained should be 10',
+    );
+
     stop_cheat_caller_address(contract.contract_address);
+
     let user3_balance_after = _token.balance_of(USER3_ADDR());
     let contract_balance_after3 = _token.balance_of(contract.contract_address);
-    assert(user3_balance_after == user3_balance_before - user3_amount, 'u3 debit');
-    assert(contract_balance_after3 == contract_balance_before3 + user3_amount, 'u3 credit');
+    assert(
+        user3_balance_after == user3_balance_before - user3_amount - user3_amount_second,
+        'u3 debit',
+    );
+    assert(
+        contract_balance_after3 == contract_balance_before3 + user3_amount + user3_amount_second,
+        'u3 credit',
+    );
 
     // assert userstake details were updates as expected
     let bet_details_user_3: UserStake = contract.get_user_stake_details(market_id, USER3_ADDR());
     assert(bet_details_user_3.total_amount_a == 0, 'u3 total amount a should be 0');
     assert(bet_details_user_3.shares_b > 0, 'u3 shares b should be 40');
-    assert(bet_details_user_3.total_amount_b == user3_amount, 'u3 total amount b should be 40');
-    assert(bet_details_user_3.total_invested == user3_amount, 'u3 total invested should be 40');
+    assert(
+        bet_details_user_3.total_amount_b == user3_amount + user3_amount_second,
+        'u3 total amount b should be 40',
+    );
+    assert(
+        bet_details_user_3.total_invested == user3_amount + user3_amount_second,
+        'u3 total invested should be 40',
+    );
 
     let market_shares_after = contract.calculate_share_prices(market_id);
     let bet_details_user_1: UserStake = contract.get_user_stake_details(market_id, USER1_ADDR());
     let bet_details_user_2: UserStake = contract.get_user_stake_details(market_id, USER2_ADDR());
     let bet_details_user_3: UserStake = contract.get_user_stake_details(market_id, USER3_ADDR());
+
+    // test all user in market
+    let all_users_in_market: Array<ContractAddress> = contract.get_all_users_in_market(market_id);
+    assert(all_users_in_market.len() == 3, 'all users in market should be 3');
+    let user_1: ContractAddress = *all_users_in_market.at(0);
+    let user_2: ContractAddress = *all_users_in_market.at(1);
+    let user_3: ContractAddress = *all_users_in_market.at(2);
+    assert(user_1 == USER1_ADDR(), 'user 1 should be in market');
+    assert(user_2 == USER2_ADDR(), 'user 2 should be in market');
+    assert(user_3 == USER3_ADDR(), 'user 3 should be in market');
+
+    // test staking activity
+    let staking_activity: Array<StakingActivity> = contract.get_staking_activity(USER3_ADDR());
+    assert(staking_activity.len() == 2, 'staking activity should be 2');
+    let staking_activity_1: StakingActivity = *staking_activity.at(0);
+    assert(staking_activity_1.market_id == market_id, 'should be 1');
+    assert(staking_activity_1.amount == user3_amount, 'should be 5');
+    let staking_activity_2: StakingActivity = *staking_activity.at(1);
+    assert(staking_activity_2.market_id == market_id, 'should be 1');
+    assert(staking_activity_2.amount == user3_amount_second, 'should be 5');
 
     println!(
         "user 1 Bet details after buying shares: shares A: {}, shares B: {}, total invested: {}",
@@ -471,5 +545,4 @@ fn test_get_user_market_ids() {
 //     println!("\nAll user bet functions are working correctly!");
 //     println!("Arrays are being returned and populated properly!");
 // }
-
 
