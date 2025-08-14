@@ -39,6 +39,10 @@ pub trait IPredictionHub<TContractState> {
     /// Retrieves a specific prediction market by ID
     fn get_prediction(self: @TContractState, market_id: u256) -> PredictionMarket;
 
+    /// gets a list of market stakers for a particular choice
+    fn get_choice_stakers(
+        self: @TContractState, market_id: u256, choice: u8,
+    ) -> Array<ContractAddress>;
     /// Returns an array of all active prediction markets
     fn get_all_predictions_by_market_category(
         self: @TContractState, category: u8,
@@ -135,6 +139,8 @@ pub trait IPredictionHub<TContractState> {
     fn get_staking_activity(self: @TContractState, user: ContractAddress) -> Array<StakingActivity>;
 
     fn claim(ref self: TContractState, market_id: u256);
+
+    fn get_user_claim_status(self: @TContractState, market_id: u256, user: ContractAddress) -> bool;
 
     /// Returns the contract admin address
     fn get_admin(self: @TContractState) -> ContractAddress;

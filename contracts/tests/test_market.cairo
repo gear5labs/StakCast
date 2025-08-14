@@ -503,8 +503,11 @@ fn test_extend_market_duration_past_time() {
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
     let market = contract.get_prediction(market_id);
 
-    start_cheat_block_timestamp(contract.contract_address, market.end_time + 86400); // Move 1 day forward
-    let past_time = market.end_time + 3600; // 1 hour after market end, but still in the past from current time
+    start_cheat_block_timestamp(
+        contract.contract_address, market.end_time + 86400,
+    ); // Move 1 day forward
+    let past_time = market.end_time
+        + 3600; // 1 hour after market end, but still in the past from current time
 
     contract.extend_market_duration(market_id, past_time);
 }

@@ -207,6 +207,13 @@ fn test_buy_share_success() {
     let user_bet: @PredictionMarket = user.at(0);
     assert!(user_bet.market_id == @market_id, "incorrect market id");
     println!("user bet id: {}", user_bet.market_id);
+
+    // test get choice stakers
+    let choice_stakers: Array<ContractAddress> = contract.get_choice_stakers(market_id, 0);
+    println!("choice stakers: {:?}", choice_stakers);
+    assert(choice_stakers.len() == 2, 'choice stakers should be 1');
+    let choice_staker: ContractAddress = *choice_stakers.at(0);
+    assert(choice_staker == USER1_ADDR(), 'choice staker should be user 1');
 }
 
 #[test]
@@ -545,4 +552,5 @@ fn test_get_user_market_ids() {
 //     println!("\nAll user bet functions are working correctly!");
 //     println!("Arrays are being returned and populated properly!");
 // }
+
 

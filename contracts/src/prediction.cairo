@@ -7,8 +7,8 @@ use stakcast::admin_interface::IAdditionalAdmin;
 use stakcast::errors;
 use stakcast::events::{
     BetPlaced, EmergencyPaused, Event, FeesCollected, MarketCreated, MarketEmergencyClosed,
-    MarketForceClosed, MarketResolved, ModeratorAdded, ModeratorRemoved, WagerPlaced, WinningsCollected,
-    MarketExtended, MarketModified,
+    MarketExtended, MarketForceClosed, MarketModified, MarketResolved, ModeratorAdded,
+    ModeratorRemoved, WagerPlaced, WinningsCollected,
 };
 use stakcast::interface::IPredictionHub;
 use stakcast::types::{
@@ -23,6 +23,7 @@ use starknet::{ClassHash, ContractAddress, get_block_timestamp, get_caller_addre
 
 #[starknet::contract]
 pub mod PredictionHub {
+    use starknet::get_contract_address;
     use starknet::storage::{MutableVecTrait, Vec, VecTrait};
     use crate::types::{MarketStats, num_to_market_category};
     use super::{*, StoragePathEntry, StoragePointerWriteAccess};
@@ -56,6 +57,7 @@ pub mod PredictionHub {
         market_creation_paused: bool,
         betting_paused: bool,
         resolution_paused: bool,
+        claim_paused: bool,
         // Time-based restrictions
 
         min_market_duration: u64, // Minimum time a market must be open
@@ -116,7 +118,7 @@ pub mod PredictionHub {
 
         self.fee_recipient.write(fee_recipient);
 
-        self.platform_fee_percentage.write(250); // 2.5% default fee
+        self.platform_fee_percentage.write(500000000000000000); // 0.5% default fee
 
         self.pragma_oracle.write(pragma_oracle);
 
@@ -149,6 +151,8 @@ pub mod PredictionHub {
         self.betting_paused.write(false);
 
         self.resolution_paused.write(false);
+
+        self.claim_paused.write(false);
 
         self.reentrancy_guard.write(false);
     }
@@ -193,6 +197,11 @@ pub mod PredictionHub {
 
         fn assert_resolution_not_paused(self: @ContractState) {
             assert(!self.resolution_paused.read(), errors::RESOLUTION_PAUSED);
+        }
+
+
+        fn assert_claim_not_paused(self: @ContractState) {
+            assert(!self.claim_paused.read(), errors::CLAIM_PAUSED);
         }
 
 
@@ -371,6 +380,23 @@ pub mod PredictionHub {
 
             let (choice_0_label, choice_1_label) = choices;
 
+            // 1 strk for creation fee
+            let creation_fee = PRECISION;
+            let caller = get_caller_address();
+            let token_contract_address = self.protocol_token.read();
+            let token_dispatcher = IERC20Dispatcher { contract_address: token_contract_address };
+            self
+                .assert_sufficient_token_balance_for_token(
+                    caller, creation_fee, token_contract_address,
+                );
+            self
+                .assert_sufficient_allowance_for_token(
+                    caller, creation_fee, token_contract_address,
+                );
+            let success = token_dispatcher
+                .transfer_from(get_caller_address(), get_contract_address(), creation_fee);
+            assert(success, errors::TOKEN_TRANSFER_FAILED);
+
             let market_stats = MarketStats {
                 total_traders: 0,
                 traders_option_a: 0,
@@ -533,8 +559,7 @@ pub mod PredictionHub {
 
             let token_dispatcher = IERC20Dispatcher { contract_address: token_contract_address };
 
-            let success = token_dispatcher
-                .transfer_from(caller, starknet::get_contract_address(), amount);
+            let success = token_dispatcher.transfer_from(caller, get_contract_address(), amount);
 
             assert(success, errors::TOKEN_TRANSFER_FAILED);
 
@@ -561,7 +586,6 @@ pub mod PredictionHub {
             let mut market_user_choices = self.market_user_choices.entry((market_id, choice));
 
             if !user_traded {
-                market_stats.total_trades += 1;
                 user_dashboard.total_markets_participated += 1;
                 self.user_traded_status.entry((market_id, caller)).write(true);
                 market_users.push(caller);
@@ -628,10 +652,19 @@ pub mod PredictionHub {
             self.end_reentrancy_guard();
         }
 
+        fn get_choice_stakers(
+            self: @ContractState, market_id: u256, choice: u8,
+        ) -> Array<ContractAddress> {
+            let mut stakers = ArrayTrait::new();
+            let market_user_choices_ptr = self.market_user_choices.entry((market_id, choice));
+            for i in 0..market_user_choices_ptr.len() {
+                let user: ContractAddress = market_user_choices_ptr.at(i).read();
+                stakers.append(user);
+            }
+            stakers
+        }
 
-        fn extend_market_duration(
-            ref self: ContractState, market_id: u256, new_end_time: u64
-        ) {
+        fn extend_market_duration(ref self: ContractState, market_id: u256, new_end_time: u64) {
             self.assert_only_moderator_or_admin();
             self.assert_market_exists(market_id);
 
@@ -654,7 +687,7 @@ pub mod PredictionHub {
         }
 
         fn modify_market_details(
-            ref self: ContractState, market_id: u256, new_description: ByteArray
+            ref self: ContractState, market_id: u256, new_description: ByteArray,
         ) {
             self.assert_only_moderator_or_admin();
             self.assert_market_exists(market_id);
@@ -672,11 +705,9 @@ pub mod PredictionHub {
         fn claim(ref self: ContractState, market_id: u256) {
             self.assert_not_paused();
 
-            self.assert_resolution_not_paused();
+            self.assert_claim_not_paused();
 
             self.assert_market_exists(market_id);
-
-            self.assert_market_open(market_id);
 
             self.assert_market_resolved(market_id);
 
@@ -704,10 +735,6 @@ pub mod PredictionHub {
 
             let user_reward: u256 = self.calculate_user_winnings(market_id, user_addr);
 
-            let mut user_dashboard = self.user_dashboard.entry(user_addr).read();
-            user_dashboard.total_gained += user_reward;
-            self.user_dashboard.entry(user_addr).write(user_dashboard);
-
             // Transfer ERC20 reward to the user
 
             let token_contract_address = self.protocol_token.read();
@@ -717,6 +744,12 @@ pub mod PredictionHub {
             let success = token_dispatcher.transfer(user_addr, user_reward);
 
             assert(success, errors::ERC20_TRANSFER_FAILED);
+        }
+
+        fn get_user_claim_status(
+            self: @ContractState, market_id: u256, user: ContractAddress,
+        ) -> bool {
+            self.claimed.entry((market_id, user)).read()
         }
 
 
@@ -1097,21 +1130,23 @@ pub mod PredictionHub {
 
             market.status = MarketStatus::Resolved(winning_choice_outcome);
 
-            let market_user_choices = self.market_user_choices.entry((market_id, winning_choice));
-
-            for i in 0..market_user_choices.len() {
-                let user: ContractAddress = market_user_choices.at(i).read();
-
+            let choice_stakers = self.get_choice_stakers(market_id, winning_choice);
+            self.all_predictions.entry(market_id).write(market);
+            for i in 0..choice_stakers.len() {
+                let user: ContractAddress = *choice_stakers.at(i);
                 let user_stake: UserStake = self.bet_details.entry((market_id, user)).read();
                 let mut user_dashboard = self.user_dashboard.entry(user).read();
 
+                let user_reward: u256 = self.calculate_user_winnings(market_id, user);
+                user_dashboard.total_wins += 1;
                 match winning_choice {
                     0 => {
                         if user_stake.shares_a > 0 {
                             user_dashboard.total_wins += 1;
-                            user_dashboard.total_gained += user_stake.shares_a;
+                            user_dashboard.total_gained += (user_reward - user_stake.shares_a);
                             self.user_dashboard.entry(user).write(user_dashboard);
-                        } else {
+                        }
+                        if user_stake.shares_b > 0 {
                             user_dashboard.total_losses += 1;
                             self.user_dashboard.entry(user).write(user_dashboard);
                         }
@@ -1119,18 +1154,18 @@ pub mod PredictionHub {
                     1 => {
                         if user_stake.shares_b > 0 {
                             user_dashboard.total_wins += 1;
-                            user_dashboard.total_gained += user_stake.shares_b;
+                            user_dashboard.total_gained += (user_reward - user_stake.shares_b);
                             self.user_dashboard.entry(user).write(user_dashboard);
-                        } else {
+                        }
+                        if user_stake.shares_a > 0 {
                             user_dashboard.total_losses += 1;
                             self.user_dashboard.entry(user).write(user_dashboard);
                         }
                     },
                     _ => {},
                 }
+                self.user_dashboard.entry(user).write(user_dashboard);
             }
-
-            self.all_predictions.entry(market_id).write(market);
 
             self.emit(MarketResolved { market_id, resolver: get_caller_address(), winning_choice });
 
@@ -1304,6 +1339,20 @@ pub mod PredictionHub {
         }
 
 
+        fn pause_claim(ref self: ContractState) {
+            self.assert_only_admin();
+
+            self.claim_paused.write(true);
+        }
+
+
+        fn unpause_claim(ref self: ContractState) {
+            self.assert_only_admin();
+
+            self.claim_paused.write(false);
+        }
+
+
         fn set_time_restrictions(
             ref self: ContractState, min_duration: u64, max_duration: u64, resolution_window: u64,
         ) {
@@ -1322,7 +1371,7 @@ pub mod PredictionHub {
             self.resolution_window.write(resolution_window);
         }
 
-
+        // FUNCTION NEEDS WORK
         fn set_platform_fee(ref self: ContractState, fee_percentage: u256) {
             self.assert_only_admin();
 
@@ -1419,13 +1468,12 @@ pub mod PredictionHub {
             prediction.status = MarketStatus::Closed;
             prediction.is_open = false;
             self.all_predictions.entry(market_id).write(prediction);
-            self.emit(MarketForceClosed {
-                market_id,
-                reason,
-                closed_by: get_caller_address(),
-                time: current_time
-            });
-
+            self
+                .emit(
+                    MarketForceClosed {
+                        market_id, reason, closed_by: get_caller_address(), time: current_time,
+                    },
+                );
         }
 
         fn emergency_close_multiple_markets(ref self: ContractState, market_ids: Array<u256>) {
@@ -1450,17 +1498,12 @@ pub mod PredictionHub {
             market.is_open = false;
             market.winning_choice = Option::Some(winning_choice);
 
-
-            let winning_choice_outcome: Outcome = self.choice_num_to_outcome(market_id, winning_choice);
+            let winning_choice_outcome: Outcome = self
+                .choice_num_to_outcome(market_id, winning_choice);
             market.status = MarketStatus::Resolved(winning_choice_outcome);
 
             self.all_predictions.entry(market_id).write(market);
-            self.emit(MarketResolved {
-                market_id,
-                resolver: get_caller_address(),
-                winning_choice
-            });
-
+            self.emit(MarketResolved { market_id, resolver: get_caller_address(), winning_choice });
 
             self.end_reentrancy_guard();
         }
@@ -1602,49 +1645,17 @@ pub mod PredictionHub {
 
             let user_stake = self.bet_details.entry((market_id, user)).read();
 
-            // 2. Ensure the market is resolved and has a winning choice.
-
             assert(market.is_resolved, errors::MARKET_NOT_RESOLVED);
 
             let winning_choice = market.winning_choice.unwrap();
 
-            // 3. Determine user's shares on the winning side.
-
-            let user_shares = if winning_choice == 0 {
-                user_stake.shares_a
+            let user_rewards = if winning_choice == 0 {
+                (user_stake.shares_a * market.total_pool) / market.total_shares_option_one
             } else {
-                user_stake.shares_b
+                (user_stake.shares_b * market.total_pool) / market.total_shares_option_two
             };
 
-            // 4. If user has no shares on the winning side, return 0.
-
-            if user_shares == 0 {
-                return 0;
-            }
-
-            // 5. Calculate total shares on the winning side.
-
-            let total_winning_shares = if winning_choice == 0 {
-                market.total_shares_option_one
-            } else {
-                market.total_shares_option_two
-            };
-
-            // 6. Calculate platform fee.
-
-            let platform_fee_bps = self.platform_fee_percentage.read(); // e.g., 250 = 2.5%
-
-            let _fee_amount = (market.total_pool * platform_fee_bps) / 10000_u256;
-
-            let distributable_pool = market.total_pool;
-
-            // 7. User's reward = (user_shares / total_winning_shares) * distributable_pool
-
-            // To avoid precision loss, multiply first, then divide.
-
-            let user_reward = (user_shares * distributable_pool) / total_winning_shares;
-
-            user_reward
+            user_rewards
         }
     }
 }

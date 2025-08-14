@@ -79,7 +79,7 @@ pub enum MarketStatus {
     Closed,
 }
 
-#[derive(Drop, Copy, Serde, starknet::Store, Clone)]
+#[derive(Drop, Copy, Serde, starknet::Store, Clone, Debug)]
 pub struct UserStake {
     pub shares_a: u256, // Fixed-point shares
     pub shares_b: u256, // Fixed-point shares
@@ -103,7 +103,7 @@ pub struct BetActivity {
 }
 
 
-#[derive(Drop, Serde, Copy, starknet::Store, PartialEq)]
+#[derive(Drop, Serde, Copy, starknet::Store, PartialEq, Debug)]
 pub struct UserDashboard {
     pub total_markets_participated: u256,
     pub total_wins: u256,

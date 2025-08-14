@@ -14,6 +14,7 @@ const MODERATOR_CONST: felt252 = 456;
 const USER1_CONST: felt252 = 101112;
 const USER2_CONST: felt252 = 131415;
 const USER3_CONST: felt252 = 161718;
+const USER4_CONST: felt252 = 192021;
 const FEE_RECIPIENT_CONST: felt252 = 161718;
 const PRAGMA_ORACLE_CONST: felt252 = 192021;
 
@@ -35,6 +36,10 @@ pub fn USER2_ADDR() -> ContractAddress {
 
 pub fn USER3_ADDR() -> ContractAddress {
     USER3_CONST.try_into().unwrap()
+}
+
+pub fn USER4_ADDR() -> ContractAddress {
+    USER4_CONST.try_into().unwrap()
 }
 
 pub fn FEE_RECIPIENT_ADDR() -> ContractAddress {
@@ -99,10 +104,15 @@ pub fn setup_test_environment() -> (
     start_cheat_caller_address(token.contract_address, USER1_ADDR());
     token.transfer(USER2_ADDR(), 500000000000000000000000); // 500k tokens to USER2
     token.transfer(USER3_ADDR(), 500000000000000000000000); // 500k tokens to USER3
+    token.transfer(MODERATOR_ADDR(), 500000000000000000000000); // 500k tokens to USER3
     token.approve(prediction_hub.contract_address, 1000000000000000000000000); // 1M approval
     stop_cheat_caller_address(token.contract_address);
 
     start_cheat_caller_address(token.contract_address, USER2_ADDR());
+    token.approve(prediction_hub.contract_address, 500000000000000000000000); // 500k approval
+    stop_cheat_caller_address(token.contract_address);
+
+    start_cheat_caller_address(token.contract_address, MODERATOR_ADDR());
     token.approve(prediction_hub.contract_address, 500000000000000000000000); // 500k approval
     stop_cheat_caller_address(token.contract_address);
 
