@@ -65,7 +65,6 @@ fn test_buy_share_success() {
     assert(user_dashboard_user_1.total_wins == 0, 'u1 total wins should be 0');
     assert(user_dashboard_user_1.total_losses == 0, 'u1 total losses should be 0');
     assert(user_dashboard_user_1.total_trades == 1, 'u1 total trades should be 1');
-    assert(user_dashboard_user_1.total_gained == user1_amount, 'u1 total gained should be 10');
 
     // user 2 buys 20 shares of option 2
     let user2_balance_before = _token.balance_of(USER2_ADDR());
@@ -91,7 +90,6 @@ fn test_buy_share_success() {
     assert(user_dashboard_user_2.total_wins == 0, 'u2 total wins should be 0');
     assert(user_dashboard_user_2.total_losses == 0, 'u2 total losses should be 0');
     assert(user_dashboard_user_2.total_trades == 1, 'u2 total trades should be 1');
-    assert(user_dashboard_user_2.total_gained == user2_amount, 'u2 total gained should be 20');
 
     // user 3 buys 40 shares of option 2
     let user3_balance_before = _token.balance_of(USER3_ADDR());
@@ -106,7 +104,6 @@ fn test_buy_share_success() {
     assert(user_dashboard_user_3.total_wins == 0, 'u3 total wins should be 0');
     assert(user_dashboard_user_3.total_losses == 0, 'u3 total losses should be 0');
     assert(user_dashboard_user_3.total_trades == 1, 'u3 total trades should be 1');
-    assert(user_dashboard_user_3.total_gained == user3_amount, 'u3 total gained should be 5');
 
     contract.buy_shares(market_id, 1, user3_amount_second);
 
@@ -118,10 +115,6 @@ fn test_buy_share_success() {
     assert(user_dashboard_user_3_after.total_wins == 0, 'u3 total wins should be 0');
     assert(user_dashboard_user_3_after.total_losses == 0, 'u3 total losses should be 0');
     assert(user_dashboard_user_3_after.total_trades == 2, 'u3 total trades should be 2');
-    assert(
-        user_dashboard_user_3_after.total_gained == user3_amount + user3_amount_second,
-        'u3 total gained should be 10',
-    );
 
     stop_cheat_caller_address(contract.contract_address);
 

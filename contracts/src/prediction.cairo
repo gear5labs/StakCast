@@ -83,11 +83,13 @@ pub mod PredictionHub {
         >, // (market_id, choice) to a list of users
         // user traded status
 
+        addresses_that_chose_different_options: Map<(u256, u8), Vec<ContractAddress>>,
         user_traded_status: Map<
             (u256, ContractAddress), bool,
         >, // Tracks if user has traded on a market
-        // more market analytics
-
+        user_choice_staked_status: Map<
+            (u256, ContractAddress, u8), bool,
+        >, // (market_id, user, choice) to a boolean
         user_predictions: Map<ContractAddress, Vec<u256>>, // user to a list of market ids
         claimed: Map<(u256, ContractAddress), bool>,
         market_analytics: Map<u256, Vec<BetActivity>>, // market to a list of BetActivity structs
@@ -582,20 +584,24 @@ pub mod PredictionHub {
             let mut market_stats = self.market_stats.entry(market_id).read();
 
             let mut market_users = self.market_users.entry(market_id);
+            let user_choice_staked: bool = self
+                .user_choice_staked_status
+                .entry((market_id, caller, choice))
+                .read();
 
-            let mut market_user_choices = self.market_user_choices.entry((market_id, choice));
+            // if user has not staked on this choice before, add them to the choice stakers
+            if !user_choice_staked {
+                self.user_choice_staked_status.entry((market_id, caller, choice)).write(true);
+                self.addresses_that_chose_different_options.entry((market_id, choice)).push(caller);
+            }
 
             if !user_traded {
                 user_dashboard.total_markets_participated += 1;
                 self.user_traded_status.entry((market_id, caller)).write(true);
                 market_users.push(caller);
-                market_user_choices.push(caller);
-                // Add market_id to user's list of predictions
-                // add bet to user bet collection
                 self.user_predictions.entry(caller).push(market_id);
             }
 
-            user_dashboard.total_gained += amount;
             user_dashboard.total_trades += 1;
             // Update market stats
             match user_choice {
@@ -656,9 +662,11 @@ pub mod PredictionHub {
             self: @ContractState, market_id: u256, choice: u8,
         ) -> Array<ContractAddress> {
             let mut stakers = ArrayTrait::new();
-            let market_user_choices_ptr = self.market_user_choices.entry((market_id, choice));
-            for i in 0..market_user_choices_ptr.len() {
-                let user: ContractAddress = market_user_choices_ptr.at(i).read();
+            let addresses_that_chose_different_options_ptr = self
+                .addresses_that_chose_different_options
+                .entry((market_id, choice));
+            for i in 0..addresses_that_chose_different_options_ptr.len() {
+                let user: ContractAddress = addresses_that_chose_different_options_ptr.at(i).read();
                 stakers.append(user);
             }
             stakers
@@ -1130,20 +1138,19 @@ pub mod PredictionHub {
 
             market.status = MarketStatus::Resolved(winning_choice_outcome);
 
-            let choice_stakers = self.get_choice_stakers(market_id, winning_choice);
+            let all_users_in_market = self.get_all_users_in_market(market_id);
             self.all_predictions.entry(market_id).write(market);
-            for i in 0..choice_stakers.len() {
-                let user: ContractAddress = *choice_stakers.at(i);
+            for i in 0..all_users_in_market.len() {
+                let user: ContractAddress = *all_users_in_market.at(i);
                 let user_stake: UserStake = self.bet_details.entry((market_id, user)).read();
                 let mut user_dashboard = self.user_dashboard.entry(user).read();
 
                 let user_reward: u256 = self.calculate_user_winnings(market_id, user);
-                user_dashboard.total_wins += 1;
                 match winning_choice {
                     0 => {
                         if user_stake.shares_a > 0 {
                             user_dashboard.total_wins += 1;
-                            user_dashboard.total_gained += (user_reward - user_stake.shares_a);
+                            user_dashboard.total_gained += user_reward;
                             self.user_dashboard.entry(user).write(user_dashboard);
                         }
                         if user_stake.shares_b > 0 {
@@ -1154,7 +1161,7 @@ pub mod PredictionHub {
                     1 => {
                         if user_stake.shares_b > 0 {
                             user_dashboard.total_wins += 1;
-                            user_dashboard.total_gained += (user_reward - user_stake.shares_b);
+                            user_dashboard.total_gained += user_reward;
                             self.user_dashboard.entry(user).write(user_dashboard);
                         }
                         if user_stake.shares_a > 0 {

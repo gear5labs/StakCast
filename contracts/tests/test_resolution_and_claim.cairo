@@ -77,30 +77,42 @@ fn test_resolve_market_success() {
     };
     assert!(event == 456, "market not resolved");
     stop_cheat_caller_address(contract.contract_address);
-    // // get choice stakers
-// let choice_stakers: Array<ContractAddress> = contract.get_choice_stakers(market_id, 0);
-// assert(choice_stakers.len() == 2, 'choice stakers should be 1');
-// let choice_staker: ContractAddress = *choice_stakers.at(0);
-// assert(choice_staker == USER1_ADDR(), 'choice staker should be user 1');
 
-    // // get market details
-// let market = contract.get_prediction(market_id);
-// assert(market.is_resolved, 'market should be resolved');
-// assert(!market.is_open, 'market should be closed');
-// let (choice1, choice2) = market.choices;
-// assert(market.status == MarketStatus::Resolved(choice1), 'resolved not correct');
+    // get market details
+    let market = contract.get_prediction(market_id);
+    assert(market.is_resolved, 'market should be resolved');
+    assert(!market.is_open, 'market should be closed');
+    let (choice1, _) = market.choices;
+    assert(market.status == MarketStatus::Resolved(choice1), 'resolved not correct');
 
-    // // assert that all the user dashboards were updated as expected
-// let user_1_dashboard = contract.get_user_dashboard(USER1_ADDR());
-// // nb: he has one win and one loss cos he staked on the two options
-// assert(user_1_dashboard.total_wins == 1, 'user 1 should have 1 win');
-// assert(user_1_dashboard.total_losses == 1, 'user 1 should have 1 losses');
-// // he staked 10 on the correct option so he shoulve gained more than 10
-// assert(
-//     user_1_dashboard.total_gained > turn_number_to_precision_point(10), 'gained not correct',
-// );
-// assert(user_1_dashboard.total_markets_participated == 1, 'incorrect markets participated');
+    // het all user dashboards and assert they were updated successfully
+    let user_one_dashboard = contract.get_user_dashboard(USER1_ADDR());
+    // this user bet on the two
+    assert(user_one_dashboard.total_wins == 1, 'user 1 should have 1 win');
+    assert(user_one_dashboard.total_losses == 1, 'user 1 should have 1 losses');
+    // his total gained should be more than 10 since he bet 10 on the correct option
+    assert(
+        user_one_dashboard.total_gained > turn_number_to_precision_point(10),
+        'gain should be more than 10',
+    );
 
+    let user_two_dashboard = contract.get_user_dashboard(USER2_ADDR());
+    // this user bet on the wrong option
+    assert(user_two_dashboard.total_wins == 0, 'user 2 should have 0 win');
+    assert(user_two_dashboard.total_losses == 1, 'user 2 should have 1 losses');
+    // he bet 20 on the wrong option so he should have lost 20
+    assert(user_two_dashboard.total_gained == 0, 'user 2 should have 0 gained');
+
+    let user_three_dashboard = contract.get_user_dashboard(USER3_ADDR());
+    // this user bet on the two options
+    assert(user_three_dashboard.total_wins == 1, 'user 3 should have 0 win');
+    assert(user_three_dashboard.total_losses == 1, 'user 3 should have 1 losses');
+    println!("user 3 dashboard: {:?}", user_three_dashboard);
+    // he bet 20 on the correct option so he should have gained 20
+    assert(
+        user_three_dashboard.total_gained > turn_number_to_precision_point(20),
+        'user 3 should have 20 gained',
+    );
 }
 
 #[test]
