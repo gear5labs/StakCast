@@ -7,7 +7,7 @@ import { useMarkets, useWallet } from "../hooks/useContract";
 export function DashboardPreview() {
   const previewRef = useRef<HTMLDivElement>(null);
   const { markets, tvl, totalMarkets, loading, error } = useMarkets();
-  const { isConnected, address, connecting, disconnectWallet } = useWallet();
+  const { isConnected, address, disconnectWallet } = useWallet();
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -107,7 +107,7 @@ export function DashboardPreview() {
                   {loading ? "Loading..." : error ? "Demo Data" : "Live Data"}
                 </div>
               </div>
-              
+
               <div className="rounded-xl bg-gray-50 dark:bg-slate-800 p-4 transition-all duration-300 hover:shadow-md">
                 <div className="mb-2 text-sm text-slate-500 dark:text-slate-400">
                   Active Markets
@@ -120,10 +120,14 @@ export function DashboardPreview() {
                   )}
                 </div>
                 <div className="mt-2 flex items-center text-xs text-emerald-500 dark:text-emerald-400">
-                  {loading ? "Loading..." : error ? "Demo Markets" : "Live Markets"}
+                  {loading
+                    ? "Loading..."
+                    : error
+                    ? "Demo Markets"
+                    : "Live Markets"}
                 </div>
               </div>
-              
+
               <div className="rounded-xl bg-gray-50 dark:bg-slate-800 p-4 transition-all duration-300 hover:shadow-md">
                 <div className="mb-2 text-sm text-slate-500 dark:text-slate-400">
                   Your Portfolio
@@ -150,11 +154,9 @@ export function DashboardPreview() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      // onClick={connectWallet}
-                      disabled={connecting}
                       className="h-6 px-2 text-xs text-emerald-500 dark:text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-300"
                     >
-                      {connecting ? "Connecting..." : "Connect Wallet"}
+                      Connect Wallet
                     </Button>
                   )}
                 </div>
@@ -201,8 +203,8 @@ export function DashboardPreview() {
                     >
                       <div className="flex-1">
                         <div className="font-medium text-slate-900 dark:text-white">
-                          {market.title.length > 45 
-                            ? `${market.title.substring(0, 45)}...` 
+                          {market.title.length > 45
+                            ? `${market.title.substring(0, 45)}...`
                             : market.title}
                         </div>
                         <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">

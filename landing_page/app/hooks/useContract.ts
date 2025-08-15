@@ -23,7 +23,7 @@ export interface Market {
 export const useWallet = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [address, setAddress] = useState<string | null>(null);
-  const [connecting, setConnecting] = useState(false);
+  // const [connecting, setConnecting] = useState(false);
 
 
   const disconnectWallet = () => {
@@ -31,7 +31,7 @@ export const useWallet = () => {
     setAddress(null);
   };
 
-  return { isConnected, address, connecting, disconnectWallet };
+  return { isConnected, address,  disconnectWallet };
 };
 
 export const useContract = () => {
