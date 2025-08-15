@@ -43,11 +43,6 @@ fn test_admin_functions() {
     assert(count == 1, 'Market count should be 1');
 
     // add moderator
-    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
-    contract.remove_all_predictions();
-    stop_cheat_caller_address(contract.contract_address);
-    let count = contract.get_prediction_count();
-    assert(count == 0, 'Market count should be 0');
     assert!(contract.get_fee_recipient() == MODERATOR_ADDR(), "address not recipient address");
 }
 
@@ -58,17 +53,6 @@ fn test_non_admin_function_should_panic() {
     // set fee recipent with non admin call should panic
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
     contract.set_fee_recipient(MODERATOR_ADDR());
-    stop_cheat_caller_address(contract.contract_address);
-}
-
-
-#[test]
-#[should_panic(expected: 'Only admin allowed')]
-fn test_non_admin_remove_prediction_should_panic() {
-    let (contract, _admin_interface, _token) = setup_test_environment();
-    // set fee recipent with non admin call should panic
-    start_cheat_caller_address(contract.contract_address, USER1_ADDR());
-    contract.remove_all_predictions();
     stop_cheat_caller_address(contract.contract_address);
 }
 

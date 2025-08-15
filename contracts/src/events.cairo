@@ -40,9 +40,6 @@ pub struct WagerPlaced {
     pub user: ContractAddress,
     pub choice: u8,
     pub amount: u256,
-    pub fee_amount: u256,
-    pub net_amount: u256,
-    pub wager_index: u8,
 }
 
 #[derive(Drop, starknet::Event)]
@@ -57,7 +54,6 @@ pub struct WinningsCollected {
     pub market_id: u256,
     pub user: ContractAddress,
     pub amount: u256,
-    pub wager_index: u8,
 }
 
 #[derive(Drop, starknet::Event)]

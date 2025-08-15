@@ -7,8 +7,9 @@ use stakcast::admin_interface::{IAdditionalAdminDispatcher, IAdditionalAdminDisp
 use stakcast::interface::{IPredictionHubDispatcher, IPredictionHubDispatcherTrait};
 use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
 use crate::test_utils::{
-    ADMIN_ADDR, FEE_RECIPIENT_ADDR, MODERATOR_ADDR, USER1_ADDR, USER2_ADDR, create_test_market,
-    default_create_crypto_prediction, default_create_predictions, setup_test_environment,
+    ADMIN_ADDR, FEE_RECIPIENT_ADDR, MODERATOR_ADDR, MODERATOR_ADDR_2, USER1_ADDR, USER2_ADDR,
+    create_test_market, default_create_crypto_prediction, default_create_predictions,
+    setup_test_environment,
 };
 
 // ================ General Prediction Market Tests ================
@@ -320,7 +321,7 @@ fn test_creat_market_multiple_moderators_can_create_markets() {
     let mut spy = spy_events();
 
     start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
-    contract.add_moderator(contract_address_const::<0x02>());
+    contract.add_moderator(MODERATOR_ADDR_2());
     stop_cheat_caller_address(contract.contract_address);
 
     let future_time = get_block_timestamp() + 86400;
@@ -347,7 +348,7 @@ fn test_creat_market_multiple_moderators_can_create_markets() {
     stop_cheat_caller_address(contract.contract_address);
 
     // Second moderator creates a market
-    start_cheat_caller_address(contract.contract_address, contract_address_const::<0x02>());
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR_2());
     contract
         .create_predictions(
             "Moderator 2 Market",
@@ -503,8 +504,11 @@ fn test_extend_market_duration_past_time() {
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
     let market = contract.get_prediction(market_id);
 
-    start_cheat_block_timestamp(contract.contract_address, market.end_time + 86400); // Move 1 day forward
-    let past_time = market.end_time + 3600; // 1 hour after market end, but still in the past from current time
+    start_cheat_block_timestamp(
+        contract.contract_address, market.end_time + 86400,
+    ); // Move 1 day forward
+    let past_time = market.end_time
+        + 3600; // 1 hour after market end, but still in the past from current time
 
     contract.extend_market_duration(market_id, past_time);
 }

@@ -42,6 +42,12 @@ pub trait IAdditionalAdmin<TContractState> {
     /// Unpause market resolution (admin only)
     fn unpause_resolution(ref self: TContractState);
 
+    /// Pause only claim functionality (admin only)
+    fn pause_claim(ref self: TContractState);
+
+    /// Unpause claim functionality (admin only)
+    fn unpause_claim(ref self: TContractState);
+
     // ================ Time and Fee Management ================
 
     /// Set time restrictions for markets (admin only)

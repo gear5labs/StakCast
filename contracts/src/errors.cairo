@@ -51,3 +51,6 @@ pub const CLASS_HASH_CANNOT_BE_ZERO: felt252 = 'Class hash cannot be zero';
 
 // Fee and Percentage Errors
 pub const FEE_CANNOT_EXCEED_TEN_PERCENT: felt252 = 'Fee cannot exceed 10%';
+
+// Claim Errors
+pub const CLAIM_PAUSED: felt252 = 'Claim paused';

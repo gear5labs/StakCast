@@ -39,6 +39,10 @@ pub trait IPredictionHub<TContractState> {
     /// Retrieves a specific prediction market by ID
     fn get_prediction(self: @TContractState, market_id: u256) -> PredictionMarket;
 
+    /// gets a list of market stakers for a particular choice
+    fn get_choice_stakers(
+        self: @TContractState, market_id: u256, choice: u8,
+    ) -> Array<ContractAddress>;
     /// Returns an array of all active prediction markets
     fn get_all_predictions_by_market_category(
         self: @TContractState, category: u8,
@@ -62,7 +66,6 @@ pub trait IPredictionHub<TContractState> {
     fn get_market_status(self: @TContractState, market_id: u256) -> (bool, bool);
 
     fn get_all_open_markets(self: @TContractState) -> Array<PredictionMarket>;
-    fn get_all_locked_markets(self: @TContractState) -> Array<PredictionMarket>;
     fn get_all_resolved_markets(self: @TContractState) -> Array<PredictionMarket>;
 
     fn get_all_users_in_market(self: @TContractState, market_id: u256) -> Array<ContractAddress>;
@@ -74,9 +77,9 @@ pub trait IPredictionHub<TContractState> {
     fn get_all_open_bets_for_user(
         self: @TContractState, user: ContractAddress,
     ) -> Array<PredictionMarket>;
-    fn get_all_locked_bets_for_user(
-        self: @TContractState, user: ContractAddress,
-    ) -> Array<PredictionMarket>;
+    // fn get_all_locked_bets_for_user(
+    //     self: @TContractState, user: ContractAddress,
+    // ) -> Array<PredictionMarket>;
     fn get_all_bets_for_user(
         self: @TContractState, user: ContractAddress,
     ) -> Array<PredictionMarket>;
@@ -96,7 +99,7 @@ pub trait IPredictionHub<TContractState> {
     fn get_market_liquidity(self: @TContractState, market_id: u256) -> u256;
 
     /// Returns total value locked across all markets
-    fn get_total_value_locked(self: @TContractState) -> u256;
+    fn get_total_value_held(self: @TContractState) -> u256;
 
     /// Returns an array of all active predictiona markets
     fn get_active_prediction_markets(self: @TContractState) -> Array<PredictionMarket>;
@@ -111,9 +114,7 @@ pub trait IPredictionHub<TContractState> {
     // fn get_active_crypto_markets(self: @TContractState) -> Array<PredictionMarket>;
 
     /// Returns an array of all resolved general prediction markets
-    fn get_all_resolved_prediction_markets(self: @TContractState) -> Array<PredictionMarket>;
-
-    fn is_prediction_market_open_for_betting(self: @TContractState, market_id: u256) -> bool;
+    // fn get_all_resolved_prediction_markets(self: @TContractState) -> Array<PredictionMarket>;
 
     // ================ Market Resolution ================
 
@@ -136,6 +137,8 @@ pub trait IPredictionHub<TContractState> {
 
     fn claim(ref self: TContractState, market_id: u256);
 
+    fn get_user_claim_status(self: @TContractState, market_id: u256, user: ContractAddress) -> bool;
+
     /// Returns the contract admin address
     fn get_admin(self: @TContractState) -> ContractAddress;
 
@@ -146,13 +149,13 @@ pub trait IPredictionHub<TContractState> {
     fn set_fee_recipient(ref self: TContractState, recipient: ContractAddress);
 
     /// Opens or closes a market for new bets
-    fn toggle_market_status(ref self: TContractState, market_id: u256, market_type: u8);
+    // fn toggle_market_status (ref self: TContractState, market_id: u256, market_type: u8);
 
     /// Adds a new moderator who can create/resolve predictions
     fn add_moderator(ref self: TContractState, moderator: ContractAddress);
 
     /// Administrative function to reset all prediction markets
-    fn remove_all_predictions(ref self: TContractState);
+    // fn remove_all_predictions(ref self: TContractState);
     /// Upgrades the contract implementation (admin only)
     fn upgrade(ref self: TContractState, impl_hash: ClassHash);
 }
