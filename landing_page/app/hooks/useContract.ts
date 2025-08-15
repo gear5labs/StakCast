@@ -25,39 +25,13 @@ export const useWallet = () => {
   const [address, setAddress] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
 
-  const connectWallet = async () => {
-    setConnecting(true);
-    try {
-      if (typeof window !== 'undefined' && (window as any).starknet) {
-        const starknet = (window as any).starknet;
-        const result = await starknet.enable();
-        if (result && result.length > 0) {
-          setIsConnected(true);
-          setAddress(result[0]);
-          console.log('Wallet connected:', result[0]);
-        }
-      } else {
-        console.log('No wallet detected, using demo connection');
-        setTimeout(() => {
-          setIsConnected(true);
-          setAddress("0x1234...5678");
-        }, 1000);
-      }
-    } catch (error) {
-      console.error('Failed to connect wallet:', error);
-      setIsConnected(false);
-      setAddress(null);
-    } finally {
-      setConnecting(false);
-    }
-  };
 
   const disconnectWallet = () => {
     setIsConnected(false);
     setAddress(null);
   };
 
-  return { isConnected, address, connecting, connectWallet, disconnectWallet };
+  return { isConnected, address, connecting, disconnectWallet };
 };
 
 export const useContract = () => {
@@ -108,12 +82,12 @@ export const useMarkets = () => {
         console.log('Attempting to fetch real contract data...');
         
         try {
-          // Try real contract calls first
+
           const predictionCount = await contract.get_prediction_count();
           const openMarkets = await contract.get_all_open_markets();
           const totalValueLocked = await contract.get_total_value_locked();
           
-          const processedMarkets = openMarkets.slice(0, 3).map((market: any, index: number) => ({
+          const processedMarkets = openMarkets.slice(0, 3).map((market: Market, index: number) => ({
             market_id: market.market_id?.toString() || index.toString(),
             title: market.title || `Market ${index + 1}`,
             description: market.description || "No description available",

@@ -7,7 +7,7 @@ import { useMarkets, useWallet } from "../hooks/useContract";
 export function DashboardPreview() {
   const previewRef = useRef<HTMLDivElement>(null);
   const { markets, tvl, totalMarkets, loading, error } = useMarkets();
-  const { isConnected, address, connecting, connectWallet, disconnectWallet } = useWallet();
+  const { isConnected, address, connecting, disconnectWallet } = useWallet();
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -150,7 +150,7 @@ export function DashboardPreview() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={connectWallet}
+                      // onClick={connectWallet}
                       disabled={connecting}
                       className="h-6 px-2 text-xs text-emerald-500 dark:text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-300"
                     >
