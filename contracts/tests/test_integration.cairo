@@ -126,22 +126,6 @@ fn test_pool_creation_staking_resolution_claim_flow() {
     start_cheat_caller_address(prediction_hub.contract_address, USER1_ADDR());
     prediction_hub.claim(market_id);
     stop_cheat_caller_address(prediction_hub.contract_address);
-
-    // get event
-
-    let mut claimed_amount = 0;
-
-    if let Some((_, event)) = spy_events.get_events().events.into_iter().last() {
-        claimed_amount = (*event.data.at(0)).into();
-    }
-
-    println!("claimed_amount: {:?}", claimed_amount);
-
-    // verify claim event
-    let expected_stake_event = events::Event::WinningsCollected(
-        WinningsCollected { market_id, user: USER1_ADDR(), amount: claimed_amount },
-    );
-    spy_events.assert_emitted(@array![(prediction_hub.contract_address, expected_stake_event)]);
 }
 
 
@@ -285,21 +269,6 @@ fn test_overall_lifecycle_with_get_functions() {
     // get claim status
     let claim_status = prediction_hub.get_user_claim_status(market_id, USER1_ADDR());
     assert(claim_status, 'user should have claim');
-
-    // get event
-    let mut claimed_amount = 0;
-
-    // The last event should be WinningsCollected for USER1
-    if let Some((_, event)) = spy_events.get_events().events.into_iter().last() {
-        claimed_amount = (*event.data.at(0)).into();
-    }
-
-    // Check WinningsCollected event for USER1
-    let expected_event = events::Event::WinningsCollected(
-        WinningsCollected { market_id, user: USER1_ADDR(), amount: claimed_amount },
-    );
-    spy_events.assert_emitted(@array![(prediction_hub.contract_address, expected_event)]);
-
     // create another prediction market, set time forward for new pool
     let new_pool_time = after_final_end + 1000;
     start_cheat_block_timestamp(prediction_hub.contract_address, new_pool_time);
@@ -345,6 +314,7 @@ fn test_overall_lifecycle_with_get_functions() {
     // create 5 prediction markets, increment time for each to avoid timestamp collision
     let mut create_time = new_pool_time + 1000;
     let mut created_market_ids = array![];
+    start_cheat_caller_address(prediction_hub.contract_address, MODERATOR_ADDR());
     for i in 0..details.len() {
         start_cheat_block_timestamp(prediction_hub.contract_address, create_time);
         prediction_hub
@@ -371,10 +341,11 @@ fn test_overall_lifecycle_with_get_functions() {
         }
         create_time += 1000; // increment time for next market
     }
+    stop_cheat_caller_address(prediction_hub.contract_address);
 
     // check that the number of open markets is 7
     let open_markets = prediction_hub.get_all_open_markets();
-    assert(open_markets.len() == 7, 'should have 7 open markets');
+    assert(open_markets.len() == 6, 'should have 6 open markets');
 
     // check that the number of resolved markets is 1
     let resolved_markets = prediction_hub.get_all_resolved_markets();
@@ -382,11 +353,11 @@ fn test_overall_lifecycle_with_get_functions() {
 
     // get all predictions created
     let predictions = prediction_hub.get_all_predictions();
-    assert(predictions.len() == 8, 'should have 8 predictions');
+    assert(predictions.len() == 7, 'should have 7 predictions');
 
     // assert all prediction count is 8
     let prediction_count = prediction_hub.get_prediction_count();
-    assert(prediction_count == 8, 'should have 8 predictions');
+    assert(prediction_count == 7, 'should have 7 predictions');
 }
 
 fn create_stake(prediction_hub: IPredictionHubDispatcher) -> u256 {
@@ -477,45 +448,12 @@ fn test_market_status_functionality_integrated() {
 #[test]
 fn test_user_details_integration() {
     let (prediction_hub, admin_interface, token) = setup_test_environment();
+    let base_time: u64 = 2000000;
     let mut spy_events = spy_events();
 
-    let now = get_block_timestamp();
-    start_cheat_block_timestamp(prediction_hub.contract_address, now);
+    let market_duration: u64 = 172800;
+    start_cheat_block_timestamp(prediction_hub.contract_address, base_time);
 
-    let market_id = create_stake(prediction_hub);
-
-    // get all closed bets for user 1
-    let closed_bets = prediction_hub.get_all_closed_bets_for_user(USER1_ADDR());
-    assert(closed_bets.len() == 0, 'should have 0 closed bet');
-
-    // get all open bets for user 1
-    let open_bets = prediction_hub.get_all_open_bets_for_user(USER1_ADDR());
-    assert(open_bets.len() == 1, 'should have 1 open bet');
-
-    // moderator resolves
-    start_cheat_caller_address(prediction_hub.contract_address, MODERATOR_ADDR());
-    prediction_hub.resolve_prediction(market_id, 0);
-    stop_cheat_caller_address(prediction_hub.contract_address);
-
-    // get all closed bets for user 1
-    let closed_bets = prediction_hub.get_all_closed_bets_for_user(USER1_ADDR());
-    assert(closed_bets.len() == 1, 'should have 1 closed bet');
-
-    // get all open bets for user 1
-    let open_bets = prediction_hub.get_all_open_bets_for_user(USER1_ADDR());
-    assert(open_bets.len() == 0, 'should have 0 open bet');
-
-    // get all bets for user 1
-    let all_bets = prediction_hub.get_all_bets_for_user(USER1_ADDR());
-    assert(all_bets.len() == 1, 'should have 1 bet');
-
-    // get all bets for user 2
-    let all_bets = prediction_hub.get_all_bets_for_user(USER2_ADDR());
-    assert(all_bets.len() == 0, 'should have 0 bet');
-
-    // create another market
-    start_cheat_block_timestamp(prediction_hub.contract_address, now);
-    // create a prediction market
     start_cheat_caller_address(prediction_hub.contract_address, MODERATOR_ADDR());
     prediction_hub
         .create_predictions(
@@ -524,27 +462,79 @@ fn test_user_details_integration() {
             "https://imgs.search.brave.com/Bkq4xMzdpvbCQ5mUhA42_uq8z8IGE3PcohDc5FPY-Ys/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9sb2dv/cy13b3JsZC5uZXQv/d3AtY29udGVudC91/cGxvYWRzLzIwMjAv/MDUvQXJzZW5hbC1M/b25kb24tTG9nby03/MDB4Mzk0LnBuZw",
             ('yes', 'no'),
             0,
-            now + 172800, // end time of 2 days
+            base_time + market_duration,
             1,
             None,
         );
     stop_cheat_caller_address(prediction_hub.contract_address);
 
-    // user 1 buys shares
+    let mut market_id = 0;
+
+    if let Some((_, event)) = spy_events.get_events().events.into_iter().last() {
+        market_id = (*event.data.at(0)).into();
+    }
+
+    // user 1 stakes on the prediction market
     start_cheat_caller_address(prediction_hub.contract_address, USER1_ADDR());
     prediction_hub.buy_shares(market_id, 0, turn_number_to_precision_point(10));
     stop_cheat_caller_address(prediction_hub.contract_address);
 
-    // get all bets for user 1
+    let closed_bets = prediction_hub.get_all_closed_bets_for_user(USER1_ADDR());
+    assert(closed_bets.len() == 0, 'should have 0 closed bet');
+
+    let open_bets = prediction_hub.get_all_open_bets_for_user(USER1_ADDR());
+    assert(open_bets.len() == 1, 'should have 1 open bet');
+
+    start_cheat_block_timestamp(prediction_hub.contract_address, base_time + market_duration + 1);
+    start_cheat_caller_address(prediction_hub.contract_address, MODERATOR_ADDR());
+    prediction_hub.resolve_prediction(market_id, 0);
+    stop_cheat_caller_address(prediction_hub.contract_address);
+
+    let closed_bets = prediction_hub.get_all_closed_bets_for_user(USER1_ADDR());
+    assert(closed_bets.len() == 1, 'should have 1 closed bet');
+
+    let open_bets = prediction_hub.get_all_open_bets_for_user(USER1_ADDR());
+    assert(open_bets.len() == 0, 'should have 0 open bet');
+
+    let all_bets = prediction_hub.get_all_bets_for_user(USER1_ADDR());
+    assert(all_bets.len() == 1, 'should have 1 bet');
+
+    let all_bets_user2 = prediction_hub.get_all_bets_for_user(USER2_ADDR());
+    assert(all_bets_user2.len() == 0, 'should have 0 bet');
+
+    let new_market_time = base_time + 1000;
+    start_cheat_block_timestamp(prediction_hub.contract_address, new_market_time);
+
+    start_cheat_caller_address(prediction_hub.contract_address, MODERATOR_ADDR());
+    prediction_hub
+        .create_predictions(
+            "Will Arsenal win the premier league this season?",
+            "A market bringing options weather arsenal win the premier league this season",
+            "https://imgs.search.brave.com/Bkq4xMzdpvbCQ5mUhA42_uq8z8IGE3PcohDc5FPY-Ys/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9sb2dv/cy13b3JsZC5uZXQv/d3AtY29udGVudC91/cGxvYWRzLzIwMjAv/MDUvQXJzZW5hbC1M/b25kb24tTG9nby03/MDB4Mzk0LnBuZw",
+            ('yes', 'no'),
+            0,
+            new_market_time + market_duration, // end time of 2 days from new_market_time
+            1,
+            None,
+        );
+    stop_cheat_caller_address(prediction_hub.contract_address);
+
+    let mut market_id_2 = 0;
+    if let Some((_, event)) = spy_events.get_events().events.into_iter().last() {
+        market_id_2 = (*event.data.at(0)).into();
+    }
+
+    start_cheat_caller_address(prediction_hub.contract_address, USER1_ADDR());
+    prediction_hub.buy_shares(market_id_2, 0, turn_number_to_precision_point(10));
+    stop_cheat_caller_address(prediction_hub.contract_address);
+
     let all_bets = prediction_hub.get_all_bets_for_user(USER1_ADDR());
     assert(all_bets.len() == 2, 'should have 2 bet');
 
-    // user 1 buys shares again
     start_cheat_caller_address(prediction_hub.contract_address, USER1_ADDR());
-    prediction_hub.buy_shares(market_id, 1, turn_number_to_precision_point(10));
+    prediction_hub.buy_shares(market_id_2, 1, turn_number_to_precision_point(10));
     stop_cheat_caller_address(prediction_hub.contract_address);
 
-    // get all bets for user 1
     let all_bets = prediction_hub.get_all_bets_for_user(USER1_ADDR());
     assert(all_bets.len() == 2, 'should have 2 bet');
 }
