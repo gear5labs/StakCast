@@ -3,19 +3,18 @@ import { container } from "tsyringe";
 import QueueController from "./queue.controller";
 import { authenticateToken } from "../../../middleware/auth";
 import AdminController from './admin.controller';
-
 const router = Router();
 const queueController = container.resolve(QueueController);
-
+const adminController=container.resolve(AdminController)
 // Queue monitoring endpoints (protected)
 router.get("/queue/stats", authenticateToken, queueController.getQueueStats.bind(queueController));
-router.post('/pause', AdminController.pauseContract);
-router.post('/unpause', AdminController.unpauseContract);
-router.post('/set-fee', AdminController.setPlatformFee);
-router.post('/add-token', AdminController.addSupportedToken);
-router.post('/remove-token', AdminController.removeSupportedToken);
-router.post('/emergency-close-market', AdminController.emergencyCloseMarket);
-router.post('/emergency-withdraw', AdminController.emergencyWithdraw);
-router.get('/state', AdminController.getAdminState);
+router.post('/pause', adminController.pauseContract);
+router.post('/unpause', adminController.unpauseContract);
+router.post('/set-fee', adminController.setPlatformFee);
+router.post('/add-token', adminController.addSupportedToken);
+router.post('/remove-token', adminController.removeSupportedToken);
+router.post('/emergency-close-market', adminController.emergencyCloseMarket);
+router.post('/emergency-withdraw', adminController.emergencyWithdraw);
+router.get('/state', adminController.getAdminState);
 
 export default router;
