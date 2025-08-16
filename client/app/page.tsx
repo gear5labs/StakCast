@@ -196,6 +196,7 @@ const Home = () => {
                     <MarketCard
                       name={market?.title || "Untitled Market"}
                       image={market?.image_url || "/default-image.jpg"}
+                      marketId={market?.market_id}
                       options={[
                         {
                           label: "No",
