@@ -928,6 +928,29 @@ pub mod PredictionHub {
             user_markets
         }
 
+        fn get_user_markets_by_category(
+            self: @ContractState, user: ContractAddress, category: u8,
+        ) -> Array<PredictionMarket> {
+            // Validate category input
+            assert(category <= 7, 'Invalid category: must be 0-7');
+
+            let mut user_markets = ArrayTrait::new();
+            let user_market_ids = self.user_predictions.entry(user);
+            let user_market_ids_len = user_market_ids.len();
+
+            for i in 0..user_market_ids_len {
+                let market_id: u256 = user_market_ids.at(i).read();
+                let market = self.all_predictions.entry(market_id).read();
+                
+                // Check if market category matches the requested category
+                if market.category == num_to_market_category(category) {
+                    user_markets.append(market);
+                }
+            }
+
+            user_markets
+        }
+
         fn get_user_market_ids(self: @ContractState, user: ContractAddress) -> Array<u256> {
             let mut market_ids = ArrayTrait::new();
 

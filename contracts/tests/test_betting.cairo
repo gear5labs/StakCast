@@ -5,7 +5,7 @@ use snforge_std::{
 };
 use stakcast::admin_interface::{IAdditionalAdminDispatcher, IAdditionalAdminDispatcherTrait};
 use stakcast::interface::{IPredictionHubDispatcher, IPredictionHubDispatcherTrait};
-use stakcast::types::{BetActivity, PredictionMarket, StakingActivity, UserDashboard, UserStake};
+use stakcast::types::{BetActivity, PredictionMarket, StakingActivity, UserDashboard, UserStake, MarketStatus};
 use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
 use crate::test_utils::{
     ADMIN_ADDR, FEE_RECIPIENT_ADDR, HALF_PRECISION, MODERATOR_ADDR, USER1_ADDR, USER2_ADDR,
@@ -546,4 +546,171 @@ fn test_get_user_market_ids() {
 //     println!("Arrays are being returned and populated properly!");
 // }
 
+#[test]
+fn test_get_user_markets_by_category() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
 
+    // Create markets in different categories
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    
+    // Create a Sports market (category 2)
+    let sports_market_id = create_test_market_with_category(contract, 2);
+    
+    // Create a Crypto market (category 3)
+    let crypto_market_id = create_test_market_with_category(contract, 3);
+    
+    // Create a Politics market (category 1)
+    let politics_market_id = create_test_market_with_category(contract, 1);
+    
+    stop_cheat_caller_address(contract.contract_address);
+
+    // User 1 bets on sports and crypto markets
+    let user1 = USER1_ADDR();
+    start_cheat_caller_address(contract.contract_address, user1);
+    contract.buy_shares(sports_market_id, 0, turn_number_to_precision_point(10));
+    contract.buy_shares(crypto_market_id, 1, turn_number_to_precision_point(15));
+    stop_cheat_caller_address(contract.contract_address);
+
+    // User 2 bets on politics and sports markets
+    let user2 = USER2_ADDR();
+    start_cheat_caller_address(contract.contract_address, user2);
+    contract.buy_shares(politics_market_id, 0, turn_number_to_precision_point(20));
+    contract.buy_shares(sports_market_id, 1, turn_number_to_precision_point(25));
+    stop_cheat_caller_address(contract.contract_address);
+
+    // Test filtering by category
+    let user1_sports_markets = contract.get_user_markets_by_category(user1, 2); // Sports
+    let user1_crypto_markets = contract.get_user_markets_by_category(user1, 3); // Crypto
+    let user1_politics_markets = contract.get_user_markets_by_category(user1, 1); // Politics
+
+    let user2_sports_markets = contract.get_user_markets_by_category(user2, 2); // Sports
+    let user2_politics_markets = contract.get_user_markets_by_category(user2, 1); // Politics
+
+    // Assertions
+    assert(user1_sports_markets.len() == 1, 'User1 sports');
+    assert(user1_crypto_markets.len() == 1, 'User1 crypto');
+    assert(user1_politics_markets.len() == 0, 'User1 politics');
+
+    assert(user2_sports_markets.len() == 1, 'User2 sports');
+    assert(user2_politics_markets.len() == 1, 'User2 politics');
+
+    // Verify market IDs match
+    let user1_sports_market = user1_sports_markets.at(0);
+    let user1_crypto_market = user1_crypto_markets.at(0);
+    let user2_sports_market = user2_sports_markets.at(0);
+    let user2_politics_market = user2_politics_markets.at(0);
+
+    assert(user1_sports_market.market_id == @sports_market_id, 'User1 sports ID');
+    assert(user1_crypto_market.market_id == @crypto_market_id, 'User1 crypto ID');
+    assert(user2_sports_market.market_id == @sports_market_id, 'User2 sports ID');
+    assert(user2_politics_market.market_id == @politics_market_id, 'User2 politics ID');
+}
+
+#[test]
+#[should_panic(expected: ('Invalid category: must be 0-7',))]
+fn test_get_user_markets_by_category_invalid_category() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
+    
+    // Try to get markets with invalid category (8)
+    contract.get_user_markets_by_category(USER1_ADDR(), 8);
+}
+
+#[test]
+fn test_get_user_markets_by_category_empty_result() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
+
+    // User who hasn't participated in any markets
+    let user = USER3_ADDR();
+    
+    // Try to get markets by category for user with no participation
+    let sports_markets = contract.get_user_markets_by_category(user, 2); // Sports
+    
+    // Should return empty array
+    assert(sports_markets.len() == 0, 'Empty array');
+}
+
+#[test]
+fn test_get_user_markets_by_category_all_categories() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
+
+    // Create markets in all categories
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    
+    let normal_market_id = create_test_market_with_category(contract, 0); // Normal
+    let politics_market_id = create_test_market_with_category(contract, 1); // Politics
+    let sports_market_id = create_test_market_with_category(contract, 2); // Sports
+    let crypto_market_id = create_test_market_with_category(contract, 3); // Crypto
+    let business_market_id = create_test_market_with_category(contract, 4); // Business
+    let entertainment_market_id = create_test_market_with_category(contract, 5); // Entertainment
+    let science_market_id = create_test_market_with_category(contract, 6); // Science
+    let other_market_id = create_test_market_with_category(contract, 7); // Other
+    
+    stop_cheat_caller_address(contract.contract_address);
+
+    // User participates in all categories
+    let user = USER1_ADDR();
+    start_cheat_caller_address(contract.contract_address, user);
+    
+    contract.buy_shares(normal_market_id, 0, turn_number_to_precision_point(10));
+    contract.buy_shares(politics_market_id, 0, turn_number_to_precision_point(10));
+    contract.buy_shares(sports_market_id, 0, turn_number_to_precision_point(10));
+    contract.buy_shares(crypto_market_id, 0, turn_number_to_precision_point(10));
+    contract.buy_shares(business_market_id, 0, turn_number_to_precision_point(10));
+    contract.buy_shares(entertainment_market_id, 0, turn_number_to_precision_point(10));
+    contract.buy_shares(science_market_id, 0, turn_number_to_precision_point(10));
+    contract.buy_shares(other_market_id, 0, turn_number_to_precision_point(10));
+    
+    stop_cheat_caller_address(contract.contract_address);
+
+    // Test all categories
+    let normal_markets = contract.get_user_markets_by_category(user, 0);
+    let politics_markets = contract.get_user_markets_by_category(user, 1);
+    let sports_markets = contract.get_user_markets_by_category(user, 2);
+    let crypto_markets = contract.get_user_markets_by_category(user, 3);
+    let business_markets = contract.get_user_markets_by_category(user, 4);
+    let entertainment_markets = contract.get_user_markets_by_category(user, 5);
+    let science_markets = contract.get_user_markets_by_category(user, 6);
+    let other_markets = contract.get_user_markets_by_category(user, 7);
+
+    // All should have exactly 1 market
+    assert(normal_markets.len() == 1, 'Normal market');
+    assert(politics_markets.len() == 1, 'Politics market');
+    assert(sports_markets.len() == 1, 'Sports market');
+    assert(crypto_markets.len() == 1, 'Crypto market');
+    assert(business_markets.len() == 1, 'Business market');
+    assert(entertainment_markets.len() == 1, 'Entertainment market');
+    assert(science_markets.len() == 1, 'Science market');
+    assert(other_markets.len() == 1, 'Other market');
+}
+
+// Helper function to create a market with a specific category
+fn create_test_market_with_category(contract: IPredictionHubDispatcher, category: u8) -> u256 {
+    let title = "Test Market";
+    let description = "Test Description";
+    let image_url = "https://example.com/image.jpg";
+    let choices = ('Yes', 'No');
+    let end_time = get_block_timestamp() + 86400; // 24 hours from now
+    let prediction_market_type = 0; // Regular market
+    let crypto_prediction = Option::None;
+
+    let mut spy = spy_events();
+
+    contract.create_predictions(
+        title,
+        description,
+        image_url,
+        choices,
+        category,
+        end_time,
+        prediction_market_type,
+        crypto_prediction,
+    );
+
+    let events = spy.get_events();
+    let mut market_id: u256 = 0;
+    if let Some((_, event)) = events.events.into_iter().last() {
+        let market_id_felt = *event.data.at(0);
+        market_id = market_id_felt.into();
+    }
+    market_id
+}

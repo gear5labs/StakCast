@@ -1,0 +1,6 @@
+{
+  "cairo1.languageServerPath": "/Users/admin/.asdf/installs/scarb/2.11.4/bin/scarb-cairo-language-server",
+  "cairo1.enableLanguageServer": true,
+  "cairo1.enableFormatOnSave": true,
+  "cairo1.enableLinting": true
+}
