@@ -928,11 +928,11 @@ pub mod PredictionHub {
             user_markets
         }
 
-        fn get_user_markets_by_category(
-            self: @ContractState, user: ContractAddress, category: u8,
+        fn get_user_markets_by_status(
+            self: @ContractState, user: ContractAddress, status: u8,
         ) -> Array<PredictionMarket> {
-            // Validate category input
-            assert(category <= 7, 'Invalid category: must be 0-7');
+            // Validate status input
+            assert(status <= 3, 'Invalid status: must be 0-3');
 
             let mut user_markets = ArrayTrait::new();
             let user_market_ids = self.user_predictions.entry(user);
@@ -942,8 +942,21 @@ pub mod PredictionHub {
                 let market_id: u256 = user_market_ids.at(i).read();
                 let market = self.all_predictions.entry(market_id).read();
                 
-                // Check if market category matches the requested category
-                if market.category == num_to_market_category(category) {
+                // Check if market status matches the requested status
+                let should_include = match status {
+                    0 => market.status == MarketStatus::Active,
+                    1 => market.status == MarketStatus::Locked,
+                    2 => {
+                        match market.status {
+                            MarketStatus::Resolved(_) => true,
+                            _ => false,
+                        }
+                    },
+                    3 => market.status == MarketStatus::Closed,
+                    _ => false,
+                };
+
+                if should_include {
                     user_markets.append(market);
                 }
             }

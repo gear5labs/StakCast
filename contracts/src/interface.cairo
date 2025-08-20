@@ -84,9 +84,9 @@ pub trait IPredictionHub<TContractState> {
         self: @TContractState, user: ContractAddress,
     ) -> Array<PredictionMarket>;
 
-    /// Returns an array of markets that a user has participated in, filtered by category
-    fn get_user_markets_by_category(
-        self: @TContractState, user: ContractAddress, category: u8,
+    /// Returns an array of markets that a user has participated in, filtered by status
+    fn get_user_markets_by_status(
+        self: @TContractState, user: ContractAddress, status: u8,
     ) -> Array<PredictionMarket>;
 
     /// Returns an array of market IDs that a user has participated in
