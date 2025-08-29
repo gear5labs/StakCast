@@ -17,7 +17,10 @@ interface MarketCardProps {
   participants?: number;
   timeLeft?: string;
   onOptionSelect?: (optionLabel: string) => void;
+  marketId?: string | number | bigint;
 }
+
+import { useSharePrices } from "@/app/hooks/useSharePrices";
 
 const MarketCard: React.FC<MarketCardProps> = ({
   name = "Untitled Market",
@@ -30,23 +33,32 @@ const MarketCard: React.FC<MarketCardProps> = ({
   participants = 0,
   timeLeft = "",
   onOptionSelect,
+  marketId,
   ...props
 }) => {
   const totalStaked = options.reduce((sum, option) => {
     return sum + BigInt(option.staked_amount);
   }, BigInt(0));
+
+  const { priceNoPercent, priceYesPercent } = useSharePrices(marketId);
+
   const optionsWithOdds = options.map((option) => {
-    const stakedAmount = BigInt(option.staked_amount);
-    const odds =
-      totalStaked > 0 ? Number((stakedAmount * BigInt(100)) / totalStaked) : 0;
+    const name = option.label.toString();
+    const price = /yes/i.test(name)
+      ? priceYesPercent || "0.00"
+      : /no/i.test(name)
+      ? priceNoPercent || "0.00"
+      : totalStaked > 0
+      ? ((Number(option.staked_amount) / Number(totalStaked)) * 100).toFixed(2)
+      : "0.00";
+
+    const odds = Number(price);
+
     return {
       ...option,
       odds,
-      name: option.label.toString(),
-      price:
-        totalStaked > 0
-          ? ((Number(stakedAmount) / Number(totalStaked)) * 100).toFixed(2)
-          : "0.00",
+      name,
+      price,
     };
   });
 
