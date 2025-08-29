@@ -5,12 +5,12 @@ use snforge_std::{
 };
 use stakcast::admin_interface::{IAdditionalAdminDispatcher, IAdditionalAdminDispatcherTrait};
 use stakcast::interface::{IPredictionHubDispatcher, IPredictionHubDispatcherTrait};
-use stakcast::types::{Outcome, UserStake, MarketStatus};
+use stakcast::types::{MarketStatus, Outcome, UserStake};
 use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
 use crate::test_utils::{
     ADMIN_ADDR, FEE_RECIPIENT_ADDR, HALF_PRECISION, MODERATOR_ADDR, USER1_ADDR, USER2_ADDR,
-    USER3_ADDR, USER4_ADDR, create_test_market, default_create_crypto_prediction, default_create_predictions,
-    setup_test_environment, turn_number_to_precision_point,
+    USER3_ADDR, USER4_ADDR, create_test_market, default_create_crypto_prediction,
+    default_create_predictions, setup_test_environment, turn_number_to_precision_point,
 };
 
 // =============== Util ======================
@@ -156,7 +156,7 @@ fn test_resolve_when_resolution_is_pause_should_panic() {
 
 
 #[test]
-#[should_panic(expected: ('Only admin or moderator',))]
+#[should_panic(expected: ('Insufficient role privileges',))]
 fn test_resolve_whith_non_moderator_or_admin_should_panic() {
     let (market_id, contract, _admin_interface, _token) =
         create_and_stake_on_general_prediction_util();

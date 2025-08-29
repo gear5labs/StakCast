@@ -90,22 +90,3 @@ pub struct MarketModified {
     #[key]
     pub market_id: u256,
 }
-
-// ================ Main Event Enum ================
-
-#[derive(Drop, starknet::Event)]
-pub enum Event {
-    ModeratorAdded: ModeratorAdded,
-    ModeratorRemoved: ModeratorRemoved,
-    EmergencyPaused: EmergencyPaused,
-    MarketCreated: MarketCreated,
-    MarketResolved: MarketResolved,
-    WagerPlaced: WagerPlaced,
-    FeesCollected: FeesCollected,
-    WinningsCollected: WinningsCollected,
-    BetPlaced: BetPlaced,
-    MarketEmergencyClosed: MarketEmergencyClosed,
-    MarketForceClosed: MarketForceClosed,
-    MarketExtended: MarketExtended,
-    MarketModified: MarketModified,
-}

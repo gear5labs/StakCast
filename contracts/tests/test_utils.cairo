@@ -3,8 +3,14 @@ use snforge_std::{
     ContractClassTrait, DeclareResultTrait, EventSpyTrait, declare, spy_events,
     start_cheat_caller_address, stop_cheat_caller_address,
 };
-use stakcast::admin_interface::{IAdditionalAdminDispatcher, IAdditionalAdminDispatcherTrait};
+use stakcast::admin_interface::{
+    IAdditionalAdminDispatcher, IAdditionalAdminDispatcherTrait, IRoleManagementDispatcher,
+    IRoleManagementDispatcherTrait,
+};
 use stakcast::interface::{IPredictionHubDispatcher, IPredictionHubDispatcherTrait};
+use stakcast::prediction::PredictionHub::{
+    ADMIN_ROLE, EMERGENCY_MANAGER, MARKET_MANAGER, TREASURY_MANAGER,
+};
 use stakcast::types::PredictionMarket;
 use starknet::{ContractAddress, get_block_timestamp};
 
@@ -99,6 +105,10 @@ pub fn setup_test_environment() -> (
 ) {
     let token = deploy_test_token();
     let (prediction_hub, admin_interface) = deploy_prediction_contract(token.contract_address);
+
+    let role_dispatcher = IRoleManagementDispatcher {
+        contract_address: prediction_hub.contract_address,
+    };
 
     // Add moderator
     start_cheat_caller_address(prediction_hub.contract_address, ADMIN_ADDR());
