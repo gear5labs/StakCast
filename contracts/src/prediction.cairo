@@ -1,14 +1,15 @@
 use core::num::traits::Zero;
 use core::panic_with_felt252;
+use openzeppelin::security::ReentrancyGuardComponent;
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use pragma_lib::abi::{IPragmaABIDispatcher, IPragmaABIDispatcherTrait};
 use pragma_lib::types::DataType;
 use stakcast::admin_interface::IAdditionalAdmin;
 use stakcast::errors;
 use stakcast::events::{
-    BetPlaced, EmergencyPaused, Event, FeesCollected, MarketCreated, MarketEmergencyClosed,
-    MarketExtended, MarketForceClosed, MarketModified, MarketResolved, ModeratorAdded,
-    ModeratorRemoved, WagerPlaced, WinningsCollected,
+    BetPlaced, EmergencyPaused, FeesCollected, MarketCreated, MarketEmergencyClosed, MarketExtended,
+    MarketForceClosed, MarketModified, MarketResolved, ModeratorAdded, ModeratorRemoved,
+    WagerPlaced, WinningsCollected,
 };
 use stakcast::interface::IPredictionHub;
 use stakcast::types::{
@@ -27,6 +28,13 @@ pub mod PredictionHub {
     use starknet::storage::{MutableVecTrait, Vec, VecTrait};
     use crate::types::{MarketStats, num_to_market_category};
     use super::{*, StoragePathEntry, StoragePointerWriteAccess};
+
+
+    component!(
+        path: ReentrancyGuardComponent, storage: reentrancy_guard, event: ReentrancyGuardEvent,
+    );
+
+    impl ReentrancyGuardInternalImpl = ReentrancyGuardComponent::InternalImpl<ContractState>;
 
 
     #[storage]
@@ -73,7 +81,6 @@ pub mod PredictionHub {
         total_value_held: u256,
         // Reentrancy protection
 
-        reentrancy_guard: bool,
         user_nonces: Map<ContractAddress, u256>, // Tracks nonce for each user
         market_ids: Map<u256, u256>,
         market_stats: Map<u256, MarketStats>,
@@ -96,14 +103,33 @@ pub mod PredictionHub {
         // user analytics
         user_dashboard: Map<ContractAddress, UserDashboard>,
         staking_activity: Map<ContractAddress, Vec<StakingActivity>>,
+        #[substorage(v0)]
+        reentrancy_guard: ReentrancyGuardComponent::Storage,
     }
 
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    pub enum Event {
+        ModeratorAdded: ModeratorAdded,
+        ModeratorRemoved: ModeratorRemoved,
+        EmergencyPaused: EmergencyPaused,
+        MarketCreated: MarketCreated,
+        MarketResolved: MarketResolved,
+        WagerPlaced: WagerPlaced,
+        FeesCollected: FeesCollected,
+        WinningsCollected: WinningsCollected,
+        BetPlaced: BetPlaced,
+        MarketEmergencyClosed: MarketEmergencyClosed,
+        MarketForceClosed: MarketForceClosed,
+        MarketExtended: MarketExtended,
+        MarketModified: MarketModified,
+        #[flat]
+        ReentrancyGuardEvent: ReentrancyGuardComponent::Event,
+    }
 
     const PRECISION: u256 = 1000000000000000000; // 18 decimals now
 
     const HALF: u256 = 500000000000000000;
-    #[event]
-    use stakcast::events::Event;
 
 
     // ================ Constructor ================
@@ -155,8 +181,6 @@ pub mod PredictionHub {
         self.resolution_paused.write(false);
 
         self.claim_paused.write(false);
-
-        self.reentrancy_guard.write(false);
     }
 
 
@@ -297,18 +321,6 @@ pub mod PredictionHub {
 
             assert(market.winning_choice.is_some(), errors::MARKET_NOT_RESOLVED);
         }
-
-
-        fn start_reentrancy_guard(ref self: ContractState) {
-            assert(!self.reentrancy_guard.read(), errors::REENTRANT_CALL);
-
-            self.reentrancy_guard.write(true);
-        }
-
-
-        fn end_reentrancy_guard(ref self: ContractState) {
-            self.reentrancy_guard.write(false);
-        }
     }
 
 
@@ -370,7 +382,7 @@ pub mod PredictionHub {
 
             assert(prediction_market_type <= 2, errors::INVALID_MARKET_TYPE);
 
-            self.start_reentrancy_guard();
+            self.reentrancy_guard.start();
 
             let market_id = self._generate_market_id();
 
@@ -443,7 +455,7 @@ pub mod PredictionHub {
                     },
                 );
 
-            self.end_reentrancy_guard();
+            self.reentrancy_guard.end();
         }
 
 
@@ -567,7 +579,7 @@ pub mod PredictionHub {
 
             self.assert_market_open(market_id);
 
-            self.start_reentrancy_guard();
+            self.reentrancy_guard.start();
 
             let (price_a, price_b) = self.calculate_share_prices(market_id);
 
@@ -659,7 +671,7 @@ pub mod PredictionHub {
             self.emit(WagerPlaced { market_id, user: caller, choice, amount });
 
             // End reentrancy guard
-            self.end_reentrancy_guard();
+            self.reentrancy_guard.end();
         }
 
         fn get_choice_stakers(
@@ -723,6 +735,8 @@ pub mod PredictionHub {
 
             self.assert_market_resolved(market_id);
 
+            self.reentrancy_guard.start();
+
             // check if the user has claimed before
 
             let user_addr: ContractAddress = get_caller_address();
@@ -758,6 +772,8 @@ pub mod PredictionHub {
             assert(success, errors::ERC20_TRANSFER_FAILED);
 
             self.emit(WinningsCollected { market_id, user: user_addr, amount: user_reward });
+
+            self.reentrancy_guard.end();
         }
 
         fn get_user_claim_status(
@@ -941,17 +957,15 @@ pub mod PredictionHub {
             for i in 0..user_market_ids_len {
                 let market_id: u256 = user_market_ids.at(i).read();
                 let market = self.all_predictions.entry(market_id).read();
-                
+
                 // Check if market status matches the requested status
                 let should_include = match status {
                     0 => market.status == MarketStatus::Active,
                     1 => market.status == MarketStatus::Locked,
-                    2 => {
-                        match market.status {
-                            MarketStatus::Resolved(_) => true,
-                            _ => false,
-                        }
-                    },
+                    2 => { match market.status {
+                        MarketStatus::Resolved(_) => true,
+                        _ => false,
+                    } },
                     3 => market.status == MarketStatus::Closed,
                     _ => false,
                 };
@@ -1097,7 +1111,7 @@ pub mod PredictionHub {
 
             self.assert_valid_choice(winning_choice);
 
-            self.start_reentrancy_guard();
+            self.reentrancy_guard.start();
 
             let mut market = self.all_predictions.entry(market_id).read();
 
@@ -1160,7 +1174,7 @@ pub mod PredictionHub {
 
             self.emit(MarketResolved { market_id, resolver: get_caller_address(), winning_choice });
 
-            self.end_reentrancy_guard();
+            self.reentrancy_guard.end();
         }
 
         fn get_admin(self: @ContractState) -> ContractAddress {
@@ -1476,7 +1490,7 @@ pub mod PredictionHub {
             self.assert_market_not_resolved(market_id);
             self.assert_valid_choice(winning_choice);
 
-            self.start_reentrancy_guard();
+            self.reentrancy_guard.start();
 
             let mut market = self.all_predictions.entry(market_id).read();
             market.is_resolved = true;
@@ -1490,7 +1504,7 @@ pub mod PredictionHub {
             self.all_predictions.entry(market_id).write(market);
             self.emit(MarketResolved { market_id, resolver: get_caller_address(), winning_choice });
 
-            self.end_reentrancy_guard();
+            self.reentrancy_guard.end();
         }
 
         fn emergency_resolve_multiple_markets(

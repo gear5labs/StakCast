@@ -5,7 +5,9 @@ use snforge_std::{
 };
 use stakcast::admin_interface::{IAdditionalAdminDispatcher, IAdditionalAdminDispatcherTrait};
 use stakcast::interface::{IPredictionHubDispatcher, IPredictionHubDispatcherTrait};
-use stakcast::types::{BetActivity, PredictionMarket, StakingActivity, UserDashboard, UserStake, MarketStatus};
+use stakcast::types::{
+    BetActivity, MarketStatus, PredictionMarket, StakingActivity, UserDashboard, UserStake,
+};
 use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
 use crate::test_utils::{
     ADMIN_ADDR, FEE_RECIPIENT_ADDR, HALF_PRECISION, MODERATOR_ADDR, USER1_ADDR, USER2_ADDR,
@@ -558,16 +560,17 @@ fn create_test_market_with_category(contract: IPredictionHubDispatcher, category
 
     let mut spy = spy_events();
 
-    contract.create_predictions(
-        title,
-        description,
-        image_url,
-        choices,
-        category,
-        end_time,
-        prediction_market_type,
-        crypto_prediction,
-    );
+    contract
+        .create_predictions(
+            title,
+            description,
+            image_url,
+            choices,
+            category,
+            end_time,
+            prediction_market_type,
+            crypto_prediction,
+        );
 
     let events = spy.get_events();
     let mut market_id: u256 = 0;
@@ -584,11 +587,11 @@ fn test_get_user_markets_by_status_multiple_users_same_status() {
 
     // Create multiple markets
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
-    
+
     let market1_id = create_test_market_with_category(contract, 0);
     let market2_id = create_test_market_with_category(contract, 1);
     let market3_id = create_test_market_with_category(contract, 2);
-    
+
     stop_cheat_caller_address(contract.contract_address);
 
     // User1 bets on market1 and market2
@@ -625,16 +628,16 @@ fn test_get_user_markets_by_status_multiple_users_same_status() {
 
     // Test that users don't get markets they didn't participate in
     // User1 didn't bet on market3
-    let user1_has_market3 = user1_active.len() > 0 && 
-        (user1_active.at(0).market_id == @market3_id || 
-         (user1_active.len() > 1 && user1_active.at(1).market_id == @market3_id));
+    let user1_has_market3 = user1_active.len() > 0
+        && (user1_active.at(0).market_id == @market3_id
+            || (user1_active.len() > 1 && user1_active.at(1).market_id == @market3_id));
     assert(!user1_has_market3, 'User1 should not have market3');
 
     // Verify all users get empty arrays for non-existent statuses
     let user1_resolved = contract.get_user_markets_by_status(user1, 2); // Resolved
     let user2_resolved = contract.get_user_markets_by_status(user2, 2); // Resolved
     let user3_resolved = contract.get_user_markets_by_status(user3, 2); // Resolved
-    
+
     assert(user1_resolved.len() == 0, 'No resolved markets yet');
     assert(user2_resolved.len() == 0, 'No resolved markets yet');
     assert(user3_resolved.len() == 0, 'No resolved markets yet');
@@ -646,25 +649,25 @@ fn test_get_user_markets_by_status_mixed_statuses_single_user() {
 
     // Create 5 different markets
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
-    
+
     let market1_id = create_test_market_with_category(contract, 0);
     let market2_id = create_test_market_with_category(contract, 1);
     let market3_id = create_test_market_with_category(contract, 2);
     let market4_id = create_test_market_with_category(contract, 3);
     let market5_id = create_test_market_with_category(contract, 4);
-    
+
     stop_cheat_caller_address(contract.contract_address);
 
     // Single user bets on all markets
     let user = USER1_ADDR();
     start_cheat_caller_address(contract.contract_address, user);
-    
+
     contract.buy_shares(market1_id, 0, turn_number_to_precision_point(10));
     contract.buy_shares(market2_id, 1, turn_number_to_precision_point(15));
     contract.buy_shares(market3_id, 0, turn_number_to_precision_point(20));
     contract.buy_shares(market4_id, 1, turn_number_to_precision_point(25));
     contract.buy_shares(market5_id, 0, turn_number_to_precision_point(30));
-    
+
     stop_cheat_caller_address(contract.contract_address);
 
     // Initially all should be active
@@ -684,15 +687,15 @@ fn test_get_user_markets_by_status_mixed_statuses_single_user() {
     let mut i = 0;
     while i < active_markets.len() {
         let market = active_markets.at(i);
-        if market.market_id == @market1_id || 
-           market.market_id == @market2_id || 
-           market.market_id == @market3_id || 
-           market.market_id == @market4_id || 
-           market.market_id == @market5_id {
+        if market.market_id == @market1_id
+            || market.market_id == @market2_id
+            || market.market_id == @market3_id
+            || market.market_id == @market4_id
+            || market.market_id == @market5_id {
             found_markets += 1;
         }
         i += 1;
-    };
+    }
     assert(found_markets == 5, 'All 5 markets should be found');
 
     // Test consistency - same user should get same results on repeated calls
@@ -706,13 +709,13 @@ fn test_get_user_markets_by_status_boundary_and_edge_cases() {
 
     // Test with user who has no markets at all
     let empty_user = USER3_ADDR();
-    
+
     // Test all valid status values for empty user
     let empty_active = contract.get_user_markets_by_status(empty_user, 0);
     let empty_locked = contract.get_user_markets_by_status(empty_user, 1);
     let empty_resolved = contract.get_user_markets_by_status(empty_user, 2);
     let empty_closed = contract.get_user_markets_by_status(empty_user, 3);
-    
+
     assert(empty_active.len() == 0, 'Empty user active should be 0');
     assert(empty_locked.len() == 0, 'Empty user locked should be 0');
     assert(empty_resolved.len() == 0, 'Empty user resolved should be 0');
@@ -732,7 +735,7 @@ fn test_get_user_markets_by_status_boundary_and_edge_cases() {
     // Test boundary values for status parameter (valid range: 0-3)
     let status_0_result = contract.get_user_markets_by_status(user, 0);
     let status_3_result = contract.get_user_markets_by_status(user, 3);
-    
+
     assert(status_0_result.len() == 1, 'Status 0 returns 1 market');
     assert(status_3_result.len() == 0, 'Status 3 returns 0 markets');
 
@@ -744,10 +747,10 @@ fn test_get_user_markets_by_status_boundary_and_edge_cases() {
     let first_call = contract.get_user_markets_by_status(user, 0);
     let second_call = contract.get_user_markets_by_status(user, 0);
     let third_call = contract.get_user_markets_by_status(user, 0);
-    
+
     assert(first_call.len() == second_call.len(), 'Calls should be consistent');
     assert(second_call.len() == third_call.len(), 'Calls should be consistent');
-    
+
     // Verify market ID consistency across calls
     assert(first_call.at(0).market_id == second_call.at(0).market_id, 'Market ID consistent');
     assert(second_call.at(0).market_id == third_call.at(0).market_id, 'Market ID consistent');
@@ -759,12 +762,12 @@ fn test_get_user_markets_by_status() {
 
     // Create markets
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
-    
+
     // Create markets that will have different statuses
     let active_market_id = create_test_market_with_category(contract, 0);
     let resolved_market_id = create_test_market_with_category(contract, 1);
     let closed_market_id = create_test_market_with_category(contract, 2);
-    
+
     stop_cheat_caller_address(contract.contract_address);
 
     // User 1 bets on active and resolved markets
@@ -806,11 +809,15 @@ fn test_get_user_markets_by_status() {
     let user2_active_market2 = user2_active_markets.at(1);
 
     // Check that we have the correct markets (order might vary)
-    let user1_has_active = user1_active_market1.market_id == @active_market_id || user1_active_market2.market_id == @active_market_id;
-    let user1_has_resolved = user1_active_market1.market_id == @resolved_market_id || user1_active_market2.market_id == @resolved_market_id;
-    let user2_has_resolved = user2_active_market1.market_id == @resolved_market_id || user2_active_market2.market_id == @resolved_market_id;
-    let user2_has_closed = user2_active_market1.market_id == @closed_market_id || user2_active_market2.market_id == @closed_market_id;
-    
+    let user1_has_active = user1_active_market1.market_id == @active_market_id
+        || user1_active_market2.market_id == @active_market_id;
+    let user1_has_resolved = user1_active_market1.market_id == @resolved_market_id
+        || user1_active_market2.market_id == @resolved_market_id;
+    let user2_has_resolved = user2_active_market1.market_id == @resolved_market_id
+        || user2_active_market2.market_id == @resolved_market_id;
+    let user2_has_closed = user2_active_market1.market_id == @closed_market_id
+        || user2_active_market2.market_id == @closed_market_id;
+
     assert(user1_has_active, 'User1 has active market');
     assert(user1_has_resolved, 'User1 has resolved market');
     assert(user2_has_resolved, 'User2 has resolved market');
@@ -821,7 +828,7 @@ fn test_get_user_markets_by_status() {
 #[should_panic(expected: ('Invalid status: must be 0-3',))]
 fn test_get_user_markets_by_status_invalid_status() {
     let (contract, _admin_interface, _token) = setup_test_environment();
-    
+
     // Try to get markets with invalid status (4)
     contract.get_user_markets_by_status(USER1_ADDR(), 4);
 }
@@ -832,10 +839,10 @@ fn test_get_user_markets_by_status_empty_result() {
 
     // User who hasn't participated in any markets
     let user = USER3_ADDR();
-    
+
     // Try to get markets by status for user with no participation
     let active_markets = contract.get_user_markets_by_status(user, 0); // Active
-    
+
     // Should return empty array
     assert(active_markets.len() == 0, 'Empty array');
 }
@@ -846,21 +853,21 @@ fn test_get_user_markets_by_status_all_statuses() {
 
     // Create markets
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
-    
+
     let active_market_id = create_test_market_with_category(contract, 0);
     let resolved_market_id = create_test_market_with_category(contract, 1);
     let closed_market_id = create_test_market_with_category(contract, 2);
-    
+
     stop_cheat_caller_address(contract.contract_address);
 
     // User participates in all markets
     let user = USER1_ADDR();
     start_cheat_caller_address(contract.contract_address, user);
-    
+
     contract.buy_shares(active_market_id, 0, turn_number_to_precision_point(10));
     contract.buy_shares(resolved_market_id, 0, turn_number_to_precision_point(10));
     contract.buy_shares(closed_market_id, 0, turn_number_to_precision_point(10));
-    
+
     stop_cheat_caller_address(contract.contract_address);
 
     // Test all statuses - all should be active initially
