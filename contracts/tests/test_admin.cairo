@@ -47,7 +47,7 @@ fn test_admin_functions() {
 }
 
 #[test]
-#[should_panic(expected: 'Only admin allowed')]
+#[should_panic(expected: 'Insufficient role privileges')]
 fn test_non_admin_function_should_panic() {
     let (contract, _admin_interface, _token) = setup_test_environment();
     // set fee recipent with non admin call should panic
@@ -116,7 +116,7 @@ fn test_emergency_close_market_panics_on_bet_after_close() {
 }
 
 #[test]
-#[should_panic(expected: ('Only admin allowed',))]
+#[should_panic(expected: ('Insufficient role privileges',))]
 fn test_emergency_close_market_panics_if_not_admin() {
     let (contract, admin_interface, _token) = setup_test_environment();
 
@@ -199,7 +199,7 @@ fn test_force_close_market() {
 }
 
 #[test]
-#[should_panic(expected: ('Only admin allowed',))]
+#[should_panic(expected: ('Insufficient role privileges',))]
 fn test_force_close_market_panics_if_not_admin() {
     let (contract, admin_interface, _token) = setup_test_environment();
 
@@ -255,7 +255,7 @@ fn test_emergency_resolve_market() {
 }
 
 #[test]
-#[should_panic(expected: ('Only admin allowed',))]
+#[should_panic(expected: ('Insufficient role privileges',))]
 fn test_emergency_resolve_market_panics_if_not_admin() {
     let (contract, admin_interface, _token) = setup_test_environment();
 
