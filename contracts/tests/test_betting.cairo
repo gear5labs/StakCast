@@ -875,3 +875,4 @@ fn test_get_user_markets_by_status_all_statuses() {
     assert(resolved_markets.len() == 0, 'Resolved market'); // No resolved markets initially
     assert(closed_markets.len() == 0, 'Closed market'); // No closed markets initially
 }
+
