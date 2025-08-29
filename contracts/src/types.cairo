@@ -48,8 +48,6 @@ pub fn num_to_market_category(category_input: u8) -> MarketCategory {
 }
 
 
-
-
 #[derive(Copy, Drop, Serde, starknet::Store, PartialEq)]
 pub struct MarketStats {
     pub total_traders: u256, // Total number of unique traders
