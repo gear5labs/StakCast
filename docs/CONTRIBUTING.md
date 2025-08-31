@@ -14,7 +14,7 @@ Please follow this guide to ensure a smooth contribution process.
 5. [Making Changes](#making-changes)  
 6. [Submitting a Pull Request](#submitting-a-pull-request)  
 7. [Reporting Issues](#reporting-issues)  
-
+8. [Security Reporting](#security-reporting)
 ---
 
 ## 📜 Code of Conduct
@@ -122,5 +122,8 @@ If you encounter a bug or have a feature request, please [open an issue](https:/
 - We expect a **draft PR** within **48 hours** of assignment, even if it's incomplete—this shows progress has started.
 
 ---
+## Security Reporting
+If you find a security vulnerability, please do not open a public issue. Instead contact us for responsible disclosure.
 
+---
 Thank you for contributing to Stakcast! 🎉
