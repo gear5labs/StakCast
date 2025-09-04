@@ -8,7 +8,7 @@ use stakcast::interface::{IPredictionHubDispatcher, IPredictionHubDispatcherTrai
 use stakcast::types::{BetActivity, PredictionMarket, StakingActivity, UserDashboard, UserStake, MarketStatus};
 use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
 use crate::test_utils::{
-    ADMIN_ADDR, FEE_RECIPIENT_ADDR, HALF_PRECISION, MODERATOR_ADDR, USER1_ADDR, USER2_ADDR,
+    ADMIN_ADDR, FEE_RECIPIENT_ADDR, HALF_PRECISION, MODERATOR_ADDR, MODERATOR_ADDR_2, USER1_ADDR, USER2_ADDR,
     USER3_ADDR, create_test_market, default_create_crypto_prediction, default_create_predictions,
     setup_test_environment, turn_number_to_precision_point,
 };
@@ -876,3 +876,198 @@ fn test_get_user_markets_by_status_all_statuses() {
     assert(closed_markets.len() == 0, 'Closed market'); // No closed markets initially
 }
 
+#[test]
+fn test_get_markets_by_creator() {
+    let (contract, admin_interface, _token) = setup_test_environment();
+
+    // Add MODERATOR_ADDR_2 as a moderator so it can create markets
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.add_moderator(MODERATOR_ADDR_2());
+    stop_cheat_caller_address(contract.contract_address);
+
+    // Create markets with different creators
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let market1_id = create_test_market_with_category(contract, 0);
+    let market2_id = create_test_market_with_category(contract, 1);
+    stop_cheat_caller_address(contract.contract_address);
+
+    // Create markets with a different creator (MODERATOR_ADDR_2)
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR_2());
+    let market3_id = create_test_market_with_category(contract, 2);
+    let market4_id = create_test_market_with_category(contract, 3);
+    stop_cheat_caller_address(contract.contract_address);
+
+    // Test getting markets by creator for MODERATOR_ADDR
+    let moderator_markets = contract.get_markets_by_creator(MODERATOR_ADDR());
+    assert(moderator_markets.len() == 2, 'MODERATOR should ave 2 markets');
+
+    // Test getting markets by creator for MODERATOR_ADDR_2
+    let moderator2_markets = contract.get_markets_by_creator(MODERATOR_ADDR_2());
+    assert(moderator2_markets.len() == 2, 'MODERATOR2 should ave 2 markets');
+
+    // Test getting markets by creator for a user who hasn't created any markets
+    let user_markets = contract.get_markets_by_creator(USER1_ADDR());
+    assert(user_markets.len() == 0, 'USER1 should have 0 markets');
+
+    // Verify the returned markets have the correct creator
+    let market1 = moderator_markets.at(0);
+    let market2 = moderator_markets.at(1);
+    
+    // Check that we have the correct market IDs (order might vary)
+    let has_market1 = market1.market_id == @market1_id || market2.market_id == @market1_id;
+    let has_market2 = market1.market_id == @market2_id || market2.market_id == @market2_id;
+    
+    assert(has_market1, 'Should contain market1');
+    assert(has_market2, 'Should contain market2');
+
+    // Verify markets created by MODERATOR_ADDR_2
+    let market3 = moderator2_markets.at(0);
+    let market4 = moderator2_markets.at(1);
+    
+    let has_market3 = market3.market_id == @market3_id || market4.market_id == @market3_id;
+    let has_market4 = market3.market_id == @market4_id || market4.market_id == @market4_id;
+    
+    assert(has_market3, 'Should contain market3');
+    assert(has_market4, 'Should contain market4');
+
+    println!("get_markets_by_creator function works correctly!");
+    println!("MODERATOR_ADDR created {} markets", moderator_markets.len());
+    println!("MODERATOR_ADDR_2 created {} markets", moderator2_markets.len());
+    println!("USER1_ADDR created {} markets", user_markets.len());
+}
+
+#[test]
+fn test_get_markets_by_creator_empty_result() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
+
+    // Test with a user who hasn't created any markets
+    let user_markets = contract.get_markets_by_creator(USER1_ADDR());
+    assert(user_markets.len() == 0, 'Empty array for user');
+
+    // Test with another user who hasn't created any markets
+    let user2_markets = contract.get_markets_by_creator(USER2_ADDR());
+    assert(user2_markets.len() == 0, 'Empty array for user2');
+
+    // Test with a non-existent address (zero address)
+    let zero_address = contract_address_const::<'0'>();
+    let zero_markets = contract.get_markets_by_creator(zero_address);
+    assert(zero_markets.len() == 0, 'Empty array for zero');
+
+    println!("Empty result tests passed!");
+}
+
+#[test]
+fn test_get_markets_by_creator_single_creator_multiple_markets() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
+
+    // Create multiple markets with the same creator
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let market1_id = create_test_market_with_category(contract, 0);
+    let market2_id = create_test_market_with_category(contract, 1);
+    let market3_id = create_test_market_with_category(contract, 2);
+    let market4_id = create_test_market_with_category(contract, 3);
+    let market5_id = create_test_market_with_category(contract, 4);
+    stop_cheat_caller_address(contract.contract_address);
+
+    // Get all markets created by MODERATOR_ADDR
+    let moderator_markets = contract.get_markets_by_creator(MODERATOR_ADDR());
+    assert(moderator_markets.len() == 5, 'Should have 5 markets');
+
+    // Verify all market IDs are present
+    let mut found_markets = 0;
+    let mut i = 0;
+    while i < moderator_markets.len() {
+        let market = moderator_markets.at(i);
+        if market.market_id == @market1_id || 
+           market.market_id == @market2_id || 
+           market.market_id == @market3_id || 
+           market.market_id == @market4_id || 
+           market.market_id == @market5_id {
+            found_markets += 1;
+        }
+        i += 1;
+    };
+    assert(found_markets == 5, 'All 5 markets should be found');
+
+    println!("Single creator multiple markets test passed!");
+    println!("MODERATOR_ADDR created {} markets", moderator_markets.len());
+}
+
+#[test]
+fn test_get_markets_by_creator_consistency_and_idempotency() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
+
+    // Create some markets
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let market1_id = create_test_market_with_category(contract, 0);
+    let market2_id = create_test_market_with_category(contract, 1);
+    stop_cheat_caller_address(contract.contract_address);
+
+    // Call the function multiple times and verify consistency
+    let result1 = contract.get_markets_by_creator(MODERATOR_ADDR());
+    let result2 = contract.get_markets_by_creator(MODERATOR_ADDR());
+    let result3 = contract.get_markets_by_creator(MODERATOR_ADDR());
+
+    // All results should be identical
+    assert(result1.len() == result2.len(), 'Results should be consistent');
+    assert(result2.len() == result3.len(), 'Results should be consistent');
+    assert(result1.len() == 2, 'Should have 2 markets');
+
+    // Verify market IDs are consistent across calls
+    let market1_from_result1 = result1.at(0);
+    let market1_from_result2 = result2.at(0);
+    let market1_from_result3 = result3.at(0);
+
+    // At least one of the results should contain market1_id
+    let has_market1 = market1_from_result1.market_id == @market1_id || 
+                      market1_from_result1.market_id == @market2_id;
+    assert(has_market1, 'Should contain market');
+
+    println!("Consistency and idempotency test passed!");
+}
+
+#[test]
+fn test_get_markets_by_creator_boundary_conditions() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
+
+    // Test with admin address (who can create markets)
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    let admin_market_id = create_test_market_with_category(contract, 0);
+    stop_cheat_caller_address(contract.contract_address);
+
+    let admin_markets = contract.get_markets_by_creator(ADMIN_ADDR());
+    assert(admin_markets.len() == 1, 'Admin should have 1 market');
+
+    // Test with fee recipient (who shouldn't have created markets)
+    let fee_recipient_markets = contract.get_markets_by_creator(FEE_RECIPIENT_ADDR());
+    assert(fee_recipient_markets.len() == 0, 'Fee recipient has 0');
+
+    // Test with contract address itself (edge case)
+    let contract_markets = contract.get_markets_by_creator(contract.contract_address);
+    assert(contract_markets.len() == 0, 'Contract has 0');
+
+    println!("Boundary conditions test passed!");
+}
+
+#[test]
+#[should_panic(expected: ('Only admin or moderator',))]
+fn test_get_markets_by_creator_unauthorized_creation_should_panic() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
+
+    // Try to create a market with a non-moderator address
+    start_cheat_caller_address(contract.contract_address, USER1_ADDR());
+    create_test_market_with_category(contract, 0);
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+#[should_panic(expected: ('Only admin or moderator',))]
+fn test_get_markets_by_creator_regular_user_creation_should_panic() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
+
+    // Try to create a market with USER2_ADDR (not a moderator)
+    start_cheat_caller_address(contract.contract_address, USER2_ADDR());
+    create_test_market_with_category(contract, 0);
+
+    stop_cheat_caller_address(contract.contract_address);
+}
