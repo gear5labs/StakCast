@@ -10,7 +10,7 @@ use stakcast::types::{
 };
 use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
 use crate::test_utils::{
-    ADMIN_ADDR, FEE_RECIPIENT_ADDR, HALF_PRECISION, MODERATOR_ADDR, USER1_ADDR, USER2_ADDR,
+    ADMIN_ADDR, FEE_RECIPIENT_ADDR, HALF_PRECISION, MODERATOR_ADDR, MODERATOR_ADDR_2, USER1_ADDR, USER2_ADDR,
     USER3_ADDR, create_test_market, default_create_crypto_prediction, default_create_predictions,
     setup_test_environment, turn_number_to_precision_point,
 };
