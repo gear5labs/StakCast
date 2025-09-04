@@ -60,7 +60,7 @@ fn test_pool_creation_staking_resolution_claim_flow() {
     let open_markets = prediction_hub.get_all_open_markets();
     assert(open_markets.len() == 1, 'should have 1 open market');
 
-    let expected_stake_event = Event::MarketCreated(
+    let expected_stake_event = PredictionHub::Event::MarketCreated(
         MarketCreated { market_id, creator: MODERATOR_ADDR(), market_type: 1 },
     );
     spy_events.assert_emitted(@array![(prediction_hub.contract_address, expected_stake_event)]);
@@ -75,7 +75,7 @@ fn test_pool_creation_staking_resolution_claim_flow() {
     assert(total_value_held == turn_number_to_precision_point(10), 'total value held should be 10');
 
     // verify staking event
-    let expected_stake_event = Event::WagerPlaced(
+    let expected_stake_event = PredictionHub::Event::WagerPlaced(
         WagerPlaced {
             market_id, user: USER1_ADDR(), choice: 0, amount: turn_number_to_precision_point(10),
         },
@@ -93,7 +93,7 @@ fn test_pool_creation_staking_resolution_claim_flow() {
     assert(total_value_held == turn_number_to_precision_point(30), 'total value held should be 30');
 
     // verify staking event
-    let expected_stake_event = Event::WagerPlaced(
+    let expected_stake_event = PredictionHub::Event::WagerPlaced(
         WagerPlaced {
             market_id, user: USER2_ADDR(), choice: 1, amount: turn_number_to_precision_point(20),
         },
@@ -108,7 +108,7 @@ fn test_pool_creation_staking_resolution_claim_flow() {
     stop_cheat_caller_address(prediction_hub.contract_address);
 
     // verify resolved event
-    let expected_stake_event = Event::MarketResolved(
+    let expected_stake_event = PredictionHub::Event::MarketResolved(
         MarketResolved { market_id, resolver: ADMIN_ADDR(), winning_choice: 0 },
     );
     spy_events.assert_emitted(@array![(prediction_hub.contract_address, expected_stake_event)]);
@@ -170,7 +170,7 @@ fn test_overall_lifecycle_with_get_functions() {
     assert(open_markets.len() == 1, 'should have 1 open market');
 
     // Check MarketCreated event
-    let expected_event = Event::MarketCreated(
+    let expected_event = PredictionHub::Event::MarketCreated(
         MarketCreated { market_id, creator: MODERATOR_ADDR(), market_type: 1 },
     );
     spy_events.assert_emitted(@array![(prediction_hub.contract_address, expected_event)]);
@@ -181,7 +181,7 @@ fn test_overall_lifecycle_with_get_functions() {
     stop_cheat_caller_address(prediction_hub.contract_address);
 
     // Check WagerPlaced event for USER1
-    let expected_event = Event::WagerPlaced(
+    let expected_event = PredictionHub::Event::WagerPlaced(
         WagerPlaced {
             market_id, user: USER1_ADDR(), choice: 0, amount: turn_number_to_precision_point(10),
         },
@@ -195,7 +195,7 @@ fn test_overall_lifecycle_with_get_functions() {
     stop_cheat_caller_address(prediction_hub.contract_address);
 
     // Check MarketExtended event
-    let expected_event = Event::MarketExtended(
+    let expected_event = PredictionHub::Event::MarketExtended(
         MarketExtended { market_id, new_end_time: after_extension },
     );
     spy_events.assert_emitted(@array![(prediction_hub.contract_address, expected_event)]);
@@ -209,7 +209,7 @@ fn test_overall_lifecycle_with_get_functions() {
     stop_cheat_caller_address(prediction_hub.contract_address);
 
     // Check WagerPlaced event for USER2
-    let expected_event = Event::WagerPlaced(
+    let expected_event = PredictionHub::Event::WagerPlaced(
         WagerPlaced {
             market_id, user: USER2_ADDR(), choice: 1, amount: turn_number_to_precision_point(20),
         },
@@ -226,7 +226,7 @@ fn test_overall_lifecycle_with_get_functions() {
     stop_cheat_caller_address(prediction_hub.contract_address);
 
     // Check MarketModified event
-    let expected_event = Event::MarketModified(MarketModified { market_id });
+    let expected_event = PredictionHub::Event::MarketModified(MarketModified { market_id });
     spy_events.assert_emitted(@array![(prediction_hub.contract_address, expected_event)]);
 
     // Fast forward to just before the new end time, allow another buy
@@ -236,7 +236,7 @@ fn test_overall_lifecycle_with_get_functions() {
     stop_cheat_caller_address(prediction_hub.contract_address);
 
     // Check WagerPlaced event for USER2 again
-    let expected_event = Event::WagerPlaced(
+    let expected_event = PredictionHub::Event::WagerPlaced(
         WagerPlaced {
             market_id, user: USER2_ADDR(), choice: 1, amount: turn_number_to_precision_point(20),
         },
@@ -252,7 +252,7 @@ fn test_overall_lifecycle_with_get_functions() {
     stop_cheat_caller_address(prediction_hub.contract_address);
 
     // Check MarketResolved event
-    let expected_event = Event::MarketResolved(
+    let expected_event = PredictionHub::Event::MarketResolved(
         MarketResolved { market_id, resolver: ADMIN_ADDR(), winning_choice: 0 },
     );
     spy_events.assert_emitted(@array![(prediction_hub.contract_address, expected_event)]);
@@ -294,7 +294,7 @@ fn test_overall_lifecycle_with_get_functions() {
     }
 
     // Check MarketCreated event for market_id_2
-    let expected_event = Event::MarketCreated(
+    let expected_event = PredictionHub::Event::MarketCreated(
         MarketCreated { market_id: market_id_2, creator: MODERATOR_ADDR(), market_type: 1 },
     );
     spy_events.assert_emitted(@array![(prediction_hub.contract_address, expected_event)]);
@@ -332,7 +332,7 @@ fn test_overall_lifecycle_with_get_functions() {
         if let Some((_, event)) = spy_events.get_events().events.into_iter().last() {
             let new_market_id = (*event.data.at(0)).into();
             created_market_ids.append(new_market_id);
-            let expected_event = Event::MarketCreated(
+            let expected_event = PredictionHub::Event::MarketCreated(
                 MarketCreated {
                     market_id: new_market_id, creator: MODERATOR_ADDR(), market_type: 1,
                 },
