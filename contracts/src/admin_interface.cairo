@@ -127,3 +127,18 @@ pub trait IAdditionalAdmin<TContractState> {
         ref self: TContractState, amount: u256, recipient: ContractAddress,
     );
 }
+
+#[starknet::interface]
+pub trait IRoleManagement<TContractState> {
+    /// Grant a role to an account (admin only for sensitive roles)
+    fn grant_role(ref self: TContractState, role: felt252, account: ContractAddress);
+
+    /// Revoke a role from an account (admin only for sensitive roles)
+    fn revoke_role(ref self: TContractState, role: felt252, account: ContractAddress);
+
+    /// Renounce a role (caller can only renounce their own roles)
+    fn renounce_role(ref self: TContractState, role: felt252, account: ContractAddress);
+
+    /// Check if an account has a specific role
+    fn has_role(self: @TContractState, role: felt252, account: ContractAddress) -> bool;
+}

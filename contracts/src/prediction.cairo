@@ -4,7 +4,7 @@ use openzeppelin::security::ReentrancyGuardComponent;
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use pragma_lib::abi::{IPragmaABIDispatcher, IPragmaABIDispatcherTrait};
 use pragma_lib::types::DataType;
-use stakcast::admin_interface::IAdditionalAdmin;
+use stakcast::admin_interface::{IAdditionalAdmin, IRoleManagement};
 use stakcast::errors;
 use stakcast::events::{
     BetPlaced, EmergencyPaused, FeesCollected, MarketCreated, MarketEmergencyClosed, MarketExtended,
@@ -24,6 +24,8 @@ use starknet::{ClassHash, ContractAddress, get_block_timestamp, get_caller_addre
 
 #[starknet::contract]
 pub mod PredictionHub {
+    use openzeppelin::access::accesscontrol::AccessControlComponent;
+    use openzeppelin::introspection::src5::SRC5Component;
     use starknet::get_contract_address;
     use starknet::storage::{MutableVecTrait, Vec, VecTrait};
     use crate::types::{MarketStats, num_to_market_category};
@@ -36,11 +38,22 @@ pub mod PredictionHub {
 
     impl ReentrancyGuardInternalImpl = ReentrancyGuardComponent::InternalImpl<ContractState>;
 
+    component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+
+    #[abi(embed_v0)]
+    impl AccessControlCamelImpl =
+        AccessControlComponent::AccessControlCamelImpl<ContractState>;
+
+    impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
+
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+
 
     #[storage]
     struct Storage {
         // Access control
-
         admin: ContractAddress,
         moderators: Map<ContractAddress, bool>,
         moderator_count: u32,
@@ -104,8 +117,23 @@ pub mod PredictionHub {
         user_dashboard: Map<ContractAddress, UserDashboard>,
         staking_activity: Map<ContractAddress, Vec<StakingActivity>>,
         #[substorage(v0)]
+        accesscontrol: AccessControlComponent::Storage,
+        #[substorage(v0)]
+        src5: SRC5Component::Storage,
+        #[substorage(v0)]
         reentrancy_guard: ReentrancyGuardComponent::Storage,
     }
+
+    const PRECISION: u256 = 1000000000000000000; // 18 decimals now
+    const HALF: u256 = 500000000000000000;
+    const HIGH_VALUE_THRESHOLD: u256 = 1000000000000000000000000; // 1M tokens
+
+
+    // roles
+    pub const ADMIN_ROLE: felt252 = selector!("ADMIN_ROLE");
+    pub const MARKET_MANAGER: felt252 = selector!("MARKET_MANAGER");
+    pub const EMERGENCY_MANAGER: felt252 = selector!("EMERGENCY_MANAGER");
+    pub const TREASURY_MANAGER: felt252 = selector!("TREASURY_MANAGER");
 
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -124,13 +152,12 @@ pub mod PredictionHub {
         MarketExtended: MarketExtended,
         MarketModified: MarketModified,
         #[flat]
+        AccessControlEvent: AccessControlComponent::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
+        #[flat]
         ReentrancyGuardEvent: ReentrancyGuardComponent::Event,
     }
-
-    const PRECISION: u256 = 1000000000000000000; // 18 decimals now
-
-    const HALF: u256 = 500000000000000000;
-
 
     // ================ Constructor ================
 
@@ -181,6 +208,9 @@ pub mod PredictionHub {
         self.resolution_paused.write(false);
 
         self.claim_paused.write(false);
+
+        self.accesscontrol.initializer();
+        self.accesscontrol._grant_role(ADMIN_ROLE, admin);
     }
 
 
@@ -192,73 +222,80 @@ pub mod PredictionHub {
             assert(!self.is_paused.read(), errors::CONTRACT_PAUSED);
         }
 
-
-        fn assert_only_admin(self: @ContractState) {
+        // Enhanced role-based access control
+        fn assert_has_role(self: @ContractState, role: felt252) {
             let caller = get_caller_address();
-
-            assert(self.admin.read() == caller, errors::ONLY_ADMIN_ALLOWED);
+            assert(self.has_role(role, caller), errors::INSUFFICIENT_ROLE_PRIVILEGES);
         }
 
+        fn assert_has_any_role(self: @ContractState, roles: Span<felt252>) {
+            let caller = get_caller_address();
+            let mut has_role = false;
+            let mut i = 0;
+            while i < roles.len() {
+                if self.has_role(*roles.at(i), caller) {
+                    has_role = true;
+                    break;
+                }
+                i += 1;
+            }
+            assert(has_role, errors::INSUFFICIENT_ROLE_PRIVILEGES);
+        }
+
+        // Legacy compatibility (maintained for backward compatibility)
+        fn assert_only_admin(self: @ContractState) {
+            // Check both old admin system and new role system
+            let caller = get_caller_address();
+            let is_legacy_admin = self.admin.read() == caller;
+            let has_admin_role = self.has_role(ADMIN_ROLE, caller);
+            assert(is_legacy_admin || has_admin_role, errors::ONLY_ADMIN_ALLOWED);
+        }
 
         fn assert_only_moderator_or_admin(self: @ContractState) {
+            // Check both legacy and new role systems
             let caller = get_caller_address();
+            let is_legacy_admin = self.admin.read() == caller;
+            let is_legacy_moderator = self.moderators.entry(caller).read();
+            let has_admin_role = self.has_role(ADMIN_ROLE, caller);
+            let has_market_manager_role = self.has_role(MARKET_MANAGER, caller);
 
-            let is_admin = self.admin.read() == caller;
-
-            let is_moderator = self.moderators.entry(caller).read();
-
-            assert(is_admin || is_moderator, errors::ONLY_ADMIN_OR_MODERATOR);
+            assert(
+                is_legacy_admin || is_legacy_moderator || has_admin_role || has_market_manager_role,
+                errors::ONLY_ADMIN_OR_MODERATOR,
+            );
         }
-
 
         fn assert_market_creation_not_paused(self: @ContractState) {
             assert(!self.market_creation_paused.read(), errors::MARKET_CREATION_PAUSED);
         }
 
-
         fn assert_betting_not_paused(self: @ContractState) {
             assert(!self.betting_paused.read(), errors::BETTING_PAUSED);
         }
-
 
         fn assert_resolution_not_paused(self: @ContractState) {
             assert(!self.resolution_paused.read(), errors::RESOLUTION_PAUSED);
         }
 
-
         fn assert_claim_not_paused(self: @ContractState) {
             assert(!self.claim_paused.read(), errors::CLAIM_PAUSED);
         }
 
-
         fn assert_valid_market_timing(self: @ContractState, end_time: u64) {
             let current_time = get_block_timestamp();
-
             let min_duration = self.min_market_duration.read();
-
             let max_duration = self.max_market_duration.read();
 
-            // Check that end_time is in the future first to avoid overflow in subtraction
-
             assert(end_time > current_time, errors::END_TIME_MUST_BE_IN_FUTURE);
-
             let duration = end_time - current_time;
-
             assert(duration >= min_duration, errors::MARKET_DURATION_TOO_SHORT);
-
             assert(duration <= max_duration, errors::MARKET_DURATION_TOO_LONG);
         }
 
-
-        /// @notice Asserts that the market is open, not resolved, and has not ended
-
         fn assert_market_open(self: @ContractState, market_id: u256) {
             let market = self.all_predictions.entry(market_id).read();
-
             assert(market.is_open, errors::MARKET_CLOSED);
-
             assert(!market.is_resolved, errors::MARKET_ALREADY_RESOLVED);
-
             assert(get_block_timestamp() < market.end_time, errors::MARKET_HAS_ENDED);
         }
 
@@ -267,58 +304,40 @@ pub mod PredictionHub {
             assert(!market.is_resolved, 'Market is already resolved');
         }
 
-
         fn assert_market_exists(self: @ContractState, market_id: u256) {
             let market = self.all_predictions.entry(market_id).read();
             assert(market.market_id == market_id, errors::MARKET_DOES_NOT_EXIST);
         }
 
-
-        /// @notice Asserts that the provided choice is valid (1 or 2)
-
         fn assert_valid_choice(self: @ContractState, choice: u8) {
             assert(choice < 2, errors::INVALID_CHOICE_SELECTED);
         }
 
-
         fn assert_valid_amount(self: @ContractState, amount: u256) {
             assert(amount > 0, errors::AMOUNT_MUST_BE_POSITIVE);
-
             let min_bet = self.min_bet_amount.read();
-
             let max_bet = self.max_bet_amount.read();
-
             assert(amount >= min_bet, errors::AMOUNT_BELOW_MINIMUM);
-
             assert(amount <= max_bet, errors::AMOUNT_ABOVE_MAXIMUM);
         }
-
 
         fn assert_sufficient_token_balance(
             self: @ContractState, user: ContractAddress, amount: u256,
         ) {
             let token = IERC20Dispatcher { contract_address: self.protocol_token.read() };
-
             let balance = token.balance_of(user);
-
             assert(balance >= amount, errors::INSUFFICIENT_TOKEN_BALANCE);
         }
 
-
         fn assert_sufficient_allowance(self: @ContractState, user: ContractAddress, amount: u256) {
             let token = IERC20Dispatcher { contract_address: self.protocol_token.read() };
-
             let allowance = token.allowance(user, starknet::get_contract_address());
-
             assert(allowance >= amount, errors::INSUFFICIENT_TOKEN_ALLOWANCE);
         }
 
-
         fn assert_market_resolved(self: @ContractState, market_id: u256) {
             let market = self.all_predictions.entry(market_id).read();
-
             assert(market.is_resolved, errors::MARKET_NOT_RESOLVED);
-
             assert(market.winning_choice.is_some(), errors::MARKET_NOT_RESOLVED);
         }
     }
@@ -376,7 +395,7 @@ pub mod PredictionHub {
 
             self.assert_market_creation_not_paused();
 
-            self.assert_only_moderator_or_admin();
+            self.assert_has_any_role(array![MARKET_MANAGER, ADMIN_ROLE].span());
 
             self.assert_valid_market_timing(end_time);
 
@@ -689,7 +708,7 @@ pub mod PredictionHub {
         }
 
         fn extend_market_duration(ref self: ContractState, market_id: u256, new_end_time: u64) {
-            self.assert_only_moderator_or_admin();
+            self.assert_has_any_role(array![MARKET_MANAGER, ADMIN_ROLE].span());
             self.assert_market_exists(market_id);
 
             let mut market = self.all_predictions.entry(market_id).read();
@@ -713,7 +732,7 @@ pub mod PredictionHub {
         fn modify_market_details(
             ref self: ContractState, market_id: u256, new_description: ByteArray,
         ) {
-            self.assert_only_moderator_or_admin();
+            self.assert_has_any_role(array![MARKET_MANAGER, ADMIN_ROLE].span());
             self.assert_market_exists(market_id);
 
             let mut market = self.all_predictions.entry(market_id).read();
@@ -1105,7 +1124,7 @@ pub mod PredictionHub {
 
             self.assert_resolution_not_paused();
 
-            self.assert_only_moderator_or_admin();
+            self.assert_has_any_role(array![MARKET_MANAGER, ADMIN_ROLE].span());
 
             self.assert_market_exists(market_id);
 
@@ -1188,7 +1207,7 @@ pub mod PredictionHub {
 
 
         fn set_fee_recipient(ref self: ContractState, recipient: ContractAddress) {
-            self.assert_only_admin();
+            self.assert_has_any_role(array![TREASURY_MANAGER, ADMIN_ROLE].span());
 
             self.fee_recipient.write(recipient);
         }
@@ -1205,6 +1224,8 @@ pub mod PredictionHub {
 
             self.moderator_count.write(current_count + 1);
 
+            self.grant_role(MARKET_MANAGER, moderator);
+
             self.emit(ModeratorAdded { moderator, added_by: get_caller_address() });
         }
 
@@ -1216,7 +1237,7 @@ pub mod PredictionHub {
         // }
 
         fn upgrade(ref self: ContractState, impl_hash: ClassHash) {
-            self.assert_only_admin();
+            self.assert_has_role(ADMIN_ROLE);
 
             assert(impl_hash.is_non_zero(), errors::CLASS_HASH_CANNOT_BE_ZERO);
 
@@ -1297,7 +1318,7 @@ pub mod PredictionHub {
 
 
         fn pause_market_creation(ref self: ContractState) {
-            self.assert_only_admin();
+            self.assert_has_any_role(array![EMERGENCY_MANAGER, ADMIN_ROLE].span());
 
             self.market_creation_paused.write(true);
         }
@@ -1311,7 +1332,7 @@ pub mod PredictionHub {
 
 
         fn pause_betting(ref self: ContractState) {
-            self.assert_only_admin();
+            self.assert_has_any_role(array![EMERGENCY_MANAGER, ADMIN_ROLE].span());
 
             self.betting_paused.write(true);
         }
@@ -1325,7 +1346,7 @@ pub mod PredictionHub {
 
 
         fn pause_resolution(ref self: ContractState) {
-            self.assert_only_admin();
+            self.assert_has_any_role(array![EMERGENCY_MANAGER, ADMIN_ROLE].span());
 
             self.resolution_paused.write(true);
         }
@@ -1339,7 +1360,7 @@ pub mod PredictionHub {
 
 
         fn pause_claim(ref self: ContractState) {
-            self.assert_only_admin();
+            self.assert_has_any_role(array![EMERGENCY_MANAGER, ADMIN_ROLE].span());
 
             self.claim_paused.write(true);
         }
@@ -1372,7 +1393,7 @@ pub mod PredictionHub {
 
         // FUNCTION NEEDS WORK
         fn set_platform_fee(ref self: ContractState, fee_percentage: u256) {
-            self.assert_only_admin();
+            self.assert_has_any_role(array![TREASURY_MANAGER, ADMIN_ROLE].span());
 
             assert(
                 fee_percentage <= 1000, errors::FEE_CANNOT_EXCEED_TEN_PERCENT,
@@ -1444,7 +1465,7 @@ pub mod PredictionHub {
 
 
         fn emergency_close_market(ref self: ContractState, market_id: u256) {
-            self.assert_only_admin();
+            self.assert_has_any_role(array![EMERGENCY_MANAGER, ADMIN_ROLE].span());
             self.assert_market_exists(market_id);
             self.assert_market_open(market_id);
             self.assert_market_not_resolved(market_id);
@@ -1458,7 +1479,7 @@ pub mod PredictionHub {
         }
 
         fn force_close_market(ref self: ContractState, market_id: u256, reason: ByteArray) {
-            self.assert_only_admin();
+            self.assert_has_any_role(array![EMERGENCY_MANAGER, ADMIN_ROLE].span());
             self.assert_market_exists(market_id);
             self.assert_market_not_resolved(market_id);
 
@@ -1485,7 +1506,7 @@ pub mod PredictionHub {
 
 
         fn emergency_resolve_market(ref self: ContractState, market_id: u256, winning_choice: u8) {
-            self.assert_only_admin();
+            self.assert_has_any_role(array![EMERGENCY_MANAGER, ADMIN_ROLE].span());
             self.assert_market_exists(market_id);
             self.assert_market_not_resolved(market_id);
             self.assert_valid_choice(winning_choice);
@@ -1513,7 +1534,7 @@ pub mod PredictionHub {
             market_types: Array<u8>,
             winning_choices: Array<u8>,
         ) {
-            self.assert_only_admin();
+            self.assert_has_any_role(array![EMERGENCY_MANAGER, ADMIN_ROLE].span());
             assert(market_ids.len() == winning_choices.len(), 'Arrays must have same length');
             assert(market_ids.len() == market_types.len(), 'Arrays must have same length');
 
@@ -1526,7 +1547,7 @@ pub mod PredictionHub {
 
 
         fn set_protocol_token(ref self: ContractState, token_address: ContractAddress) {
-            self.assert_only_admin();
+            self.assert_has_role(ADMIN_ROLE);
 
             self.protocol_token.write(token_address);
         }
@@ -1548,14 +1569,16 @@ pub mod PredictionHub {
         fn emergency_withdraw_tokens(
             ref self: ContractState, amount: u256, recipient: ContractAddress,
         ) {
-            self.assert_only_admin();
+            // High-value withdrawals require ADMIN, smaller ones allow TREASURY_MANAGER
+            if amount > HIGH_VALUE_THRESHOLD {
+                self.assert_has_role(ADMIN_ROLE);
+            } else {
+                self.assert_has_any_role(array![TREASURY_MANAGER, ADMIN_ROLE].span());
+            }
 
             assert(amount > 0, errors::AMOUNT_MUST_BE_POSITIVE);
-
             let token = IERC20Dispatcher { contract_address: self.protocol_token.read() };
-
             let success = token.transfer(recipient, amount);
-
             assert(success, errors::EMERGENCY_WITHDRAWAL_FAILED);
         }
     }
@@ -1660,6 +1683,54 @@ pub mod PredictionHub {
             };
 
             user_rewards
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl RoleManagementImpl of IRoleManagement<ContractState> {
+        fn grant_role(ref self: ContractState, role: felt252, account: ContractAddress) {
+            // Only ADMIN can grant sensitive roles
+            let caller = get_caller_address();
+
+            if role == ADMIN_ROLE
+                || role == EMERGENCY_MANAGER
+                || role == TREASURY_MANAGER
+                || role == MARKET_MANAGER {
+                self.assert_has_role(ADMIN_ROLE);
+            } else {
+                // Invalid role
+                assert(false, errors::INVALID_ROLE);
+            }
+            // Grant the role
+            self.accesscontrol._grant_role(role, account);
+        }
+
+        fn revoke_role(ref self: ContractState, role: felt252, account: ContractAddress) {
+            let caller = get_caller_address();
+
+            // Prevent self-revocation of ADMIN role
+            if role == ADMIN_ROLE && account == caller {
+                assert(false, errors::CANNOT_REVOKE_OWN_ADMIN_ROLE);
+            }
+
+            // Only ADMIN can revoke roles
+            self.assert_has_role(ADMIN_ROLE);
+
+            // Revoke the role
+            self.accesscontrol._revoke_role(role, account);
+        }
+
+        fn renounce_role(ref self: ContractState, role: felt252, account: ContractAddress) {
+            let caller = get_caller_address();
+
+            // Users can only renounce their own roles
+            assert(caller == account, errors::UNAUTHORIZED_ROLE_OPERATION);
+
+            self.accesscontrol._revoke_role(role, account);
+        }
+
+        fn has_role(self: @ContractState, role: felt252, account: ContractAddress) -> bool {
+            self.accesscontrol.hasRole(role, account)
         }
     }
 }

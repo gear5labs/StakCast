@@ -10,7 +10,6 @@ use snforge_std::{
 use stakcast::admin_interface::{
     IAdditionalAdmin, IAdditionalAdminDispatcher, IAdditionalAdminDispatcherTrait,
 };
-use stakcast::events;
 use stakcast::events::{
     BetPlaced, EmergencyPaused, FeesCollected, MarketCreated, MarketEmergencyClosed, MarketExtended,
     MarketForceClosed, MarketModified, MarketResolved, ModeratorAdded, ModeratorRemoved,
@@ -18,6 +17,7 @@ use stakcast::events::{
 };
 use stakcast::interface::{IPredictionHub, IPredictionHubDispatcher, IPredictionHubDispatcherTrait};
 use stakcast::prediction::PredictionHub;
+use stakcast::prediction::PredictionHub::Event;
 use stakcast::types::{
     BetActivity, Choice, MarketCategory, MarketStats, MarketStatus, Outcome, PredictionMarket,
     StakingActivity, UserDashboard, UserStake, num_to_market_category,

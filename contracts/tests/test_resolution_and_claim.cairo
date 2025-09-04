@@ -156,7 +156,7 @@ fn test_resolve_when_resolution_is_pause_should_panic() {
 
 
 #[test]
-#[should_panic(expected: ('Only admin or moderator',))]
+#[should_panic(expected: ('Insufficient role privileges',))]
 fn test_resolve_whith_non_moderator_or_admin_should_panic() {
     let (market_id, contract, _admin_interface, _token) =
         create_and_stake_on_general_prediction_util();

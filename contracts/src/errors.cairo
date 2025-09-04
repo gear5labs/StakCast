@@ -54,3 +54,10 @@ pub const FEE_CANNOT_EXCEED_TEN_PERCENT: felt252 = 'Fee cannot exceed 10%';
 
 // Claim Errors
 pub const CLAIM_PAUSED: felt252 = 'Claim paused';
+
+pub const INSUFFICIENT_ROLE_PRIVILEGES: felt252 = 'Insufficient role privileges';
+pub const UNAUTHORIZED_ROLE_OPERATION: felt252 = 'Unauthorized role operation';
+pub const INVALID_ROLE: felt252 = 'Invalid role';
+pub const ROLE_ALREADY_GRANTED: felt252 = 'Role already granted';
+pub const ROLE_NOT_GRANTED: felt252 = 'Role not granted';
+pub const CANNOT_REVOKE_OWN_ADMIN_ROLE: felt252 = 'Cannot revoke own admin role';

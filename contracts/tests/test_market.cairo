@@ -136,7 +136,7 @@ fn test_create_market_should_work_after_market_creation_unpasued() {
 }
 
 #[test]
-#[should_panic(expected: 'Only admin or moderator')]
+#[should_panic(expected: 'Insufficient role privileges')]
 fn test_create_market_should_panic_if_non_admin_tries_to_create() {
     let (contract, _admin_contract, _token) = setup_test_environment();
     start_cheat_caller_address(contract.contract_address, USER2_ADDR().into());
@@ -455,7 +455,7 @@ fn test_extend_market_duration_admin_access() {
 }
 
 #[test]
-#[should_panic(expected: ('Only admin or moderator',))]
+#[should_panic(expected: ('Insufficient role privileges',))]
 fn test_extend_market_duration_unauthorized() {
     let (contract, _admin_contract, _token) = setup_test_environment();
 
@@ -550,7 +550,7 @@ fn test_modify_market_details_admin_access() {
 }
 
 #[test]
-#[should_panic(expected: ('Only admin or moderator',))]
+#[should_panic(expected: ('Insufficient role privileges',))]
 fn test_modify_market_details_unauthorized() {
     let (contract, _admin_contract, _token) = setup_test_environment();
 
