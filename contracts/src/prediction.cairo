@@ -98,6 +98,7 @@ pub mod PredictionHub {
             (u256, ContractAddress, u8), bool,
         >, // (market_id, user, choice) to a boolean
         user_predictions: Map<ContractAddress, Vec<u256>>, // user to a list of market ids
+        market_creators: Map<u256, ContractAddress>, // market_id to creator address
         claimed: Map<(u256, ContractAddress), bool>,
         market_analytics: Map<u256, Vec<BetActivity>>, // market to a list of BetActivity structs
         // user analytics
@@ -445,6 +446,9 @@ pub mod PredictionHub {
             self.all_predictions.entry(market_id).write(market.clone());
 
             self.market_stats.entry(market_id).write(market_stats);
+
+            // Store the creator of this market
+            self.market_creators.entry(market_id).write(get_caller_address());
 
             self
                 .emit(
@@ -991,6 +995,26 @@ pub mod PredictionHub {
             }
 
             market_ids
+        }
+
+        fn get_markets_by_creator(self: @ContractState, creator: ContractAddress) -> Array<PredictionMarket> {
+            let mut creator_markets = ArrayTrait::new();
+            let count = self.prediction_count.read();
+
+            for i in 0..=count {
+                let market_id = self.market_ids.entry(i).read();
+
+                if market_id != 0 {
+                    let stored_creator = self.market_creators.entry(market_id).read();
+                    
+                    if stored_creator == creator {
+                        let market = self.all_predictions.entry(market_id).read();
+                        creator_markets.append(market);
+                    }
+                }
+            }
+
+            creator_markets
         }
 
 

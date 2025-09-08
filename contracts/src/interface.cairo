@@ -92,6 +92,9 @@ pub trait IPredictionHub<TContractState> {
     /// Returns an array of market IDs that a user has participated in
     fn get_user_market_ids(self: @TContractState, user: ContractAddress) -> Array<u256>;
 
+    /// Returns an array of markets created by a specific creator
+    fn get_markets_by_creator(self: @TContractState, creator: ContractAddress) -> Array<PredictionMarket>;
+
     // ================ Betting Functions ================
 
     /// Returns the protocol token contract address
