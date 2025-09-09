@@ -91,6 +91,3 @@ pub struct MarketModified {
     #[key]
     pub market_id: u256,
 }
-// ================ Main Event Enum ================
-
-
