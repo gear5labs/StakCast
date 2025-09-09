@@ -24,7 +24,8 @@ use starknet::{ClassHash, ContractAddress, get_block_timestamp, get_caller_addre
 
 #[starknet::contract]
 pub mod PredictionHub {
-    use starknet::get_contract_address;
+    use super::StoragePointerReadAccess;
+use starknet::get_contract_address;
     use starknet::storage::{MutableVecTrait, Vec, VecTrait};
     use crate::types::{MarketStats, num_to_market_category};
     use super::{*, StoragePathEntry, StoragePointerWriteAccess};
@@ -729,6 +730,19 @@ pub mod PredictionHub {
             self.emit(MarketModified { market_id });
         }
 
+        fn update_market_title(ref self: ContractState, market_id: u256, new_title: ByteArray) {
+            self.assert_only_moderator_or_admin();
+            self.assert_market_exists(market_id);
+
+            let mut market = self.all_predictions.entry(market_id).read();
+            assert(market.is_open, 'Market must be open');
+            assert(!market.is_resolved, 'Market must not be resolved');
+
+            market.title = new_title;
+            self.all_predictions.entry(market_id).write(market);
+
+            self.emit(MarketModified { market_id });
+        }
 
         fn claim(ref self: ContractState, market_id: u256) {
             self.assert_not_paused();

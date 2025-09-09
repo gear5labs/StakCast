@@ -31,6 +31,9 @@ pub trait IPredictionHub<TContractState> {
     /// Modifies the description of an existing market
     fn modify_market_details(ref self: TContractState, market_id: u256, new_description: ByteArray);
 
+    // Updates the title of an existing market
+    fn update_market_title(ref self: TContractState, market_id: u256, new_title: ByteArray);
+
     // ================ Market Queries ================
 
     /// Returns the total number of prediction markets created
