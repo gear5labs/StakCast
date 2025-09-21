@@ -639,7 +639,7 @@ fn test_update_market_title_unauthorized_user() {
 
     start_cheat_caller_address(contract.contract_address, USER1_ADDR());
     let new_title: ByteArray = "Unauthorized update attempt";
-    
+
     contract.update_market_title(market_id, new_title);
     stop_cheat_caller_address(contract.contract_address);
 }
@@ -659,7 +659,7 @@ fn test_update_market_title_admin_success() {
 
     let updated_market = contract.get_prediction(market_id);
     let events = spy.get_events();
-    
+
     assert(events.events.len() == 1, 'Should emit 1 event');
     assert(updated_market.title == expected_title, 'Title mismatch');
     stop_cheat_caller_address(contract.contract_address);
@@ -685,7 +685,7 @@ fn test_update_market_title_moderator2_success() {
 
     let updated_market = contract.get_prediction(market_id);
     let events = spy.get_events();
-    
+
     assert(events.events.len() == 1, 'Should emit 1 event');
     assert(updated_market.title == expected_title, 'Title mismatch');
     stop_cheat_caller_address(contract.contract_address);
@@ -701,7 +701,7 @@ fn test_update_market_title_nonexistent_market() {
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
     let new_title: ByteArray = "Title for non-existent market";
     let non_existent_market_id: u256 = 999;
-    
+
     contract.update_market_title(non_existent_market_id, new_title);
     stop_cheat_caller_address(contract.contract_address);
 }
@@ -721,7 +721,7 @@ fn test_update_market_title_closed_market() {
 
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
     let new_title: ByteArray = "Title for closed market";
-    
+
     contract.update_market_title(market_id, new_title);
     stop_cheat_caller_address(contract.contract_address);
 }
@@ -740,7 +740,7 @@ fn test_update_market_title_resolved_market() {
 
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
     let new_title: ByteArray = "Title for resolved market";
-    
+
     contract.update_market_title(market_id, new_title);
     stop_cheat_caller_address(contract.contract_address);
 }
@@ -762,7 +762,7 @@ fn test_update_market_title_empty_title() {
 
     let updated_market = contract.get_prediction(market_id);
     let events = spy.get_events();
-    
+
     assert(events.events.len() == 1, 'Should emit 1 event');
     assert(updated_market.title == expected_title, 'Title should be empty');
     stop_cheat_caller_address(contract.contract_address);
@@ -775,7 +775,8 @@ fn test_update_market_title_very_long_title() {
     let market_id = create_test_market(contract);
 
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
-    let long_title: ByteArray = "This is a very long title that contains many characters and should test the limits of the title field to ensure it can handle longer strings without issues or truncation";
+    let long_title: ByteArray =
+        "This is a very long title that contains many characters and should test the limits of the title field to ensure it can handle longer strings without issues or truncation";
     let expected_title = long_title.clone();
     let mut spy = spy_events();
 
@@ -783,7 +784,7 @@ fn test_update_market_title_very_long_title() {
 
     let updated_market = contract.get_prediction(market_id);
     let events = spy.get_events();
-    
+
     assert(events.events.len() == 1, 'Should emit 1 event');
     assert(updated_market.title == expected_title, 'Long title mismatch');
     stop_cheat_caller_address(contract.contract_address);
@@ -804,7 +805,7 @@ fn test_update_market_title_special_characters() {
 
     let updated_market = contract.get_prediction(market_id);
     let events = spy.get_events();
-    
+
     assert(events.events.len() == 1, 'Should emit 1 event');
     assert(updated_market.title == expected_title, 'Special chars title mismatch');
     stop_cheat_caller_address(contract.contract_address);
@@ -825,7 +826,7 @@ fn test_update_market_title_unicode_characters() {
 
     let updated_market = contract.get_prediction(market_id);
     let events = spy.get_events();
-    
+
     assert(events.events.len() == 1, 'Should emit 1 event');
     assert(updated_market.title == expected_title, 'Unicode title mismatch');
     stop_cheat_caller_address(contract.contract_address);
@@ -840,21 +841,21 @@ fn test_update_market_title_multiple_times() {
     let market_id = create_test_market(contract);
 
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
-    
+
     // First update
     let first_title: ByteArray = "First title update";
     let mut spy = spy_events();
     contract.update_market_title(market_id, first_title);
     let events = spy.get_events();
     assert(events.events.len() == 1, 'Should emit 1 event');
-    
+
     // Second update
     let second_title: ByteArray = "Second title update";
     let mut spy2 = spy_events();
     contract.update_market_title(market_id, second_title);
     let events2 = spy2.get_events();
     assert(events2.events.len() == 1, 'Should emit 1 event');
-    
+
     // Third update
     let third_title: ByteArray = "Third title update";
     let expected_title = third_title.clone();
@@ -865,7 +866,7 @@ fn test_update_market_title_multiple_times() {
 
     let final_market = contract.get_prediction(market_id);
     assert(final_market.title == expected_title, 'Final title must be 3rd');
-    
+
     stop_cheat_caller_address(contract.contract_address);
 }
 
@@ -876,15 +877,15 @@ fn test_update_market_title_same_title_twice() {
     let market_id = create_test_market(contract);
 
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
-    
+
     let same_title: ByteArray = "Same title";
-    
+
     // First update
     let mut spy1 = spy_events();
     contract.update_market_title(market_id, same_title.clone());
     let events1 = spy1.get_events();
     assert(events1.events.len() == 1, 'Should emit 1 event');
-    
+
     // Second update with same title
     let mut spy2 = spy_events();
     contract.update_market_title(market_id, same_title.clone());
@@ -893,7 +894,7 @@ fn test_update_market_title_same_title_twice() {
 
     let final_market = contract.get_prediction(market_id);
     assert(final_market.title == same_title, 'Title should remain the same');
-    
+
     stop_cheat_caller_address(contract.contract_address);
 }
 
@@ -913,7 +914,7 @@ fn test_update_market_title_contract_paused() {
 
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
     let new_title: ByteArray = "Title update while paused";
-    
+
     contract.update_market_title(market_id, new_title);
     stop_cheat_caller_address(contract.contract_address);
 }
@@ -935,13 +936,13 @@ fn test_update_market_title_event_emission() {
 
     let events = spy.get_events();
     assert(events.events.len() == 1, 'Should emit exactly 1 event');
-    
+
     // Verify the event is MarketTitleUpdated with correct data
     let event = events.events.at(0);
     let (_, _event_data) = event.clone();
     // Note: Event structure verification would depend on the exact event format
     // This is a basic check that an event was emitted
-    
+
     stop_cheat_caller_address(contract.contract_address);
 }
 
@@ -960,14 +961,19 @@ fn test_update_market_title_no_side_effects() {
     stop_cheat_caller_address(contract.contract_address);
 
     let updated_market = contract.get_prediction(market_id);
-    
+
     // Verify only title changed, other fields remain the same
     assert(updated_market.title == expected_title, 'Title should be updated');
-    assert(updated_market.description == original_market.description, 'Description should not change');
+    assert(
+        updated_market.description == original_market.description, 'Description should not change',
+    );
     assert(updated_market.image_url == original_market.image_url, 'Image URL should not change');
     assert(updated_market.choices == original_market.choices, 'Choices should not change');
     assert(updated_market.category == original_market.category, 'Category should not change');
     assert(updated_market.end_time == original_market.end_time, 'End time should not change');
     assert(updated_market.is_open == original_market.is_open, 'Market status should not change');
-    assert(updated_market.is_resolved == original_market.is_resolved, 'Market status should not change');
+    assert(
+        updated_market.is_resolved == original_market.is_resolved,
+        'Market status should not change',
+    );
 }

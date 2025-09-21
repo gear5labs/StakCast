@@ -17,17 +17,18 @@ use stakcast::types::{
     UserStake,
 };
 use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
-use starknet::{ClassHash, ContractAddress, get_block_timestamp, get_caller_address, get_contract_address};
+use starknet::{
+    ClassHash, ContractAddress, get_block_timestamp, get_caller_address, get_contract_address,
+};
 
 
 // ================ Contract Storage ================
 
 #[starknet::contract]
 pub mod PredictionHub {
-    use super::StoragePointerReadAccess;
     use starknet::storage::{MutableVecTrait, Vec, VecTrait};
     use crate::types::{MarketStats, num_to_market_category};
-    use super::{*, StoragePathEntry, StoragePointerWriteAccess};
+    use super::{*, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
 
 
     component!(
@@ -1011,7 +1012,9 @@ pub mod PredictionHub {
             market_ids
         }
 
-        fn get_markets_by_creator(self: @ContractState, creator: ContractAddress) -> Array<PredictionMarket> {
+        fn get_markets_by_creator(
+            self: @ContractState, creator: ContractAddress,
+        ) -> Array<PredictionMarket> {
             let mut creator_markets = ArrayTrait::new();
             let count = self.prediction_count.read();
 
@@ -1020,7 +1023,7 @@ pub mod PredictionHub {
 
                 if market_id != 0 {
                     let stored_creator = self.market_creators.entry(market_id).read();
-                    
+
                     if stored_creator == creator {
                         let market = self.all_predictions.entry(market_id).read();
                         creator_markets.append(market);

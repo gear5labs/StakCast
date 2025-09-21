@@ -96,7 +96,9 @@ pub trait IPredictionHub<TContractState> {
     fn get_user_market_ids(self: @TContractState, user: ContractAddress) -> Array<u256>;
 
     /// Returns an array of markets created by a specific creator
-    fn get_markets_by_creator(self: @TContractState, creator: ContractAddress) -> Array<PredictionMarket>;
+    fn get_markets_by_creator(
+        self: @TContractState, creator: ContractAddress,
+    ) -> Array<PredictionMarket>;
 
     // ================ Betting Functions ================
 
