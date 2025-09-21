@@ -31,6 +31,9 @@ pub trait IPredictionHub<TContractState> {
     /// Modifies the description of an existing market
     fn modify_market_details(ref self: TContractState, market_id: u256, new_description: ByteArray);
 
+    // Updates the title of an existing market
+    fn update_market_title(ref self: TContractState, market_id: u256, new_title: ByteArray);
+
     // ================ Market Queries ================
 
     /// Returns the total number of prediction markets created
@@ -93,7 +96,9 @@ pub trait IPredictionHub<TContractState> {
     fn get_user_market_ids(self: @TContractState, user: ContractAddress) -> Array<u256>;
 
     /// Returns an array of markets created by a specific creator
-    fn get_markets_by_creator(self: @TContractState, creator: ContractAddress) -> Array<PredictionMarket>;
+    fn get_markets_by_creator(
+        self: @TContractState, creator: ContractAddress,
+    ) -> Array<PredictionMarket>;
 
     // ================ Betting Functions ================
 

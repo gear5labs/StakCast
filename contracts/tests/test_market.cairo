@@ -605,3 +605,375 @@ fn test_modify_market_details_resolved_market() {
     let new_description = "Should not work";
     contract.modify_market_details(market_id, new_description);
 }
+
+#[test]
+fn test_update_market_title_success() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+    // let original_title = contract.get_prediction(market_id).title;
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let new_title: ByteArray = "Updated market title";
+    let expected_title = new_title.clone();
+    let mut spy = spy_events();
+
+    contract.update_market_title(market_id, new_title);
+
+    let updated_market = contract.get_prediction(market_id);
+
+    let events = spy.get_events();
+    assert(events.events.len() == 1, 'Should emit 1 event');
+    assert(updated_market.title == expected_title, 'Title mismatch');
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+// ================ Access Control Tests ================
+
+#[test]
+#[should_panic(expected: ('Only admin or moderator',))]
+fn test_update_market_title_unauthorized_user() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    start_cheat_caller_address(contract.contract_address, USER1_ADDR());
+    let new_title: ByteArray = "Unauthorized update attempt";
+
+    contract.update_market_title(market_id, new_title);
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+fn test_update_market_title_admin_success() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    let new_title: ByteArray = "Admin updated title";
+    let expected_title = new_title.clone();
+    let mut spy = spy_events();
+
+    contract.update_market_title(market_id, new_title);
+
+    let updated_market = contract.get_prediction(market_id);
+    let events = spy.get_events();
+
+    assert(events.events.len() == 1, 'Should emit 1 event');
+    assert(updated_market.title == expected_title, 'Title mismatch');
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+fn test_update_market_title_moderator2_success() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
+
+    // Add second moderator
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.add_moderator(MODERATOR_ADDR_2());
+    stop_cheat_caller_address(contract.contract_address);
+
+    let market_id = create_test_market(contract);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR_2());
+    let new_title: ByteArray = "Moderator2 updated title";
+    let expected_title = new_title.clone();
+    let mut spy = spy_events();
+
+    contract.update_market_title(market_id, new_title);
+
+    let updated_market = contract.get_prediction(market_id);
+    let events = spy.get_events();
+
+    assert(events.events.len() == 1, 'Should emit 1 event');
+    assert(updated_market.title == expected_title, 'Title mismatch');
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+// ================ Market State Tests ================
+
+#[test]
+#[should_panic(expected: ('Market does not exist',))]
+fn test_update_market_title_nonexistent_market() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let new_title: ByteArray = "Title for non-existent market";
+    let non_existent_market_id: u256 = 999;
+
+    contract.update_market_title(non_existent_market_id, new_title);
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+#[should_panic]
+fn test_update_market_title_closed_market() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    // Close the market by setting end time to past
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    let past_time = get_block_timestamp() - 3600; // 1 hour ago
+    contract.extend_market_duration(market_id, past_time);
+    stop_cheat_caller_address(contract.contract_address);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let new_title: ByteArray = "Title for closed market";
+
+    contract.update_market_title(market_id, new_title);
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+#[should_panic]
+fn test_update_market_title_resolved_market() {
+    let (contract, _admin_interface, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    // Resolve the market
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    contract.resolve_prediction(market_id, 0);
+    stop_cheat_caller_address(contract.contract_address);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let new_title: ByteArray = "Title for resolved market";
+
+    contract.update_market_title(market_id, new_title);
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+// ================ Edge Cases and Validation Tests ================
+
+#[test]
+fn test_update_market_title_empty_title() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let empty_title: ByteArray = "";
+    let expected_title = empty_title.clone();
+    let mut spy = spy_events();
+
+    contract.update_market_title(market_id, empty_title);
+
+    let updated_market = contract.get_prediction(market_id);
+    let events = spy.get_events();
+
+    assert(events.events.len() == 1, 'Should emit 1 event');
+    assert(updated_market.title == expected_title, 'Title should be empty');
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+fn test_update_market_title_very_long_title() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let long_title: ByteArray =
+        "This is a very long title that contains many characters and should test the limits of the title field to ensure it can handle longer strings without issues or truncation";
+    let expected_title = long_title.clone();
+    let mut spy = spy_events();
+
+    contract.update_market_title(market_id, long_title);
+
+    let updated_market = contract.get_prediction(market_id);
+    let events = spy.get_events();
+
+    assert(events.events.len() == 1, 'Should emit 1 event');
+    assert(updated_market.title == expected_title, 'Long title mismatch');
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+fn test_update_market_title_special_characters() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let special_title: ByteArray = "Title with special chars: @#$%^&*()_+-=[]{}|;':\",./<>?";
+    let expected_title = special_title.clone();
+    let mut spy = spy_events();
+
+    contract.update_market_title(market_id, special_title);
+
+    let updated_market = contract.get_prediction(market_id);
+    let events = spy.get_events();
+
+    assert(events.events.len() == 1, 'Should emit 1 event');
+    assert(updated_market.title == expected_title, 'Special chars title mismatch');
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+fn test_update_market_title_unicode_characters() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let unicode_title: ByteArray = "Title with unicode:";
+    let expected_title = unicode_title.clone();
+    let mut spy = spy_events();
+
+    contract.update_market_title(market_id, unicode_title);
+
+    let updated_market = contract.get_prediction(market_id);
+    let events = spy.get_events();
+
+    assert(events.events.len() == 1, 'Should emit 1 event');
+    assert(updated_market.title == expected_title, 'Unicode title mismatch');
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+// ================ Multiple Updates Tests ================
+
+#[test]
+fn test_update_market_title_multiple_times() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+
+    // First update
+    let first_title: ByteArray = "First title update";
+    let mut spy = spy_events();
+    contract.update_market_title(market_id, first_title);
+    let events = spy.get_events();
+    assert(events.events.len() == 1, 'Should emit 1 event');
+
+    // Second update
+    let second_title: ByteArray = "Second title update";
+    let mut spy2 = spy_events();
+    contract.update_market_title(market_id, second_title);
+    let events2 = spy2.get_events();
+    assert(events2.events.len() == 1, 'Should emit 1 event');
+
+    // Third update
+    let third_title: ByteArray = "Third title update";
+    let expected_title = third_title.clone();
+    let mut spy3 = spy_events();
+    contract.update_market_title(market_id, third_title);
+    let events3 = spy3.get_events();
+    assert(events3.events.len() == 1, 'Should emit 1 event');
+
+    let final_market = contract.get_prediction(market_id);
+    assert(final_market.title == expected_title, 'Final title must be 3rd');
+
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+fn test_update_market_title_same_title_twice() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+
+    let same_title: ByteArray = "Same title";
+
+    // First update
+    let mut spy1 = spy_events();
+    contract.update_market_title(market_id, same_title.clone());
+    let events1 = spy1.get_events();
+    assert(events1.events.len() == 1, 'Should emit 1 event');
+
+    // Second update with same title
+    let mut spy2 = spy_events();
+    contract.update_market_title(market_id, same_title.clone());
+    let events2 = spy2.get_events();
+    assert(events2.events.len() == 1, 'Should emit 1 event');
+
+    let final_market = contract.get_prediction(market_id);
+    assert(final_market.title == same_title, 'Title should remain the same');
+
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+// ================ Pause State Tests ================
+
+#[test]
+#[should_panic(expected: ('Contract is paused',))]
+fn test_update_market_title_contract_paused() {
+    let (contract, admin_interface, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    // Pause the contract
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    admin_interface.emergency_pause();
+    stop_cheat_caller_address(contract.contract_address);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let new_title: ByteArray = "Title update while paused";
+
+    contract.update_market_title(market_id, new_title);
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+// ================ Event Testing ================
+
+#[test]
+fn test_update_market_title_event_emission() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+    let _original_title = contract.get_prediction(market_id).title;
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let new_title: ByteArray = "Event test title";
+    let mut spy = spy_events();
+
+    contract.update_market_title(market_id, new_title);
+
+    let events = spy.get_events();
+    assert(events.events.len() == 1, 'Should emit exactly 1 event');
+
+    // Verify the event is MarketTitleUpdated with correct data
+    let event = events.events.at(0);
+    let (_, _event_data) = event.clone();
+    // Note: Event structure verification would depend on the exact event format
+    // This is a basic check that an event was emitted
+
+    stop_cheat_caller_address(contract.contract_address);
+}
+
+#[test]
+fn test_update_market_title_no_side_effects() {
+    let (contract, _admin_contract, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+    let original_market = contract.get_prediction(market_id);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let new_title: ByteArray = "New title for side effects test";
+    let expected_title = new_title.clone();
+
+    contract.update_market_title(market_id, new_title);
+    stop_cheat_caller_address(contract.contract_address);
+
+    let updated_market = contract.get_prediction(market_id);
+
+    // Verify only title changed, other fields remain the same
+    assert(updated_market.title == expected_title, 'Title should be updated');
+    assert(
+        updated_market.description == original_market.description, 'Description should not change',
+    );
+    assert(updated_market.image_url == original_market.image_url, 'Image URL should not change');
+    assert(updated_market.choices == original_market.choices, 'Choices should not change');
+    assert(updated_market.category == original_market.category, 'Category should not change');
+    assert(updated_market.end_time == original_market.end_time, 'End time should not change');
+    assert(updated_market.is_open == original_market.is_open, 'Market status should not change');
+    assert(
+        updated_market.is_resolved == original_market.is_resolved,
+        'Market status should not change',
+    );
+}

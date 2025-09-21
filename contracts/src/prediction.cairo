@@ -17,17 +17,18 @@ use stakcast::types::{
     UserStake,
 };
 use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
-use starknet::{ClassHash, ContractAddress, get_block_timestamp, get_caller_address};
+use starknet::{
+    ClassHash, ContractAddress, get_block_timestamp, get_caller_address, get_contract_address,
+};
 
 
 // ================ Contract Storage ================
 
 #[starknet::contract]
 pub mod PredictionHub {
-    use starknet::get_contract_address;
     use starknet::storage::{MutableVecTrait, Vec, VecTrait};
     use crate::types::{MarketStats, num_to_market_category};
-    use super::{*, StoragePathEntry, StoragePointerWriteAccess};
+    use super::{*, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
 
 
     component!(
@@ -729,6 +730,20 @@ pub mod PredictionHub {
             self.emit(MarketModified { market_id });
         }
 
+        fn update_market_title(ref self: ContractState, market_id: u256, new_title: ByteArray) {
+            self.assert_not_paused();
+            self.assert_only_moderator_or_admin();
+            self.assert_market_exists(market_id);
+
+            let mut market = self.all_predictions.entry(market_id).read();
+            assert(market.is_open, 'Market must be open');
+            assert(!market.is_resolved, 'Market must not be resolved');
+
+            market.title = new_title;
+            self.all_predictions.entry(market_id).write(market);
+
+            self.emit(MarketModified { market_id });
+        }
 
         fn claim(ref self: ContractState, market_id: u256) {
             self.assert_not_paused();
@@ -997,7 +1012,9 @@ pub mod PredictionHub {
             market_ids
         }
 
-        fn get_markets_by_creator(self: @ContractState, creator: ContractAddress) -> Array<PredictionMarket> {
+        fn get_markets_by_creator(
+            self: @ContractState, creator: ContractAddress,
+        ) -> Array<PredictionMarket> {
             let mut creator_markets = ArrayTrait::new();
             let count = self.prediction_count.read();
 
@@ -1006,7 +1023,7 @@ pub mod PredictionHub {
 
                 if market_id != 0 {
                     let stored_creator = self.market_creators.entry(market_id).read();
-                    
+
                     if stored_creator == creator {
                         let market = self.all_predictions.entry(market_id).read();
                         creator_markets.append(market);
