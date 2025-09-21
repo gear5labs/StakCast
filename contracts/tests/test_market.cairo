@@ -709,7 +709,7 @@ fn test_update_market_title_nonexistent_market() {
 #[test]
 #[should_panic]
 fn test_update_market_title_closed_market() {
-    let (contract, admin_interface, _token) = setup_test_environment();
+    let (contract, _admin_interface, _token) = setup_test_environment();
 
     let market_id = create_test_market(contract);
 
@@ -729,7 +729,7 @@ fn test_update_market_title_closed_market() {
 #[test]
 #[should_panic]
 fn test_update_market_title_resolved_market() {
-    let (contract, admin_interface, _token) = setup_test_environment();
+    let (contract, _admin_interface, _token) = setup_test_environment();
 
     let market_id = create_test_market(contract);
 
@@ -864,7 +864,7 @@ fn test_update_market_title_multiple_times() {
     assert(events3.events.len() == 1, 'Should emit 1 event');
 
     let final_market = contract.get_prediction(market_id);
-    assert(final_market.title == expected_title, 'Final title shuld be 3rd update');
+    assert(final_market.title == expected_title, 'Final title must be 3rd');
     
     stop_cheat_caller_address(contract.contract_address);
 }
@@ -897,6 +897,27 @@ fn test_update_market_title_same_title_twice() {
     stop_cheat_caller_address(contract.contract_address);
 }
 
+// ================ Pause State Tests ================
+
+#[test]
+#[should_panic(expected: ('Contract is paused',))]
+fn test_update_market_title_contract_paused() {
+    let (contract, admin_interface, _token) = setup_test_environment();
+
+    let market_id = create_test_market(contract);
+
+    // Pause the contract
+    start_cheat_caller_address(contract.contract_address, ADMIN_ADDR());
+    admin_interface.emergency_pause();
+    stop_cheat_caller_address(contract.contract_address);
+
+    start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
+    let new_title: ByteArray = "Title update while paused";
+    
+    contract.update_market_title(market_id, new_title);
+    stop_cheat_caller_address(contract.contract_address);
+}
+
 // ================ Event Testing ================
 
 #[test]
@@ -904,6 +925,7 @@ fn test_update_market_title_event_emission() {
     let (contract, _admin_contract, _token) = setup_test_environment();
 
     let market_id = create_test_market(contract);
+    let _original_title = contract.get_prediction(market_id).title;
 
     start_cheat_caller_address(contract.contract_address, MODERATOR_ADDR());
     let new_title: ByteArray = "Event test title";
@@ -914,9 +936,9 @@ fn test_update_market_title_event_emission() {
     let events = spy.get_events();
     assert(events.events.len() == 1, 'Should emit exactly 1 event');
     
-    // Verify the event is MarketModified
+    // Verify the event is MarketTitleUpdated with correct data
     let event = events.events.at(0);
-    let (_, event_data) = event.clone();
+    let (_, _event_data) = event.clone();
     // Note: Event structure verification would depend on the exact event format
     // This is a basic check that an event was emitted
     

@@ -17,7 +17,7 @@ use stakcast::types::{
     UserStake,
 };
 use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
-use starknet::{ClassHash, ContractAddress, get_block_timestamp, get_caller_address};
+use starknet::{ClassHash, ContractAddress, get_block_timestamp, get_caller_address, get_contract_address};
 
 
 // ================ Contract Storage ================
@@ -25,7 +25,6 @@ use starknet::{ClassHash, ContractAddress, get_block_timestamp, get_caller_addre
 #[starknet::contract]
 pub mod PredictionHub {
     use super::StoragePointerReadAccess;
-use starknet::get_contract_address;
     use starknet::storage::{MutableVecTrait, Vec, VecTrait};
     use crate::types::{MarketStats, num_to_market_category};
     use super::{*, StoragePathEntry, StoragePointerWriteAccess};
@@ -731,6 +730,7 @@ use starknet::get_contract_address;
         }
 
         fn update_market_title(ref self: ContractState, market_id: u256, new_title: ByteArray) {
+            self.assert_not_paused();
             self.assert_only_moderator_or_admin();
             self.assert_market_exists(market_id);
 

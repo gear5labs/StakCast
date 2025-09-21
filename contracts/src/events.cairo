@@ -91,6 +91,14 @@ pub struct MarketModified {
     #[key]
     pub market_id: u256,
 }
+
+#[derive(Drop, starknet::Event)]
+pub struct MarketTitleUpdated {
+    #[key]
+    pub market_id: u256,
+    pub old_title: ByteArray,
+    pub new_title: ByteArray,
+}
 // ================ Main Event Enum ================
 
 
